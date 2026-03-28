@@ -3,7 +3,6 @@ import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
 import { validationError, validator } from "@carbon/form";
 import type { modelThumbnailTask } from "@carbon/jobs/trigger/model-thumbnail";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { data, redirect } from "react-router";
 import { partValidator, upsertPart } from "~/modules/items";
@@ -11,6 +10,7 @@ import { PartForm } from "~/modules/items/ui/Parts";
 import { setCustomFields } from "~/utils/form";
 import type { Handle } from "~/utils/handle";
 import { path } from "~/utils/path";
+import { tasks } from "~/utils/tasks";
 
 export const handle: Handle = {
   breadcrumb: "Parts",

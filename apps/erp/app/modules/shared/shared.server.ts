@@ -4,7 +4,6 @@ import type { sendEmailResendTask } from "@carbon/jobs/trigger/send-email-resend
 import { redis } from "@carbon/kv";
 import { renderAsync } from "@react-email/components";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { tasks } from "@trigger.dev/sdk";
 import type { LoaderFunctionArgs } from "react-router";
 import { getPaymentTermsList } from "~/modules/accounting";
 import {
@@ -16,6 +15,7 @@ import {
 import { getCompany } from "~/modules/settings";
 import { getUser } from "~/modules/users/users.server";
 import { stripSpecialCharacters } from "~/utils/string";
+import { tasks } from "~/utils/tasks";
 import { upsertDocument } from "../documents/documents.service";
 import type { CustomFieldsTableType } from "../settings";
 

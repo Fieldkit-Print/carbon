@@ -3,7 +3,6 @@ import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import type { Database } from "@carbon/database";
 import { NotificationEvent } from "@carbon/notifications";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { qualityDocumentStatus } from "~/modules/quality/quality.models";
 import {
@@ -15,6 +14,7 @@ import {
   hasPendingApproval,
   isApprovalRequired
 } from "~/modules/shared";
+import { tasks } from "~/utils/tasks";
 
 type DocRow = { id: string; status: string | null };
 

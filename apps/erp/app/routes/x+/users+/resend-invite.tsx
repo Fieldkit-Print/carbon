@@ -6,11 +6,11 @@ import { InviteEmail } from "@carbon/documents/email";
 import { validationError, validator } from "@carbon/form";
 import { sendEmail } from "@carbon/lib/resend.server";
 import { render } from "@react-email/components";
-import { tasks } from "@trigger.dev/sdk";
 import { nanoid } from "nanoid";
 import type { ActionFunctionArgs } from "react-router";
 import { data } from "react-router";
 import { resendInviteValidator } from "~/modules/users";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request }: ActionFunctionArgs) {
   const { companyId } = await requirePermissions(request, {

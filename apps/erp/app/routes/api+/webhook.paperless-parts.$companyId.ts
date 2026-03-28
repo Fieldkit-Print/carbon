@@ -1,11 +1,11 @@
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import type { paperlessPartsTask } from "@carbon/jobs/trigger/paperless-parts";
-import { tasks } from "@trigger.dev/sdk";
 import crypto from "crypto";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { data } from "react-router";
 import { z } from "zod";
 import { getIntegration } from "~/modules/settings/settings.service";
+import { tasks } from "~/utils/tasks";
 
 const integrationValidator = z.object({
   apiKey: z.string(),

@@ -3,10 +3,10 @@ import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { validator } from "@carbon/form";
 import type { notifyTask } from "@carbon/jobs/trigger/notify";
 import { NotificationEvent } from "@carbon/notifications";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { getCompany } from "~/modules/settings";
 import { suggestionValidator } from "~/modules/shared";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request }: ActionFunctionArgs) {
   const { userId, companyId } = await requirePermissions(request, {});

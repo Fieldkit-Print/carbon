@@ -5,7 +5,6 @@ import { validationError, validator } from "@carbon/form";
 import type { sendEmailResendTask } from "@carbon/jobs/trigger/send-email-resend";
 import { tiptapToHTML } from "@carbon/utils";
 import type { JSONContent } from "@tiptap/react";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import {
@@ -24,6 +23,7 @@ import { getCompany, getNextSequence } from "~/modules/settings";
 import { upsertExternalLink } from "~/modules/shared";
 import { getUser } from "~/modules/users/users.server";
 import { path } from "~/utils/path";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request, params }: ActionFunctionArgs) {
   assertIsPost(request);

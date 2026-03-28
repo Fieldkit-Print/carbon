@@ -192,7 +192,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (issue.error) {
       throw data(
-        insertProduction.data,
+        {},
         await flash(request, {
           ...error(issue.error, "Failed to issue materials"),
           flash: "error"
@@ -226,7 +226,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     return data(
-      insertProduction.data,
+      {},
       await flash(request, {
         ...success("Successfully completed part"),
         flash: "success"

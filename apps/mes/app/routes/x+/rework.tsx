@@ -37,7 +37,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   return data(
-    insertRework.data,
+    {},
     await flash(request, success("Rework quantity recorded successfully"))
   );
 }

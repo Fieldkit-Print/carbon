@@ -1,8 +1,8 @@
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { syncIssueFromJiraSchema } from "@carbon/jobs/trigger/jira";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { data } from "react-router";
+import { tasks } from "~/utils/tasks";
 import { getIntegration } from "../../modules/settings";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {

@@ -5,7 +5,6 @@ import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { flash } from "@carbon/auth/session.server";
 import type { modelThumbnailTask } from "@carbon/jobs/trigger/model-thumbnail";
 import { supportedModelTypes } from "@carbon/utils";
-import { tasks } from "@trigger.dev/sdk";
 import { generateObject } from "ai";
 import { nanoid } from "nanoid";
 import type { ActionFunctionArgs } from "react-router";
@@ -18,6 +17,7 @@ import {
   upsertQuoteLineMethod
 } from "~/modules/sales";
 import { path } from "~/utils/path";
+import { tasks } from "~/utils/tasks";
 
 const quoteDragValidator = z.object({
   id: z.string(),

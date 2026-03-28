@@ -8,7 +8,6 @@ import {
   parseDateTime,
   toCalendarDateTime
 } from "@internationalized/date";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { getDefaultShelfForJob } from "~/modules/inventory";
@@ -21,6 +20,7 @@ import {
 import { getNextSequence } from "~/modules/settings/settings.service";
 import { setCustomFields } from "~/utils/form";
 import { path } from "~/utils/path";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request }: ActionFunctionArgs) {
   assertIsPost(request);

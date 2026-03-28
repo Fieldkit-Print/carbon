@@ -16,7 +16,6 @@ import {
 } from "@carbon/react";
 import { Edition } from "@carbon/utils";
 import { getLocalTimeZone } from "@internationalized/date";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { Link, redirect, useLoaderData } from "react-router";
 import {
@@ -37,6 +36,7 @@ import {
   seedCompany,
   updateCompany
 } from "~/modules/settings";
+import { tasks } from "~/utils/tasks";
 
 export async function loader({ request }: ActionFunctionArgs) {
   const { client, companyId } = await requirePermissions(request, {});

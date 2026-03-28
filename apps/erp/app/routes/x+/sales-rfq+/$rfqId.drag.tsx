@@ -2,13 +2,13 @@ import { assertIsPost, error } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
 import type { modelThumbnailTask } from "@carbon/jobs/trigger/model-thumbnail";
-import { tasks } from "@trigger.dev/sdk";
 import { nanoid } from "nanoid";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { salesRfqDragValidator, upsertSalesRFQLine } from "~/modules/sales";
 import { setCustomFields } from "~/utils/form";
 import { path } from "~/utils/path";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request, params }: ActionFunctionArgs) {
   assertIsPost(request);

@@ -9,7 +9,6 @@ import { NotificationEvent } from "@carbon/notifications";
 import { VStack } from "@carbon/react";
 import { renderAsync } from "@react-email/components";
 import { FunctionRegion } from "@supabase/supabase-js";
-import { tasks } from "@trigger.dev/sdk";
 import { parseAcceptLanguage } from "intl-parse-accept-language";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Outlet, redirect, useParams } from "react-router";
@@ -46,6 +45,7 @@ import { getDatabaseClient } from "~/services/database.server";
 import type { Handle } from "~/utils/handle";
 import { path } from "~/utils/path";
 import { stripSpecialCharacters } from "~/utils/string";
+import { tasks } from "~/utils/tasks";
 
 export const handle: Handle = {
   breadcrumb: "Orders",

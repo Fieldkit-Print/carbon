@@ -1,7 +1,6 @@
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import type { recalculateTask } from "@carbon/jobs/trigger/recalculate";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import {
   calculateJobPriority,
@@ -10,6 +9,7 @@ import {
   upsertJobMethod
 } from "~/modules/production";
 import { requireUnlockedBulk } from "~/utils/lockedGuard.server";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request }: ActionFunctionArgs) {
   const { client, companyId, userId } = await requirePermissions(request, {

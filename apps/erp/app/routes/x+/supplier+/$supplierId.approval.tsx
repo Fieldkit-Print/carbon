@@ -5,7 +5,6 @@ import { flash } from "@carbon/auth/session.server";
 import { validationError, validator } from "@carbon/form";
 import { NotificationEvent } from "@carbon/notifications";
 import { getLocalTimeZone, today } from "@internationalized/date";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { supplierApprovalDecisionValidator } from "~/modules/purchasing";
@@ -21,6 +20,7 @@ import {
 } from "~/modules/shared";
 import { getDatabaseClient } from "~/services/database.server";
 import { path } from "~/utils/path";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request, params }: ActionFunctionArgs) {
   assertIsPost(request);

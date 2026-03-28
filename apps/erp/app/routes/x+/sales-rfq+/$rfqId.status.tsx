@@ -3,12 +3,12 @@ import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
 import type { notifyTask } from "@carbon/jobs/trigger/notify";
 import { NotificationEvent } from "@carbon/notifications";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { salesRFQStatusType, updateSalesRFQStatus } from "~/modules/sales";
 import { getCompanySettings } from "~/modules/settings/settings.service";
 import { path } from "~/utils/path";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request, params }: ActionFunctionArgs) {
   assertIsPost(request);

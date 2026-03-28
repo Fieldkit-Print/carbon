@@ -6,10 +6,10 @@ import { validationError, validator } from "@carbon/form";
 import type { userAdminTask } from "@carbon/jobs/trigger/user-admin";
 import { updateSubscriptionQuantityForCompany } from "@carbon/stripe/stripe.server";
 import { Edition } from "@carbon/utils";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { deactivateUsersValidator } from "~/modules/users";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request }: ActionFunctionArgs) {
   const { client, companyId } = await requirePermissions(request, {

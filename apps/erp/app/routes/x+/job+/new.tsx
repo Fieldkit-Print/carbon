@@ -5,7 +5,6 @@ import { flash } from "@carbon/auth/session.server";
 import { validationError, validator } from "@carbon/form";
 import type { recalculateTask } from "@carbon/jobs/trigger/recalculate";
 import { parseDate } from "@internationalized/date";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { useUrlParams, useUser } from "~/hooks";
@@ -23,6 +22,7 @@ import type { MethodItemType } from "~/modules/shared";
 import { setCustomFields } from "~/utils/form";
 import type { Handle } from "~/utils/handle";
 import { path } from "~/utils/path";
+import { tasks } from "~/utils/tasks";
 
 export const handle: Handle = {
   breadcrumb: "Jobs",

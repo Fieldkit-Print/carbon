@@ -5,7 +5,6 @@ import { flash } from "@carbon/auth/session.server";
 import { validationError, validator } from "@carbon/form";
 import type { recalculateTask } from "@carbon/jobs/trigger/recalculate";
 import { parseDate } from "@internationalized/date";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { getDefaultShelfForJob } from "~/modules/inventory";
@@ -18,6 +17,7 @@ import {
 import { getNextSequence } from "~/modules/settings";
 import { setCustomFields } from "~/utils/form";
 import { path } from "~/utils/path";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request, params }: ActionFunctionArgs) {
   assertIsPost(request);

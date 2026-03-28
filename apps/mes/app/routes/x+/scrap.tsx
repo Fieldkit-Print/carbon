@@ -52,13 +52,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (issue.error) {
     throw data(
-      insertScrap.data,
+      {},
       await flash(request, error(issue.error, "Failed to issue materials"))
     );
   }
 
   return data(
-    insertScrap.data,
+    {},
     await flash(request, success("Scrap quantity recorded successfully"))
   );
 }

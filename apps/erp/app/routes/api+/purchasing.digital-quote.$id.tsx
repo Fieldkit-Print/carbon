@@ -3,7 +3,6 @@ import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { validationError, validator } from "@carbon/form";
 import type { notifyTask } from "@carbon/jobs/trigger/notify";
 import { NotificationEvent } from "@carbon/notifications";
-import { tasks } from "@trigger.dev/sdk";
 import type { ActionFunctionArgs } from "react-router";
 import { z } from "zod";
 import {
@@ -12,6 +11,7 @@ import {
 } from "~/modules/purchasing/purchasing.models";
 import { getSupplierQuoteByExternalLinkId } from "~/modules/purchasing/purchasing.service";
 import { getCompanySettings } from "~/modules/settings";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request, params }: ActionFunctionArgs) {
   assertIsPost(request);

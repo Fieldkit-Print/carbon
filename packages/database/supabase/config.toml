@@ -127,6 +127,74 @@ vector_port = 54328
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
 
+[functions.issue]
+enabled = true
+verify_jwt = true
+
+[functions.create]
+enabled = true
+verify_jwt = true
+
+[functions.recalculate]
+enabled = true
+verify_jwt = true
+
+[functions.reschedule]
+enabled = true
+verify_jwt = true
+
+[functions.schedule]
+enabled = true
+verify_jwt = true
+
+[functions.post-receipt]
+enabled = true
+verify_jwt = true
+
+[functions.post-purchase-invoice]
+enabled = true
+verify_jwt = true
+
+[functions.post-shipment]
+enabled = true
+verify_jwt = true
+
+[functions.get-method]
+enabled = true
+verify_jwt = true
+
+[functions.seed-company]
+enabled = true
+verify_jwt = true
+
+[functions.webhook]
+enabled = true
+verify_jwt = true
+
+[functions.convert]
+enabled = true
+verify_jwt = true
+
+[functions.download]
+enabled = true
+verify_jwt = true
+
+[functions.import-csv]
+enabled = true
+verify_jwt = true
+
+[functions.update-purchased-prices]
+enabled = true
+verify_jwt = true
+
+[functions.trigger]
+enabled = true
+verify_jwt = true
+
+[functions.thumbnail]
+enabled = true
+verify_jwt = true
+
 [functions.image-resizer]
 enabled = true
 verify_jwt = false
