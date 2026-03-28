@@ -6,7 +6,7 @@ import type {
 } from "@supabase/supabase-js";
 import { createHash } from "crypto";
 import { redirect } from "react-router";
-import { REFRESH_ACCESS_TOKEN_THRESHOLD, VERCEL_URL } from "../config/env";
+import { getAppUrl, REFRESH_ACCESS_TOKEN_THRESHOLD } from "../config/env";
 import { getCarbon } from "../lib/supabase";
 import { getCarbonAPIKeyClient } from "../lib/supabase/client";
 import { getCarbonServiceRole } from "../lib/supabase/client.server";
@@ -296,7 +296,7 @@ export async function sendInviteByEmail(
   data?: Record<string, unknown>
 ) {
   return getCarbonServiceRole().auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${VERCEL_URL}`,
+    redirectTo: `${getAppUrl()}/callback`,
     data
   });
 }
@@ -305,7 +305,7 @@ export async function sendMagicLink(email: string) {
   return getCarbonServiceRole().auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${VERCEL_URL}`
+      emailRedirectTo: `${getAppUrl()}/callback`
     }
   });
 }
