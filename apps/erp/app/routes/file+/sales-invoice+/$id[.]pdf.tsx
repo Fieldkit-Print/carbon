@@ -1,5 +1,5 @@
 import { requirePermissions } from "@carbon/auth/auth.server";
-import { SalesInvoicePDF } from "@carbon/documents/pdf";
+import { resolveLogoForPdf, SalesInvoicePDF } from "@carbon/documents/pdf";
 import type { JSONContent } from "@carbon/react";
 import { renderToStream } from "@react-pdf/renderer";
 import type { LoaderFunctionArgs } from "react-router";
@@ -125,10 +125,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   const locale = getLocale(request);
+  const logoDataUri = await resolveLogoForPdf(company.data?.logoLightIcon);
 
   const stream = await renderToStream(
     <SalesInvoicePDF
       company={company.data}
+      logoDataUri={logoDataUri}
       companySettings={companySettings.data}
       locale={locale}
       meta={{

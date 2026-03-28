@@ -1,5 +1,5 @@
 import { requirePermissions } from "@carbon/auth/auth.server";
-import { QuotePDF } from "@carbon/documents/pdf";
+import { QuotePDF, resolveLogoForPdf } from "@carbon/documents/pdf";
 import type { JSONContent } from "@carbon/react";
 import { renderToStream } from "@react-pdf/renderer";
 import type { LoaderFunctionArgs } from "react-router";
@@ -121,6 +121,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       }, {}) ?? {};
   }
 
+  const logoDataUri = await resolveLogoForPdf(company.data?.logoLightIcon);
+
   let exchangeRate = 1;
   if (quote.data?.currencyCode) {
     const currency = await getCurrencyByCode(
@@ -136,6 +138,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const stream = await renderToStream(
     <QuotePDF
       company={company.data}
+      logoDataUri={logoDataUri}
       companySettings={companySettings.data}
       locale={locale}
       exchangeRate={exchangeRate}

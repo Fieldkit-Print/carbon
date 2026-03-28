@@ -1,6 +1,10 @@
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
-import { Footer, JobTravelerPageContent } from "@carbon/documents/pdf";
+import {
+  Footer,
+  JobTravelerPageContent,
+  resolveLogoForPdf
+} from "@carbon/documents/pdf";
 import type { JSONContent } from "@carbon/react";
 import { flattenTree, generateBomIds } from "@carbon/utils";
 import {
@@ -144,6 +148,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     })
   );
 
+  const logoDataUri = await resolveLogoForPdf(company.data?.logoLightIcon);
+
   // Register fonts (same as Template component)
   Font.register({
     family: "Inter",
@@ -191,6 +197,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         <Page key={data.makeMethod.id} size="A4" style={styles.body}>
           <JobTravelerPageContent
             company={company.data}
+            logoDataUri={logoDataUri}
             job={job.data}
             jobOperations={data.operations}
             customer={customer.data}

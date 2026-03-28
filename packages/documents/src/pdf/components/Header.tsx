@@ -9,6 +9,8 @@ type HeaderProps = {
   documentId?: string | null;
   date?: string | null;
   currencyCode?: string | null;
+  /** Pre-resolved logo as a data URI (handles SVG compatibility) */
+  logoDataUri?: string | null;
 };
 
 const tw = createTw({
@@ -35,16 +37,20 @@ const Header = ({
   title,
   documentId,
   date,
-  currencyCode
+  currencyCode,
+  logoDataUri
 }: HeaderProps) => {
+  // Use pre-resolved data URI if available, otherwise fall back to URL
+  const logoSrc = logoDataUri ?? company.logoLightIcon;
+
   return (
     <>
       <View style={tw("flex flex-row justify-between mb-1")}>
         <View style={tw("flex flex-col")}>
-          {company.logoLightIcon ? (
+          {logoSrc ? (
             <View style={{ alignSelf: "flex-start" }}>
               <Image
-                src={company.logoLightIcon}
+                src={logoSrc}
                 style={{ height: 50, width: "auto", marginBottom: 4 }}
               />
             </View>

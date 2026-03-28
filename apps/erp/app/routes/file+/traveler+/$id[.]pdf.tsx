@@ -1,6 +1,6 @@
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
-import { JobTravelerPDF } from "@carbon/documents/pdf";
+import { JobTravelerPDF, resolveLogoForPdf } from "@carbon/documents/pdf";
 import type { JSONContent } from "@carbon/react";
 import { flattenTree, generateBomIds } from "@carbon/utils";
 import { renderToStream } from "@react-pdf/renderer";
@@ -118,10 +118,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   const locale = getLocale(request);
+  const logoDataUri = await resolveLogoForPdf(company.data?.logoLightIcon);
 
   const stream = await renderToStream(
     <JobTravelerPDF
       company={company.data}
+      logoDataUri={logoDataUri}
       job={job.data}
       jobMakeMethod={jobMakeMethod.data}
       jobOperations={jobOperations.data}

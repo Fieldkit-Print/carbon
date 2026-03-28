@@ -62,6 +62,7 @@ const formatDate = (dateStr: string | null) => {
 const PackingSlipPDF = ({
   company,
   customer,
+  logoDataUri,
   meta,
   customerReference,
   sourceDocument,
@@ -103,6 +104,7 @@ const PackingSlipPDF = ({
         title="Packing Slip"
         documentId={shipment?.shipmentId}
         date={shipment?.postingDate}
+        logoDataUri={logoDataUri}
       />
 
       {/* Ship To */}
@@ -203,7 +205,7 @@ const PackingSlipPDF = ({
 
         {/* Rows */}
         {shipmentLines
-          .filter((line) => line?.shippedQuantity ?? 0 > 0)
+          .filter((line) => (line?.shippedQuantity ?? 0) > 0)
           .map((line) => {
             const barcodeDataUrl = generateBarcode(line?.itemReadableId || "");
             const trackedEntitiesForLine = trackedEntities.filter(

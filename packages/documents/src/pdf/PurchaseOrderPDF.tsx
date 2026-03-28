@@ -56,6 +56,7 @@ const PurchaseOrderPDF = ({
   company,
   companySettings,
   locale,
+  logoDataUri,
   meta,
   paymentTerms,
   purchaseOrder,
@@ -121,6 +122,7 @@ const PurchaseOrderPDF = ({
         documentId={purchaseOrder?.purchaseOrderId}
         date={purchaseOrder?.orderDate}
         currencyCode={purchaseOrder?.currencyCode}
+        logoDataUri={logoDataUri}
       />
 
       <PartyDetails

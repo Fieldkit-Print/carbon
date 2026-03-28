@@ -250,6 +250,7 @@ export const JobTravelerPageContent = ({
   item,
   batchNumber,
   bomId,
+  logoDataUri,
   notes,
   thumbnail,
   methodRevision,
@@ -266,6 +267,7 @@ export const JobTravelerPageContent = ({
           title="Job Traveler"
           documentId={job.jobId}
           date={job.startDate}
+          logoDataUri={logoDataUri}
         />
       </View>
 
@@ -531,6 +533,7 @@ const JobTravelerPDF = ({
   item,
   batchNumber,
   bomId,
+  logoDataUri,
   meta,
   notes,
   thumbnail,
@@ -554,6 +557,7 @@ const JobTravelerPDF = ({
         item={item}
         batchNumber={batchNumber}
         bomId={bomId}
+        logoDataUri={logoDataUri}
         notes={notes}
         thumbnail={thumbnail}
         methodRevision={jobMakeMethod.version?.toString()}

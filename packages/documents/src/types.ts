@@ -20,6 +20,8 @@ export interface PDF {
   meta?: Meta;
   company: Company;
   locale: string;
+  /** Pre-resolved logo data URI for SVG compatibility in react-pdf */
+  logoDataUri?: string | null;
 }
 
 export type Meta = {

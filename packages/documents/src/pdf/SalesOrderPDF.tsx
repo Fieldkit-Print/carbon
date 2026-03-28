@@ -58,6 +58,7 @@ const SalesOrderPDF = ({
   company,
   companySettings,
   locale,
+  logoDataUri,
   meta,
   salesOrder,
   salesOrderLines,
@@ -113,6 +114,7 @@ const SalesOrderPDF = ({
         documentId={salesOrder?.salesOrderId}
         date={salesOrder?.orderDate}
         currencyCode={salesOrder?.currencyCode}
+        logoDataUri={logoDataUri}
       />
 
       <PartyDetails

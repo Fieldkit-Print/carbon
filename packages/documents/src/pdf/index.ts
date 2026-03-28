@@ -9,6 +9,7 @@ import QuotePDF from "./QuotePDF";
 import SalesInvoicePDF from "./SalesInvoicePDF";
 import SalesOrderPDF from "./SalesOrderPDF";
 import StockTransferPDF from "./StockTransferPDF";
+import { resolveLogoForPdf } from "./utils/logo";
 export {
   Footer,
   IssuePDF,
@@ -19,6 +20,7 @@ export {
   ProductLabelPDF,
   PurchaseOrderPDF,
   QuotePDF,
+  resolveLogoForPdf,
   SalesInvoicePDF,
   SalesOrderPDF,
   StockTransferPDF

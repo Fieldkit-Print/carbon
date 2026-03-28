@@ -1,5 +1,5 @@
 import { requirePermissions } from "@carbon/auth/auth.server";
-import { StockTransferPDF } from "@carbon/documents/pdf";
+import { resolveLogoForPdf, StockTransferPDF } from "@carbon/documents/pdf";
 import { renderToStream } from "@react-pdf/renderer";
 import type { LoaderFunctionArgs } from "react-router";
 import { getStockTransfer, getStockTransferLines } from "~/modules/inventory";
@@ -55,6 +55,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   const locale = getLocale(request);
+  const logoDataUri = await resolveLogoForPdf(company.data?.logoLightIcon);
 
   // Get thumbnails for items
   const thumbnailPaths = stockTransferLines.data?.reduce<
@@ -90,6 +91,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const stream = await renderToStream(
     <StockTransferPDF
       company={company.data}
+      logoDataUri={logoDataUri}
       stockTransfer={stockTransfer.data}
       stockTransferLines={stockTransferLines.data ?? []}
       location={location.data}

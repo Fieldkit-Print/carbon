@@ -51,6 +51,7 @@ const QuotePDF = ({
   company,
   companySettings,
   locale,
+  logoDataUri,
   meta,
   exchangeRate,
   quote,
@@ -222,6 +223,7 @@ const QuotePDF = ({
         title="Quote"
         documentId={quote?.quoteId}
         currencyCode={quote?.currencyCode}
+        logoDataUri={logoDataUri}
       />
 
       <PartyDetails

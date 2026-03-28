@@ -1,5 +1,5 @@
 import { requirePermissions } from "@carbon/auth/auth.server";
-import { IssuePDF } from "@carbon/documents/pdf";
+import { IssuePDF, resolveLogoForPdf } from "@carbon/documents/pdf";
 import { renderToStream } from "@react-pdf/renderer";
 import type { LoaderFunctionArgs } from "react-router";
 import {
@@ -156,10 +156,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   const locale = getLocale(request);
+  const logoDataUri = await resolveLogoForPdf(company.data?.logoLightIcon);
 
   const stream = await renderToStream(
     <IssuePDF
       company={company.data}
+      logoDataUri={logoDataUri}
       locale={locale}
       nonConformance={nonConformance.data}
       nonConformanceTypes={nonConformanceTypes.data ?? []}

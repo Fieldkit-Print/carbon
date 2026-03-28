@@ -1,6 +1,6 @@
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
-import { PackingSlipPDF } from "@carbon/documents/pdf";
+import { PackingSlipPDF, resolveLogoForPdf } from "@carbon/documents/pdf";
 import type { JSONContent } from "@carbon/react";
 import { renderToStream } from "@react-pdf/renderer";
 import type { LoaderFunctionArgs } from "react-router";
@@ -73,6 +73,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   const locale = getLocale(request);
+  const logoDataUri = await resolveLogoForPdf(company.data?.logoLightIcon);
 
   switch (shipment.data.sourceDocument) {
     case "Sales Order": {
@@ -152,6 +153,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         <PackingSlipPDF
           company={company.data}
           customer={customer.data}
+          logoDataUri={logoDataUri}
           locale={locale}
           meta={{
             author: "Carbon",
@@ -271,6 +273,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         <PackingSlipPDF
           company={company.data}
           customer={customer.data}
+          logoDataUri={logoDataUri}
           locale={locale}
           meta={{
             author: "Carbon",
@@ -385,6 +388,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         <PackingSlipPDF
           company={company.data}
           customer={supplier.data}
+          logoDataUri={logoDataUri}
           locale={locale}
           meta={{
             author: "Carbon",

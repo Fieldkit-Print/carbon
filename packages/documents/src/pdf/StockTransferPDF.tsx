@@ -37,6 +37,7 @@ const tw = createTw({
 
 const StockTransferPDF = ({
   company,
+  logoDataUri,
   stockTransfer,
   stockTransferLines,
   location,
@@ -84,6 +85,7 @@ const StockTransferPDF = ({
             title={title}
             documentId={stockTransfer?.stockTransferId}
             date={stockTransfer?.createdAt}
+            logoDataUri={logoDataUri}
           />
           <Summary company={company} items={details} />
         </View>

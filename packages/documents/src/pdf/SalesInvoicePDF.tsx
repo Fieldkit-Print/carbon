@@ -59,6 +59,7 @@ const SalesInvoicePDF = ({
   company,
   companySettings,
   locale,
+  logoDataUri,
   meta,
   salesInvoice,
   salesInvoiceShipment,
@@ -122,6 +123,7 @@ const SalesInvoicePDF = ({
         documentId={salesInvoice?.invoiceId}
         date={salesInvoice?.dateIssued}
         currencyCode={salesInvoice?.currencyCode}
+        logoDataUri={logoDataUri}
       />
 
       <PartyDetails

@@ -90,6 +90,7 @@ const formatDate = (dateStr: string | null) => {
 
 const IssuePDF = ({
   company,
+  logoDataUri,
   meta,
   nonConformance,
   nonConformanceTypes,
@@ -125,6 +126,7 @@ const IssuePDF = ({
         title="Issue Report"
         documentId={nonConformance.nonConformanceId}
         date={nonConformance.openDate}
+        logoDataUri={logoDataUri}
       />
 
       {/* Issue Details */}

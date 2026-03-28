@@ -21,6 +21,14 @@ interface CompanyLogoFormProps {
 
 export const maxSizeMB = 10;
 
+const supportedTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml"
+];
+
 const CompanyLogoForm = ({
   company,
   mode,
@@ -29,11 +37,11 @@ const CompanyLogoForm = ({
   const { carbon } = useCarbon();
   const submit = useSubmit();
 
-  const getLogoPath = () => {
+  const getLogoPath = (extension: string) => {
     const prefix = `${company.id}/logo`;
     const modeSuffix = mode === "dark" ? "-dark" : "-light";
     const iconSuffix = icon ? "-icon" : "";
-    const fullPath = `${prefix}${modeSuffix}${iconSuffix}.png`;
+    const fullPath = `${prefix}${modeSuffix}${iconSuffix}.${extension}`;
 
     return fullPath;
   };
@@ -57,21 +65,14 @@ const CompanyLogoForm = ({
       let logo = e.target.files[0];
 
       // Validate file type
-      const supportedTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "image/gif"
-      ];
       if (!supportedTypes.includes(logo.type)) {
         toast.error(
-          `File type not supported. Please use JPG, PNG, WebP, or GIF.`
+          "File type not supported. Please use JPG, PNG, WebP, GIF, or SVG."
         );
         return;
       }
 
       // Validate file size (10 MB limit)
-
       const maxSizeBytes = maxSizeMB * 1024 * 1024;
       if (logo.size > maxSizeBytes) {
         toast.error(
@@ -82,52 +83,77 @@ const CompanyLogoForm = ({
         return;
       }
 
-      const formData = new FormData();
-      formData.append("file", logo);
-      formData.append("height", "128");
-      formData.append("contained", "true");
+      const isSvg = logo.type === "image/svg+xml";
 
-      try {
-        const response = await fetch(
-          `${SUPABASE_URL}/functions/v1/image-resizer`,
-          {
-            method: "POST",
-            body: formData
-          }
-        );
+      if (isSvg) {
+        // SVGs bypass the image-resizer — upload directly
+        const svgText = await logo.text();
 
-        if (!response.ok) {
-          const errorText = await response
-            .text()
-            .catch(() => response.statusText);
-          throw new Error(
-            `Image resize failed: ${response.status} ${
-              errorText || "Unknown error"
-            }`
-          );
-        }
+        // Basic client-side SVG sanitization: strip script tags and event handlers
+        const sanitized = svgText
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/\bon\w+\s*=\s*"[^"]*"/gi, "")
+          .replace(/\bon\w+\s*=\s*'[^']*'/gi, "");
 
-        const blob = await response.blob();
-        const resizedFile = new File([blob], "logo.png", {
-          type: "image/png"
+        logo = new File([sanitized], "logo.svg", {
+          type: "image/svg+xml"
         });
+      } else {
+        // Raster images go through the image-resizer
+        const formData = new FormData();
+        formData.append("file", logo);
+        formData.append("height", "128");
+        formData.append("contained", "true");
 
-        logo = resizedFile;
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
-        console.error("Image resize error:", error);
-        toast.error(`Failed to resize image: ${errorMessage}`);
-        return;
+        try {
+          const response = await fetch(
+            `${SUPABASE_URL}/functions/v1/image-resizer`,
+            {
+              method: "POST",
+              body: formData
+            }
+          );
+
+          if (!response.ok) {
+            const errorText = await response
+              .text()
+              .catch(() => response.statusText);
+            throw new Error(
+              `Image resize failed: ${response.status} ${
+                errorText || "Unknown error"
+              }`
+            );
+          }
+
+          const blob = await response.blob();
+          const resizedFile = new File([blob], "logo.png", {
+            type: "image/png"
+          });
+
+          logo = resizedFile;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Unknown error";
+          console.error("Image resize error:", error);
+          toast.error(`Failed to resize image: ${errorMessage}`);
+          return;
+        }
       }
 
-      const logoPath = getLogoPath();
+      const extension = isSvg ? "svg" : "png";
+      const logoPath = getLogoPath(extension);
+
+      // Remove any old logo with a different extension
+      const otherExtension = isSvg ? "png" : "svg";
+      const oldPath = getLogoPath(otherExtension);
+      await carbon.storage.from("public").remove([oldPath]);
 
       const imageUpload = await carbon.storage
         .from("public")
         .upload(logoPath, logo, {
           cacheControl: "0",
-          upsert: true
+          upsert: true,
+          contentType: isSvg ? "image/svg+xml" : undefined
         });
 
       if (imageUpload.error) {
@@ -200,7 +226,7 @@ const CompanyLogoForm = ({
       </div>
 
       <HStack spacing={2}>
-        <FileUpload accept="image/*" onChange={uploadImage}>
+        <FileUpload accept="image/*,.svg" onChange={uploadImage}>
           {currentLogoPath ? "Change" : "Upload"}
         </FileUpload>
 
@@ -234,7 +260,7 @@ const CompanyLogoForm = ({
         )}
       </div>
       <HStack spacing={2}>
-        <FileUpload accept="image/*" onChange={uploadImage}>
+        <FileUpload accept="image/*,.svg" onChange={uploadImage}>
           {currentLogoPath ? "Change" : "Upload"}
         </FileUpload>
 
