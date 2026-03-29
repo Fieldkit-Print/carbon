@@ -45,6 +45,8 @@ export const path = {
       outstandingTrainings: `${api}/resources/trainings`,
       digitalQuote: (id: string) =>
         generatePath(`${api}/sales/digital-quote/${id}`),
+      proofApproval: (id: string) =>
+        generatePath(`${api}/production/proof-approval/${id}`),
       digitalSupplierQuote: (id: string) =>
         generatePath(`${api}/purchasing/digital-quote/${id}`),
       docs: `${api}/docs`,
@@ -788,6 +790,7 @@ export const path = {
       generatePath(`${x}/users/employee-types/${id}`),
     employeeTypes: `${x}/users/employee-types`,
     externalCustomer: (id: string) => generatePath(`/share/customer/${id}`),
+    externalProof: (id: string) => generatePath(`/share/proof/${id}`),
     externalCustomerFile: (id: string, path: string) =>
       generatePath(`/share/customer/${id}/${path}`),
     externalQuote: (id: string) => generatePath(`/share/quote/${id}`),

@@ -37,6 +37,7 @@ export const deadlineTypes = [
 export const jobStatus = [
   "Draft",
   "Planned",
+  "Awaiting Proof Approval",
   "Ready",
   "In Progress",
   "Paused",
@@ -44,6 +45,13 @@ export const jobStatus = [
   "Cancelled",
   "Overdue", // deprecated
   "Due Today" // deprecated
+] as const;
+
+export const proofApprovalStatus = [
+  "Pending",
+  "Approved",
+  "Rejected",
+  "Superseded"
 ] as const;
 
 export const JOB_LOCKED_STATUSES = ["Completed", "Cancelled"] as const;
@@ -1006,4 +1014,19 @@ export const demandProjectionValidator = z.object({
       zfd.numeric(z.number().min(0).optional())
     ])
   )
+});
+
+export const proofApprovalValidator = z.object({
+  jobId: z.string().min(1, { message: "Job is required" }),
+  customerEmail: z
+    .string()
+    .email({ message: "Valid email is required" })
+    .optional()
+});
+
+export const proofApprovalDecisionValidator = z.object({
+  type: z.enum(["approve", "reject"]),
+  decidedBy: z.string().min(1, { message: "Name is required" }),
+  decidedByEmail: z.string().email({ message: "Valid email is required" }),
+  decisionNotes: zfd.text(z.string().optional())
 });

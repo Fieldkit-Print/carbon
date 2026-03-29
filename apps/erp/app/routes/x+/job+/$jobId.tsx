@@ -19,6 +19,7 @@ import {
   getJob,
   getJobDocuments,
   getJobMethodTree,
+  getProofApprovals,
   getTrackedEntitiesByJobId
 } from "~/modules/production";
 import {
@@ -61,9 +62,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     );
   }
 
+  const proofApprovals = await getProofApprovals(client, jobId);
+
   return {
     job: job.data,
     tags: tags.data ?? [],
+    proofApprovals: proofApprovals.data ?? [],
     files: getJobDocuments(client, companyId, job.data),
     trackedEntities: getTrackedEntitiesByJobId(client, jobId),
     method: getJobMethodTree(client, jobId), // returns a promise

@@ -48,6 +48,7 @@ import {
   LuClipboardList,
   LuClock,
   LuEllipsisVertical,
+  LuLink,
   LuList,
   LuLoaderCircle,
   LuPackage,
@@ -56,6 +57,7 @@ import {
   LuQrCode,
   LuSettings,
   LuShoppingCart,
+  LuSkipForward,
   LuSquareSigma,
   LuTable,
   LuTrash,
@@ -101,7 +103,19 @@ const JobHeader = () => {
   const cancelModal = useDisclosure();
   const completeModal = useDisclosure();
   const deleteJobModal = useDisclosure();
-  const routeData = useRouteData<{ job: Job }>(path.to.job(jobId));
+  const routeData = useRouteData<{
+    job: Job;
+    proofApprovals: Array<{
+      id: string;
+      externalLinkId: string | null;
+      status: string;
+      version: number;
+      decidedBy: string | null;
+      decidedAt: string | null;
+    }>;
+  }>(path.to.job(jobId));
+
+  const latestProof = routeData?.proofApprovals?.[0];
 
   const statusFetcher = useFetcher<{}>();
   const status = routeData?.job?.status;
@@ -253,6 +267,46 @@ const JobHeader = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {status === "Awaiting Proof Approval" && (
+            <>
+              {latestProof?.externalLinkId && (
+                <Button
+                  variant="secondary"
+                  leftIcon={<LuLink />}
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `${window.location.origin}${path.to.externalProof(latestProof.externalLinkId!)}`
+                    );
+                  }}
+                >
+                  Copy Proof Link
+                </Button>
+              )}
+              <statusFetcher.Form
+                method="post"
+                action={path.to.jobStatus(jobId)}
+              >
+                <input type="hidden" name="status" value="Ready" />
+                <input type="hidden" name="skipProofApproval" value="true" />
+                <Button
+                  isLoading={
+                    statusFetcher.state !== "idle" &&
+                    statusFetcher.formData?.get("skipProofApproval") === "true"
+                  }
+                  isDisabled={
+                    statusFetcher.state !== "idle" ||
+                    !permissions.can("update", "production")
+                  }
+                  leftIcon={<LuSkipForward />}
+                  type="submit"
+                  variant="secondary"
+                >
+                  Skip Proof Approval
+                </Button>
+              </statusFetcher.Form>
+            </>
+          )}
+
           {status !== "Paused" ? (
             <statusFetcher.Form method="post" action={path.to.jobStatus(jobId)}>
               <input type="hidden" name="status" value="Paused" />
@@ -262,7 +316,9 @@ const JobHeader = () => {
                   statusFetcher.formData?.get("status") === "Paused"
                 }
                 isDisabled={
-                  !["Ready", "In Progress"].includes(status ?? "") ||
+                  !["Ready", "In Progress", "Awaiting Proof Approval"].includes(
+                    status ?? ""
+                  ) ||
                   statusFetcher.state !== "idle" ||
                   !permissions.can("update", "production")
                 }
@@ -300,7 +356,9 @@ const JobHeader = () => {
               statusFetcher.formData?.get("status") === "Ready"
             }
             isDisabled={
-              !["Draft", "Planned"].includes(status ?? "") ||
+              !["Draft", "Planned", "Awaiting Proof Approval"].includes(
+                status ?? ""
+              ) ||
               statusFetcher.state !== "idle" ||
               !permissions.can("update", "production") ||
               (routeData?.job?.quantity === 0 &&
