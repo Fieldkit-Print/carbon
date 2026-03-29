@@ -81,8 +81,3 @@ CREATE POLICY "DELETE" ON "proofApproval"
     )
   );
 
--- 7. Updated at trigger
-CREATE TRIGGER "proofApproval_updatedAt"
-  BEFORE UPDATE ON "proofApproval"
-  FOR EACH ROW
-  EXECUTE FUNCTION updated_at();
