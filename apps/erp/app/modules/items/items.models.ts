@@ -220,6 +220,7 @@ export const methodMaterialValidator = z.object({
   methodOperationId: zfd.text(z.string().optional()),
   // description: z.string().min(1, { message: "Description is required" }),
   quantity: zfd.numeric(z.number().min(0)),
+  piecesPerUnit: zfd.numeric(z.number().int().min(1).default(1)),
   unitOfMeasureCode: z
     .string()
     .min(1, { message: "Unit of Measure is required" }),

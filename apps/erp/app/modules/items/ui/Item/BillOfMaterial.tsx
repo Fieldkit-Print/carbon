@@ -138,6 +138,7 @@ const initialMethodMaterial: Omit<Material, "makeMethodId" | "order"> & {
   methodType: "Buy" as const,
   description: "",
   quantity: 1,
+  piecesPerUnit: 1,
   unitOfMeasureCode: "EA",
   shelfIds: {}
 };
@@ -635,6 +636,7 @@ function MaterialForm({
     unitOfMeasureCode: string;
     methodOperationId: string | undefined;
     quantity: number;
+    piecesPerUnit: number;
     kit: boolean;
     shelfIds: Record<string, string>;
   }>({
@@ -644,6 +646,7 @@ function MaterialForm({
     unitOfMeasureCode: item.data.unitOfMeasureCode ?? "EA",
     methodOperationId: item.data.methodOperationId ?? undefined,
     quantity: item.data.quantity ?? 1,
+    piecesPerUnit: item.data.piecesPerUnit ?? 1,
     kit: item.data.kit ?? false,
     shelfIds: item.data.shelfIds ?? {}
   });
@@ -656,6 +659,7 @@ function MaterialForm({
       itemId: "",
       methodType: "" as "Buy",
       quantity: 1,
+      piecesPerUnit: 1,
       description: "",
       unitOfMeasureCode: "EA",
       kit: false,
@@ -765,6 +769,25 @@ function MaterialForm({
                     field: key("quantity"),
                     code: rulesByField.get(key("quantity"))?.code,
                     defaultValue: itemData.quantity,
+                    returnType: { type: "numeric" }
+                  })
+              : undefined
+          }
+        />
+        <Number
+          name="piecesPerUnit"
+          label="Pieces Per Unit"
+          minValue={1}
+          formatOptions={{ maximumFractionDigits: 0 }}
+          isConfigured={rulesByField.has(key("piecesPerUnit"))}
+          onConfigure={
+            configurable && !temporaryItems[item.id]
+              ? () =>
+                  onConfigure({
+                    label: "Pieces Per Unit",
+                    field: key("piecesPerUnit"),
+                    code: rulesByField.get(key("piecesPerUnit"))?.code,
+                    defaultValue: itemData.piecesPerUnit,
                     returnType: { type: "numeric" }
                   })
               : undefined

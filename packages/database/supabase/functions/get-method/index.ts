@@ -796,6 +796,7 @@ serve(async (req: Request) => {
                 quantity,
                 methodType,
                 unitOfMeasureCode,
+                piecesPerUnit,
               ] = await Promise.all([
                 getConfiguredValue({
                   id: child.data.methodMaterialId,
@@ -821,6 +822,11 @@ serve(async (req: Request) => {
                   id: child.data.methodMaterialId,
                   field: "unitOfMeasureCode",
                   defaultValue: child.data.unitOfMeasureCode,
+                }),
+                getConfiguredValue({
+                  id: child.data.methodMaterialId,
+                  field: "piecesPerUnit",
+                  defaultValue: child.data.piecesPerUnit ?? 1,
                 }),
               ]);
 
@@ -906,6 +912,7 @@ serve(async (req: Request) => {
                 requiresBatchTracking,
                 unitOfMeasureCode,
                 unitCost: unitCost ?? 0,
+                piecesPerUnit: Number(piecesPerUnit) || 1,
                 itemScrapPercentage,
                 companyId,
                 createdBy: userId,
@@ -1402,6 +1409,7 @@ serve(async (req: Request) => {
                   child.data.itemTrackingType === "Serial",
                 unitOfMeasureCode: child.data.unitOfMeasureCode,
                 unitCost: child.data.unitCost,
+                piecesPerUnit: child.data.piecesPerUnit ?? 1,
                 itemScrapPercentage,
                 shelfId: await getShelfId(
                   trx,
@@ -1961,6 +1969,7 @@ serve(async (req: Request) => {
                 quantity,
                 methodType,
                 unitOfMeasureCode,
+                piecesPerUnit,
               ] = await Promise.all([
                 getConfiguredValue({
                   id: child.data.methodMaterialId,
@@ -1986,6 +1995,11 @@ serve(async (req: Request) => {
                   id: child.data.methodMaterialId,
                   field: "unitOfMeasureCode",
                   defaultValue: child.data.unitOfMeasureCode,
+                }),
+                getConfiguredValue({
+                  id: child.data.methodMaterialId,
+                  field: "piecesPerUnit",
+                  defaultValue: child.data.piecesPerUnit ?? 1,
                 }),
               ]);
 
@@ -2034,6 +2048,7 @@ serve(async (req: Request) => {
                   : null,
                 unitOfMeasureCode,
                 unitCost: unitCost ?? 0,
+                piecesPerUnit: Number(piecesPerUnit) || 1,
                 companyId,
                 createdBy: userId,
                 customFields: {},
@@ -2456,6 +2471,7 @@ serve(async (req: Request) => {
               shelfId: (child.data as any).shelfId || null, // @ts-ignore: shelfId field exists in database but types may not be updated
               unitOfMeasureCode: child.data.unitOfMeasureCode,
               unitCost: child.data.unitCost ?? 0,
+              piecesPerUnit: child.data.piecesPerUnit ?? 1,
               companyId,
               createdBy: userId,
               customFields: {},
