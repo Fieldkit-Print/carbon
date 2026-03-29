@@ -42,7 +42,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           receiptId: undefined,
           userId: userId
         },
-        region: FunctionRegion.UsEast1
+        region: FunctionRegion.UsWest2
       });
       if (!purchaseOrderReceipt.data || purchaseOrderReceipt.error) {
         throw redirect(
@@ -66,7 +66,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           receiptId: undefined,
           userId: userId
         },
-        region: FunctionRegion.UsEast1
+        region: FunctionRegion.UsWest2
       });
       if (!warehouseTransferReceipt.data || warehouseTransferReceipt.error) {
         throw redirect(
@@ -89,7 +89,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           locationId: defaults.data?.locationId,
           userId: userId
         },
-        region: FunctionRegion.UsEast1
+        region: FunctionRegion.UsWest2
       });
 
       if (!defaultReceipt.data || defaultReceipt.error) {

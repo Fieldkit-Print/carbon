@@ -40,7 +40,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
         userId: userId,
         companyId: companyId
       },
-      region: FunctionRegion.UsEast1
+      region: FunctionRegion.UsWest2
     });
 
     if (postReceipt.error) {

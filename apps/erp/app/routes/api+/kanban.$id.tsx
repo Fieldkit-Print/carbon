@@ -179,7 +179,7 @@ async function handleKanban({
             mode: "initial",
             direction: "backward"
           },
-          region: FunctionRegion.UsEast1
+          region: FunctionRegion.UsWest2
         }),
         serviceRole
           .from("job")

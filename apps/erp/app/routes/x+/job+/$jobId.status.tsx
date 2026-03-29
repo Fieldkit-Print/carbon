@@ -84,7 +84,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
             mode: "initial",
             direction: "backward"
           },
-          region: FunctionRegion.UsEast1
+          region: FunctionRegion.UsWest2
         }),
         serviceRole.functions.invoke("create", {
           body: {
@@ -94,7 +94,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
             companyId,
             userId
           },
-          region: FunctionRegion.UsEast1
+          region: FunctionRegion.UsWest2
         })
       ]);
 

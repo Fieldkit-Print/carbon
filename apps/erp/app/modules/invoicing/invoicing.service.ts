@@ -41,7 +41,7 @@ export async function createPurchaseInvoiceFromPurchaseOrder(
       companyId,
       userId
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -58,7 +58,7 @@ export async function createSalesInvoiceFromSalesOrder(
       companyId,
       userId
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -75,7 +75,7 @@ export async function createSalesInvoiceFromShipment(
       companyId,
       userId
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 

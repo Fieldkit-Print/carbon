@@ -55,7 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
       quantity,
       userId: userId
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 
   if (salesOrderShipment.error) {

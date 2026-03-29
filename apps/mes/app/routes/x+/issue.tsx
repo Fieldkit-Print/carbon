@@ -35,7 +35,7 @@ export async function action({ request }: ActionFunctionArgs) {
       companyId,
       userId
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 
   if (issue.error) {

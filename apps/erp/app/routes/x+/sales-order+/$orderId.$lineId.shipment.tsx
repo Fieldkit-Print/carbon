@@ -53,7 +53,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       companyId,
       userId
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 
   if (!salesOrderShipment.data || salesOrderShipment.error) {

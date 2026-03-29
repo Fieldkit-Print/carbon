@@ -65,7 +65,7 @@ export async function activateMethodVersion(
       type: "methodVersionToActive",
       ...payload
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -92,7 +92,7 @@ export async function copyItem(
         workInstructions: args.workInstructions
       }
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -111,7 +111,7 @@ export async function copyMakeMethod(
       companyId: args.companyId,
       userId: args.userId
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -156,7 +156,7 @@ export async function createRevision(
         companyId: item.companyId,
         userId: createdBy
       },
-      region: FunctionRegion.UsEast1
+      region: FunctionRegion.UsWest2
     });
   }
 

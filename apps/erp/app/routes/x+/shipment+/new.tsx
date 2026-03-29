@@ -42,7 +42,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           shipmentId: undefined,
           userId: userId
         },
-        region: FunctionRegion.UsEast1
+        region: FunctionRegion.UsWest2
       });
       if (!salesOrderShipment.data || salesOrderShipment.error) {
         console.error(salesOrderShipment.error);
@@ -68,7 +68,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           shipmentId: undefined,
           userId: userId
         },
-        region: FunctionRegion.UsEast1
+        region: FunctionRegion.UsWest2
       });
       if (!purchaseOrderShipment.data || purchaseOrderShipment.error) {
         console.error(purchaseOrderShipment.error);
@@ -93,7 +93,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           shipmentId: undefined,
           userId: userId
         },
-        region: FunctionRegion.UsEast1
+        region: FunctionRegion.UsWest2
       });
       if (!warehouseTransferShipment.data || warehouseTransferShipment.error) {
         console.error(warehouseTransferShipment.error);
@@ -119,7 +119,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           locationId: defaults.data?.locationId,
           userId: userId
         },
-        region: FunctionRegion.UsEast1
+        region: FunctionRegion.UsWest2
       });
 
       if (!defaultShipment.data || defaultShipment.error) {

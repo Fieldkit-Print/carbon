@@ -85,7 +85,7 @@ export async function convertSalesRfqToQuote(
       type: "salesRfqToQuote",
       ...payload
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -106,7 +106,7 @@ export async function convertQuoteToOrder(
       type: "quoteToSalesOrder",
       ...payload
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -130,7 +130,7 @@ export async function copyQuoteLine(
         workInstructions: payload.workInstructions
       }
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -146,7 +146,7 @@ export async function copyQuote(
       ...payload,
       type: "quoteToQuote"
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 export async function deleteCustomer(
@@ -2015,7 +2015,7 @@ export async function upsertMakeMethodFromQuoteLine(
       userId: lineMethod.userId,
       parts: lineMethod.parts
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -2045,7 +2045,7 @@ export async function upsertMakeMethodFromQuoteMethod(
       userId: quoteMethod.userId,
       parts: quoteMethod.parts
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 
   if (error) {
@@ -2850,7 +2850,7 @@ export async function upsertQuoteLineMethod(
 
   return client.functions.invoke("get-method", {
     body,
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -2941,7 +2941,7 @@ export async function upsertQuoteMaterialMakeMethod(
 
   const { error } = await client.functions.invoke("get-method", {
     body,
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 
   if (error) {

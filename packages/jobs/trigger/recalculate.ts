@@ -104,6 +104,6 @@ async function recalculateJobMakeMethodRequirements(
       companyId: params.companyId,
       userId: params.userId,
     },
-    region: FunctionRegion.UsEast1,
+    region: FunctionRegion.UsWest2,
   });
 }

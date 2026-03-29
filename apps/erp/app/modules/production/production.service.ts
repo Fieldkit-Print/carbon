@@ -1819,7 +1819,7 @@ export async function recalculateJobOperationDependencies(
       mode: "reschedule",
       direction: "backward"
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 export async function recalculateJobRequirements(
@@ -1835,7 +1835,7 @@ export async function recalculateJobRequirements(
       type: "jobRequirements",
       ...params
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -1852,7 +1852,7 @@ export async function recalculateJobMakeMethodRequirements(
       type: "jobMakeMethodRequirements",
       ...params
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -1875,7 +1875,7 @@ export async function runMRP(
     body: {
       ...params
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -2275,7 +2275,7 @@ export async function upsertJobOperation(
         companyId: jobOperation.companyId,
         userId: jobOperation.createdBy
       },
-      region: FunctionRegion.UsEast1
+      region: FunctionRegion.UsWest2
     });
     if (error) {
       return {
@@ -2433,7 +2433,7 @@ export async function upsertJobMethod(
 
   const getMethodResult = await client.functions.invoke("get-method", {
     body,
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
   if (getMethodResult.error) {
     return getMethodResult;
@@ -2498,7 +2498,7 @@ export async function upsertJobMaterialMakeMethod(
 
   const { error } = await client.functions.invoke("get-method", {
     body,
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 
   if (error) {
@@ -2537,7 +2537,7 @@ export async function upsertMakeMethodFromJob(
       userId: jobMethod.userId,
       parts: jobMethod.parts
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 
@@ -2567,7 +2567,7 @@ export async function upsertMakeMethodFromJobMethod(
       userId: jobMethod.userId,
       parts: jobMethod.parts
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 
   if (error) {

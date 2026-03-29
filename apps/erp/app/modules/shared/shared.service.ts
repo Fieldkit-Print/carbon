@@ -350,7 +350,7 @@ export async function generateEmbedding(
 ): Promise<number[]> {
   const response = await client.functions.invoke("embedding", {
     body: { text },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 
   if (response.error) {
@@ -913,7 +913,7 @@ export async function importCsv(
 ) {
   return client.functions.invoke("import-csv", {
     body: args,
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 

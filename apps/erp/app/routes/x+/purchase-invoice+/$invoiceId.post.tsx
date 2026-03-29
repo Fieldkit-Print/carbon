@@ -42,7 +42,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
         companyId: companyId,
         skipReceiptPost: skipReceiptPost
       },
-      region: FunctionRegion.UsEast1
+      region: FunctionRegion.UsWest2
     });
 
     if (postPurchaseInvoice.error) {
@@ -75,7 +75,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
             companyId: companyId,
             source: "purchaseInvoice"
           },
-          region: FunctionRegion.UsEast1
+          region: FunctionRegion.UsWest2
         }
       );
 

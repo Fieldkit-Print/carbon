@@ -454,7 +454,7 @@ export async function seedCompany(
       companyId,
       userId
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 

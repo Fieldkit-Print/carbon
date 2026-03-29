@@ -125,7 +125,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
             companyId,
             userId
           },
-          region: FunctionRegion.UsEast1
+          region: FunctionRegion.UsWest2
         });
 
         const newTrackedEntityId = response.data?.newTrackedEntityId;
@@ -174,7 +174,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
             companyId,
             userId
           },
-          region: FunctionRegion.UsEast1
+          region: FunctionRegion.UsWest2
         });
 
         if (response.error) {
@@ -217,7 +217,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
           companyId,
           userId
         },
-        region: FunctionRegion.UsEast1
+        region: FunctionRegion.UsWest2
       });
 
       if (issue.error) {

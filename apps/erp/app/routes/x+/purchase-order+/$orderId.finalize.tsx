@@ -187,7 +187,7 @@ export async function action(args: ActionFunctionArgs) {
           companyId,
           source: "purchaseOrder"
         },
-        region: FunctionRegion.UsEast1
+        region: FunctionRegion.UsWest2
       }
     );
 

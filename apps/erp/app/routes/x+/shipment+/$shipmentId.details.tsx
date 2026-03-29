@@ -70,7 +70,7 @@ export async function action({ request }: ActionFunctionArgs) {
             shipmentId: id,
             userId: userId
           },
-          region: FunctionRegion.UsEast1
+          region: FunctionRegion.UsWest2
         });
         if (!salesOrderShipment.data || salesOrderShipment.error) {
           console.error(salesOrderShipment.error);
@@ -95,7 +95,7 @@ export async function action({ request }: ActionFunctionArgs) {
             shipmentId: id,
             userId: userId
           },
-          region: FunctionRegion.UsEast1
+          region: FunctionRegion.UsWest2
         });
         if (!purchaseOrderShipment.data || purchaseOrderShipment.error) {
           console.error(purchaseOrderShipment.error);
@@ -119,7 +119,7 @@ export async function action({ request }: ActionFunctionArgs) {
             shipmentId: id,
             userId: userId
           },
-          region: FunctionRegion.UsEast1
+          region: FunctionRegion.UsWest2
         });
         if (
           !warehouseTransferShipment.data ||

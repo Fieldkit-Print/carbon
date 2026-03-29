@@ -71,7 +71,7 @@ export async function convertSupplierQuoteToOrder(
       type: "supplierQuoteToPurchaseOrder",
       ...payload
     },
-    region: FunctionRegion.UsEast1
+    region: FunctionRegion.UsWest2
   });
 }
 

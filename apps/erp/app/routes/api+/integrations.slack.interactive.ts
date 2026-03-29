@@ -464,7 +464,7 @@ async function handleViewSubmission(
           companyId,
           userId: employee.data?.id ?? "system"
         },
-        region: FunctionRegion.UsEast1
+        region: FunctionRegion.UsWest2
       })
     ]);
 
