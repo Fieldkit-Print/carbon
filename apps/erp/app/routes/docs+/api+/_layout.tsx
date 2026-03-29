@@ -68,12 +68,12 @@ export default function ApiDocsRoute() {
           <div className="bg-background border-b h-[var(--header-height)] col-span-full px-6 items-center flex flex-shrink-0 justify-between">
             <Link to={path.to.authenticatedRoot}>
               <img
-                src="/carbon-word-light.svg"
+                src="/fieldkit-word-light.svg"
                 alt="Fieldkit Logo"
                 className="h-6 dark:hidden z-50"
               />
               <img
-                src="/carbon-word-dark.svg"
+                src="/fieldkit-word-dark.svg"
                 alt="Fieldkit Logo"
                 className="h-6 dark:block hidden z-50"
               />

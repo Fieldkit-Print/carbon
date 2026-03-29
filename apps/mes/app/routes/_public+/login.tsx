@@ -153,7 +153,7 @@ export default function LoginRoute() {
     <>
       <div className="flex justify-center mb-4">
         <img
-          src={CONTROLLED_ENVIRONMENT ? "/flag.png" : "/carbon-logo-mark.svg"}
+          src={CONTROLLED_ENVIRONMENT ? "/flag.png" : "/fieldkit-logo-mark.png"}
           alt="Fieldkit Logo"
           className="w-36"
         />
