@@ -4582,6 +4582,7 @@ serve(async (req: Request) => {
                           child.data.quoteMakeMethodId
                         ],
                   quantity: child.data.quantity,
+                  piecesPerUnit: child.data.piecesPerUnit ?? 1,
                   shelfId: child.data.shelfId,
                   unitOfMeasureCode: child.data.unitOfMeasureCode,
                   unitCost: child.data.unitCost, // TODO: get unit cost
@@ -5064,6 +5065,7 @@ serve(async (req: Request) => {
                             child.data.quoteMakeMethodId
                           ],
                     quantity: child.data.quantity,
+                    piecesPerUnit: child.data.piecesPerUnit ?? 1,
                     shelfId: child.data.shelfId,
                     unitCost: child.data.unitCost, // TODO: get unit cost
                     unitOfMeasureCode: child.data.unitOfMeasureCode,

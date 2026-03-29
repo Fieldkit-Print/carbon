@@ -2486,7 +2486,7 @@ async function buildCostEffects(
     unitCost: number
   ) {
     const costFn = (outerQty: number) => {
-      const requestedQty = quantity * outerQty;
+      const requestedQty = Math.ceil(quantity * outerQty);
       return (
         lookupBuyPriceFromMap(itemId, requestedQty, priceMap, unitCost) *
         requestedQty
@@ -2509,12 +2509,14 @@ async function buildCostEffects(
 
   function walkTree(node: TreeNode, parentQuantity: number) {
     const d = node.data;
-    const qty = d.quantity * parentQuantity;
+    const ppu = d.piecesPerUnit ?? 1;
+    const prodCoeff = (d.quantity * parentQuantity) / ppu;
 
     if (d.methodType === "Buy") {
-      pushBuyCostEffect(d.itemId, d.itemType, qty, d.unitCost);
+      pushBuyCostEffect(d.itemId, d.itemType, prodCoeff, d.unitCost);
     } else if (d.methodType === "Pick") {
-      const costFn = (outerQty: number) => d.unitCost * qty * outerQty;
+      const costFn = (outerQty: number) =>
+        d.unitCost * Math.ceil(prodCoeff * outerQty);
       const key =
         d.itemType === "Material"
           ? "materialCost"
@@ -2543,13 +2545,17 @@ async function buildCostEffects(
           );
           effects.laborCost.push((outerQty) => {
             return (
-              hoursPerUnit * outerQty * qty * (op.laborRate ?? 0) +
+              hoursPerUnit *
+                Math.ceil(prodCoeff * outerQty) *
+                (op.laborRate ?? 0) +
               fixedHours * (op.laborRate ?? 0)
             );
           });
           effects.overheadCost.push((outerQty) => {
             return (
-              hoursPerUnit * outerQty * qty * (op.overheadRate ?? 0) +
+              hoursPerUnit *
+                Math.ceil(prodCoeff * outerQty) *
+                (op.overheadRate ?? 0) +
               fixedHours * (op.overheadRate ?? 0)
             );
           });
@@ -2566,7 +2572,9 @@ async function buildCostEffects(
           laborHoursPerUnit = n.hoursPerUnit;
           effects.laborCost.push((outerQty) => {
             return (
-              laborHoursPerUnit * outerQty * qty * (op.laborRate ?? 0) +
+              laborHoursPerUnit *
+                Math.ceil(prodCoeff * outerQty) *
+                (op.laborRate ?? 0) +
               laborFixedHours * (op.laborRate ?? 0)
             );
           });
@@ -2578,7 +2586,9 @@ async function buildCostEffects(
           machineHoursPerUnit = n.hoursPerUnit;
           effects.machineCost.push((outerQty) => {
             return (
-              machineHoursPerUnit * outerQty * qty * (op.machineRate ?? 0) +
+              machineHoursPerUnit *
+                Math.ceil(prodCoeff * outerQty) *
+                (op.machineRate ?? 0) +
               machineFixedHours * (op.machineRate ?? 0)
             );
           });
@@ -2587,21 +2597,22 @@ async function buildCostEffects(
         const hpu = Math.max(laborHoursPerUnit, machineHoursPerUnit);
         const fh = Math.max(laborFixedHours, machineFixedHours);
         effects.overheadCost.push((outerQty) => {
-          if (hpu * outerQty * qty > fh) {
-            return hpu * outerQty * qty * (op.overheadRate ?? 0);
+          const prodQty = Math.ceil(prodCoeff * outerQty);
+          if (hpu * prodQty > fh) {
+            return hpu * prodQty * (op.overheadRate ?? 0);
           }
           return fh * (op.overheadRate ?? 0);
         });
       } else if (op.operationType === "Outside") {
         effects.outsideCost.push((outerQty) => {
-          const cost = op.operationUnitCost * qty * outerQty;
+          const cost = op.operationUnitCost * Math.ceil(prodCoeff * outerQty);
           return Math.max(op.operationMinimumCost, cost);
         });
       }
     }
 
     for (const child of node.children) {
-      walkTree(child, qty);
+      walkTree(child, prodCoeff);
     }
   }
 

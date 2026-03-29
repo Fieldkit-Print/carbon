@@ -53,8 +53,10 @@ export function useLineCosts({
     const tree = structuredClone(originalMethodTree);
 
     function traverseTree(tree: EnhancedTree, parentQuantity: number) {
-      // multiply quantity by parent quantity
-      tree.data.quantity = tree.data.quantity * parentQuantity;
+      // multiply quantity by parent quantity, then divide by piecesPerUnit
+      // to get the production coefficient (e.g., sheets instead of pieces)
+      const ppu = tree.data.piecesPerUnit ?? 1;
+      tree.data.quantity = (tree.data.quantity * parentQuantity) / ppu;
       tree.data.operations = operations.filter(
         (o) => o.quoteMakeMethodId === tree.data.quoteMaterialMakeMethodId
       );
@@ -82,7 +84,7 @@ export function useLineCosts({
       supplierPriceMap: SupplierPriceMap
     ) {
       const costFn = (outerQty: number) => {
-        const requestedQty = quantity * outerQty;
+        const requestedQty = Math.ceil(quantity * outerQty);
         const resolved = lookupBuyPriceFromMap(
           itemId,
           requestedQty,
@@ -126,7 +128,7 @@ export function useLineCosts({
       } else if (data.methodType === "Pick") {
         // Pick items use static average cost
         const costFn = (quantity: number) =>
-          data.unitCost * data.quantity * quantity;
+          data.unitCost * Math.ceil(data.quantity * quantity);
         switch (data.itemType) {
           case "Material":
             effects.materialCost.push(costFn);
@@ -194,14 +196,15 @@ export function useLineCosts({
             }
 
             effects.setupHours.push((quantity) => {
-              return hoursPerUnit * quantity * data.quantity + fixedHours;
+              return (
+                hoursPerUnit * Math.ceil(data.quantity * quantity) + fixedHours
+              );
             });
 
             effects.laborCost.push((quantity) => {
               return (
                 hoursPerUnit *
-                  quantity *
-                  data.quantity *
+                  Math.ceil(data.quantity * quantity) *
                   (operation.laborRate ?? 0) +
                 fixedHours * (operation.laborRate ?? 0)
               );
@@ -210,8 +213,7 @@ export function useLineCosts({
             effects.overheadCost.push((quantity) => {
               return (
                 hoursPerUnit *
-                  quantity *
-                  data.quantity *
+                  Math.ceil(data.quantity * quantity) *
                   (operation.overheadRate ?? 0) +
                 fixedHours * (operation.overheadRate ?? 0)
               );
@@ -267,15 +269,15 @@ export function useLineCosts({
 
             effects.laborHours.push((quantity) => {
               return (
-                laborHoursPerUnit * quantity * data.quantity + laborFixedHours
+                laborHoursPerUnit * Math.ceil(data.quantity * quantity) +
+                laborFixedHours
               );
             });
 
             effects.laborCost.push((quantity) => {
               return (
                 laborHoursPerUnit *
-                  quantity *
-                  data.quantity *
+                  Math.ceil(data.quantity * quantity) *
                   (operation.laborRate ?? 0) +
                 laborFixedHours * (operation.laborRate ?? 0)
               );
@@ -326,7 +328,7 @@ export function useLineCosts({
 
             effects.machineHours.push((quantity) => {
               return (
-                machineHoursPerUnit * quantity * data.quantity +
+                machineHoursPerUnit * Math.ceil(data.quantity * quantity) +
                 machineFixedHours
               );
             });
@@ -334,8 +336,7 @@ export function useLineCosts({
             effects.machineCost.push((quantity) => {
               return (
                 machineHoursPerUnit *
-                  quantity *
-                  data.quantity *
+                  Math.ceil(data.quantity * quantity) *
                   (operation.machineRate ?? 0) +
                 machineFixedHours * (operation.machineRate ?? 0)
               );
@@ -346,13 +347,9 @@ export function useLineCosts({
           const fixedHours = Math.max(laborFixedHours, machineFixedHours);
 
           effects.overheadCost.push((quantity) => {
-            if (hoursPerUnit * quantity * data.quantity > fixedHours) {
-              return (
-                hoursPerUnit *
-                quantity *
-                data.quantity *
-                (operation.overheadRate ?? 0)
-              );
+            const prodQty = Math.ceil(data.quantity * quantity);
+            if (hoursPerUnit * prodQty > fixedHours) {
+              return hoursPerUnit * prodQty * (operation.overheadRate ?? 0);
             } else {
               return fixedHours * (operation.overheadRate ?? 0);
             }
@@ -360,7 +357,7 @@ export function useLineCosts({
         } else if (operation.operationType === "Outside") {
           effects.outsideCost.push((quantity) => {
             const unitCost =
-              operation.operationUnitCost * data.quantity * quantity;
+              operation.operationUnitCost * Math.ceil(data.quantity * quantity);
             return Math.max(operation.operationMinimumCost, unitCost);
           });
         }

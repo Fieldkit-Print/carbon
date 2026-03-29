@@ -130,7 +130,8 @@ export function calculateMadePartCosts<
       const child = nodeMap.get(childId);
       if (!child) continue;
       const childUnitCost = costMap.get(childId) ?? child.data.unitCost ?? 0;
-      materialCost += childUnitCost * (child.data.quantity ?? 0);
+      const ppu = (child.data as any).piecesPerUnit || 1;
+      materialCost += childUnitCost * ((child.data.quantity ?? 0) / ppu);
     }
 
     // Sum operation costs
@@ -159,13 +160,15 @@ export const calculateTotalQuantity = (
 ): number => {
   // Create lookup map for faster parent finding
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-  let quantity = node.data.quantity || 1;
+  const ppu = (node.data as any).piecesPerUnit || 1;
+  let quantity = (node.data.quantity || 1) / ppu;
   let currentNode = node;
 
   while (currentNode.parentId) {
     const parent = nodeMap.get(currentNode.parentId);
     if (!parent) break;
-    quantity *= parent.data.quantity || 1;
+    const parentPpu = (parent.data as any).piecesPerUnit || 1;
+    quantity *= (parent.data.quantity || 1) / parentPpu;
     currentNode = parent;
   }
 

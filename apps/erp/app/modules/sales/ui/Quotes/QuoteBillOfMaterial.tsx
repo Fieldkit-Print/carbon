@@ -208,6 +208,7 @@ const initialMethodMaterial: Omit<Material, "quoteMakeMethodId" | "order"> & {
   methodType: "Buy" as const,
   description: "",
   quantity: 1,
+  piecesPerUnit: 1,
   unitCost: 0,
   unitOfMeasureCode: "EA"
 };
@@ -662,6 +663,7 @@ function MaterialForm({
     unitCost: number;
     unitOfMeasureCode: string;
     quantity: number;
+    piecesPerUnit: number;
     kit: boolean;
     shelfId?: string;
     quoteOperationId?: string;
@@ -672,6 +674,7 @@ function MaterialForm({
     unitCost: item.data.unitCost ?? 0,
     unitOfMeasureCode: item.data.unitOfMeasureCode ?? "EA",
     quantity: item.data.quantity ?? 1,
+    piecesPerUnit: item.data.piecesPerUnit ?? 1,
     kit: item.data.kit ?? false,
     shelfId: item.data.shelfId,
     quoteOperationId: item.data.quoteOperationId
@@ -684,6 +687,7 @@ function MaterialForm({
       itemId: "",
       methodType: "Buy",
       quantity: 1,
+      piecesPerUnit: 1,
       unitCost: 0,
       description: "",
       unitOfMeasureCode: "EA",
@@ -823,6 +827,16 @@ function MaterialForm({
           label="Quantity"
           value={itemData.quantity}
           onChange={onQuantityChange}
+        />
+        <NumberControlled
+          name="piecesPerUnit"
+          label="Pieces Per Unit"
+          value={itemData.piecesPerUnit}
+          minValue={1}
+          onChange={(newValue) => {
+            setItemData((d) => ({ ...d, piecesPerUnit: newValue }));
+          }}
+          formatOptions={{ maximumFractionDigits: 0 }}
         />
         <UnitOfMeasure
           name="unitOfMeasureCode"
