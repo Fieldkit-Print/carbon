@@ -21,7 +21,7 @@ export default function ConfirmMagicLink() {
       <div className="flex justify-center mb-4">
         <img
           src={CONTROLLED_ENVIRONMENT ? "/flag.png" : "/carbon-logo-mark.svg"}
-          alt="Carbon Logo"
+          alt="Fieldkit Logo"
           className="w-36"
         />
       </div>

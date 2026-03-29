@@ -140,7 +140,7 @@ export default function VerifyRoute() {
   return (
     <>
       <div className="flex justify-center mb-4">
-        <img src="/carbon-logo-mark.svg" alt="Carbon Logo" className="w-36" />
+        <img src="/carbon-logo-mark.svg" alt="Fieldkit Logo" className="w-36" />
       </div>
       <div className="rounded-lg md:bg-card md:border md:border-border md:shadow-lg p-8 w-[380px]">
         <ValidatedForm

@@ -109,7 +109,11 @@ export default function Invite() {
     return (
       <VStack spacing={4} className="max-w-lg items-center text-center">
         <div className="flex justify-center mb-4">
-          <img src="/carbon-logo-mark.svg" alt="Carbon Logo" className="w-36" />
+          <img
+            src="/carbon-logo-mark.svg"
+            alt="Fieldkit Logo"
+            className="w-36"
+          />
         </div>
         <VStack spacing={2} className="text-center w-full">
           <Heading className="w-full text-center">Invalid Invite</Heading>
@@ -133,7 +137,7 @@ export default function Invite() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 2, ease: "easeInOut" }}
           src="/carbon-logo-mark.svg"
-          alt="Carbon Logo"
+          alt="Fieldkit Logo"
           className="w-24 mb-3"
         />
 
