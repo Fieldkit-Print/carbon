@@ -7,14 +7,18 @@ import tsconfigPaths from "vite-tsconfig-paths";
 /**
  * Workaround for react-router's cleanViteManifests crashing when
  * build/client/.vite doesn't exist after the SSR build phase.
+ * Runs on both buildStart and closeBundle to ensure the directory
+ * exists before cleanViteManifests scans it and after each phase.
  */
 function ensureViteDir(): PluginOption {
+  const ensure = () => {
+    const viteDir = path.resolve(__dirname, "build/client/.vite");
+    fs.mkdirSync(viteDir, { recursive: true });
+  };
   return {
     name: "ensure-vite-dir",
-    closeBundle() {
-      const viteDir = path.resolve(__dirname, "build/client/.vite");
-      fs.mkdirSync(viteDir, { recursive: true });
-    },
+    buildStart: ensure,
+    closeBundle: ensure,
   };
 }
 
