@@ -542,7 +542,7 @@ const PartProperties = () => {
           >
             <Badge variant="secondary">
               <LuMove3D className="w-3 h-3 mr-1 text-emerald-500" />
-              3D Model
+              Proof
             </Badge>
             <span className="group-hover:opacity-100 opacity-0 transition-opacity duration-200 w-4 h-4 text-foreground">
               <LuExternalLink />

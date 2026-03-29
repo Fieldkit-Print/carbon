@@ -284,7 +284,11 @@ const ToolForm = ({ initialValues, type = "card", onClose }: ToolFormProps) => {
                   label="Unit of Measure"
                 />
                 {!isEditing && (
-                  <ItemPostingGroup name="postingGroupId" label="Item Group" isClearable />
+                  <ItemPostingGroup
+                    name="postingGroupId"
+                    label="Item Group"
+                    isClearable
+                  />
                 )}
                 {!isEditing && (
                   <Number
@@ -306,7 +310,7 @@ const ToolForm = ({ initialValues, type = "card", onClose }: ToolFormProps) => {
                   htmlFor="model-upload"
                   className="text-xs font-medium text-muted-foreground"
                 >
-                  CAD Model
+                  Proof
                 </label>
                 <div
                   {...getRootProps()}

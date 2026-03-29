@@ -191,7 +191,7 @@ export default function PartMakeMethodPage() {
                 itemId: model?.itemId ?? undefined
               }}
               modelPath={model?.modelPath ?? null}
-              title="CAD Model"
+              title="Proof"
               uploadClassName="aspect-square min-h-[420px] max-h-[70vh]"
               viewerClassName="aspect-square min-h-[420px] max-h-[70vh]"
             />

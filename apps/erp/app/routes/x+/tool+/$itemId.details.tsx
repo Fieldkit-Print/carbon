@@ -265,7 +265,7 @@ export default function ToolDetailsRoute() {
             isReadOnly={!permissions.can("update", "parts")}
             metadata={{ itemId }}
             modelPath={toolData?.toolSummary?.modelPath ?? null}
-            title="CAD Model"
+            title="Proof"
           />
 
           <ItemRiskRegister itemId={itemId} />

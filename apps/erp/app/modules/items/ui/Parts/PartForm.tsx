@@ -288,7 +288,11 @@ const PartForm = ({ initialValues, type = "card", onClose }: PartFormProps) => {
                   label="Unit of Measure"
                 />
                 {!isEditing && (
-                  <ItemPostingGroup name="postingGroupId" label="Item Group" isClearable />
+                  <ItemPostingGroup
+                    name="postingGroupId"
+                    label="Item Group"
+                    isClearable
+                  />
                 )}
                 {!isEditing && replenishmentSystem !== "Make" && (
                   <Number
@@ -312,7 +316,7 @@ const PartForm = ({ initialValues, type = "card", onClose }: PartFormProps) => {
                   htmlFor="model-upload"
                   className="text-xs font-medium text-muted-foreground"
                 >
-                  CAD Model
+                  Proof
                 </label>
                 <div
                   {...getRootProps()}

@@ -454,7 +454,7 @@ export const JobOperation = ({
                   disabled={!job.modelPath && !operation.itemModelPath}
                   value="model"
                 >
-                  Model
+                  Proof
                 </TabsTrigger>
                 <TabsTrigger
                   disabled={
