@@ -22,7 +22,7 @@ export default function GetStarted() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 2, ease: "easeInOut" }}
           src="/carbon-logo-mark.svg"
-          alt="Carbon Logo"
+          alt="Fieldkit Logo"
           className="w-24 mb-3"
         />
 

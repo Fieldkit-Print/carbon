@@ -69,12 +69,12 @@ export default function ApiDocsRoute() {
             <Link to={path.to.authenticatedRoot}>
               <img
                 src="/carbon-word-light.svg"
-                alt="Carbon Logo"
+                alt="Fieldkit Logo"
                 className="h-6 dark:hidden z-50"
               />
               <img
                 src="/carbon-word-dark.svg"
-                alt="Carbon Logo"
+                alt="Fieldkit Logo"
                 className="h-6 dark:block hidden z-50"
               />
             </Link>
