@@ -1610,15 +1610,27 @@ export const JobOperation = ({
         </TabsContent>
         <TabsContent value="model">
           <div className="w-full h-[calc(100dvh-var(--header-height)*2)] p-0">
-            <ModelViewer
-              file={null}
-              key={`model-${operation.itemModelPath ?? job.modelPath}`}
-              url={`/file/preview/private/${
-                operation.itemModelPath ?? job.modelPath
-              }`}
-              mode={mode}
-              className="rounded-none"
-            />
+            {(operation.itemModelPath ?? job.modelPath)
+              ?.toLowerCase()
+              .endsWith(".pdf") ? (
+              <iframe
+                title="PDF Preview"
+                src={`/file/preview/private/${
+                  operation.itemModelPath ?? job.modelPath
+                }`}
+                className="w-full h-full rounded-none"
+              />
+            ) : (
+              <ModelViewer
+                file={null}
+                key={`model-${operation.itemModelPath ?? job.modelPath}`}
+                url={`/file/preview/private/${
+                  operation.itemModelPath ?? job.modelPath
+                }`}
+                mode={mode}
+                className="rounded-none"
+              />
+            )}
           </div>
         </TabsContent>
         <TabsContent value="procedure" className="flex flex-grow">
