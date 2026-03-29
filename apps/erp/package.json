@@ -122,7 +122,7 @@
   },
   "private": true,
   "scripts": {
-    "build": "react-router build",
+    "build": "mkdir -p build/client/.vite && react-router build || (mkdir -p build/client/.vite && react-router build)",
     "clean": "rimraf .cache .turbo node_modules dist build",
     "dev": "react-router dev",
     "dev:novu": "npx novu@latest dev --port 3000",
