@@ -25,8 +25,13 @@ export const supportedModelTypes = [
   "iges",
   "obj",
   "off",
+  "pdf",
   "ply",
   "step",
   "stl",
   "stp"
 ];
+
+export function isPdfFile(filename: string): boolean {
+  return filename.split(".").pop()?.toLowerCase() === "pdf";
+}

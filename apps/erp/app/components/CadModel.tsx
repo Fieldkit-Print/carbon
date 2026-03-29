@@ -12,6 +12,7 @@ import { useMode } from "@carbon/remix";
 import {
   convertKbToString,
   getFileSizeLimit,
+  isPdfFile,
   supportedModelTypes
 } from "@carbon/utils";
 import { nanoid } from "nanoid";
@@ -21,6 +22,7 @@ import { LuCloudUpload } from "react-icons/lu";
 import { useFetcher } from "react-router";
 import { useUser } from "~/hooks";
 import { getPrivateUrl, path } from "~/utils/path";
+import PdfViewer from "./PdfViewer";
 
 const SIZE_LIMIT = getFileSizeLimit("CAD_MODEL_UPLOAD");
 
@@ -121,14 +123,28 @@ const CadModel = ({
       }
     >
       {() => {
+        const hasPdf = file
+          ? isPdfFile(file.name)
+          : modelPath
+            ? isPdfFile(modelPath)
+            : false;
+
         return file || modelPath ? (
-          <ModelViewer
-            key={modelPath}
-            file={file}
-            url={modelPath ? getPrivateUrl(modelPath) : null}
-            mode={mode}
-            className={viewerClassName}
-          />
+          hasPdf ? (
+            <PdfViewer
+              file={file}
+              url={modelPath ? getPrivateUrl(modelPath) : null}
+              className={viewerClassName}
+            />
+          ) : (
+            <ModelViewer
+              key={modelPath}
+              file={file}
+              url={modelPath ? getPrivateUrl(modelPath) : null}
+              mode={mode}
+              className={viewerClassName}
+            />
+          )
         ) : (
           <CadModelUpload
             className={uploadClassName}
