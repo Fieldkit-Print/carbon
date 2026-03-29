@@ -110,7 +110,7 @@ export default function Invite() {
       <VStack spacing={4} className="max-w-lg items-center text-center">
         <div className="flex justify-center mb-4">
           <img
-            src="/carbon-logo-mark.svg"
+            src="/fieldkit-logo-mark.png"
             alt="Fieldkit Logo"
             className="w-36"
           />
@@ -136,7 +136,7 @@ export default function Invite() {
           initial={{ opacity: 0, scale: 0.4 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 2, ease: "easeInOut" }}
-          src="/carbon-logo-mark.svg"
+          src="/fieldkit-logo-mark.png"
           alt="Fieldkit Logo"
           className="w-24 mb-3"
         />

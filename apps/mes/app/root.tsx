@@ -237,7 +237,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       <div className="light">
         <div className="flex flex-col w-full h-screen  items-center justify-center space-y-4 ">
           <img
-            src="/carbon-logo-mark.svg"
+            src="/fieldkit-logo-mark.png"
             alt="Fieldkit Logo"
             className="block max-w-[60px]"
           />
