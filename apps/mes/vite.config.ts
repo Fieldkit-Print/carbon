@@ -1,7 +1,22 @@
 import { reactRouter } from "@react-router/dev/vite";
+import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, PluginOption } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+
+/**
+ * Workaround for react-router's cleanViteManifests crashing when
+ * build/client/.vite doesn't exist after the SSR build phase.
+ */
+function ensureViteDir(): PluginOption {
+  return {
+    name: "ensure-vite-dir",
+    closeBundle() {
+      const viteDir = path.resolve(__dirname, "build/client/.vite");
+      fs.mkdirSync(viteDir, { recursive: true });
+    },
+  };
+}
 
 export default defineConfig(({ mode, isSsrBuild }) => ({
   build: {
@@ -32,7 +47,7 @@ export default defineConfig(({ mode, isSsrBuild }) => ({
     port: 3001,
     allowedHosts: [".ngrok-free.app", ".w.modal.host", ".w.modal.dev"],
   },
-  plugins: [reactRouter(), tsconfigPaths()] as PluginOption[],
+  plugins: [reactRouter(), tsconfigPaths(), ensureViteDir()] as PluginOption[],
   resolve: {
     alias: {
       "@carbon/utils": path.resolve(
