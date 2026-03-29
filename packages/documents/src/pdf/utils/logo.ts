@@ -1,12 +1,12 @@
+import { Resvg } from "@resvg/resvg-js";
+
 /**
- * Resolves a logo URL to a data URI for use in PDF rendering.
- * This is necessary because @react-pdf/renderer's Image component
- * doesn't reliably render SVG URLs from remote sources.
+ * Resolves a logo URL to a format compatible with @react-pdf/renderer.
  *
- * For raster images (PNG/JPG), the URL is returned as-is since
- * react-pdf handles those natively.
+ * For raster images (PNG/JPG), the URL is returned as-is.
  *
- * For SVGs, the file is fetched and converted to a base64 data URI.
+ * For SVGs, the file is fetched and rasterized to a PNG data URI
+ * because react-pdf's Image component doesn't support SVG.
  */
 export async function resolveLogoForPdf(
   logoUrl: string | null | undefined
@@ -16,7 +16,6 @@ export async function resolveLogoForPdf(
   const isSvg = logoUrl.endsWith(".svg") || logoUrl.includes("image/svg+xml");
 
   if (!isSvg) {
-    // Raster images work fine as URLs in react-pdf
     return logoUrl;
   }
 
@@ -25,8 +24,12 @@ export async function resolveLogoForPdf(
     if (!response.ok) return null;
 
     const svgText = await response.text();
-    const base64 = Buffer.from(svgText).toString("base64");
-    return `data:image/svg+xml;base64,${base64}`;
+    const resvg = new Resvg(svgText, {
+      fitTo: { mode: "height", value: 200 }
+    });
+    const pngData = resvg.render();
+    const pngBuffer = pngData.asPng();
+    return `data:image/png;base64,${Buffer.from(pngBuffer).toString("base64")}`;
   } catch {
     return null;
   }
