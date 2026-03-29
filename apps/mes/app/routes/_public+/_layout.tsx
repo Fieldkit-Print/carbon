@@ -26,7 +26,7 @@ export default function PublicRoute() {
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
             <Heading size="display" className="text-foreground">
-              Let's print something
+              Let's build something
               <span className="inline-block">
                 <span className="loading-dot">.</span>
                 <span className="loading-dot">.</span>
