@@ -14,25 +14,23 @@ if (!REDIS_URL) {
 // this is needed because in development we don't want to restart
 // the server with every change, but we want to make sure we don't
 // create a new connection to Redis with every change either.
+const redisOptions = {
+  maxRetriesPerRequest: 1,
+  enableReadyCheck: false,
+  connectTimeout: 5000,
+  commandTimeout: 3000,
+  lazyConnect: true,
+  retryStrategy(times: number) {
+    if (times > 2) return null; // stop retrying
+    return Math.min(times * 100, 1000);
+  }
+};
+
 if (process.env.VERCEL_ENV === "production") {
-  redis = new Redis(REDIS_URL, {
-    maxRetriesPerRequest: 3,
-    enableReadyCheck: true,
-    retryStrategy(times) {
-      const delay = Math.min(times * 50, 2000);
-      return delay;
-    }
-  });
+  redis = new Redis(REDIS_URL, redisOptions);
 } else {
   if (!global.__redis) {
-    global.__redis = new Redis(REDIS_URL, {
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
-      retryStrategy(times) {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      }
-    });
+    global.__redis = new Redis(REDIS_URL, redisOptions);
   }
   redis = global.__redis;
 }

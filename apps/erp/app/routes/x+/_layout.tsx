@@ -66,20 +66,22 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  const authStart = Date.now();
   const { accessToken, companyId, expiresAt, expiresIn, userId } =
     await requireAuthSession(request, { verify: true });
-
-  // const { computeRegion, proxyRegion } = parseVercelId(
-  //   request.headers.get("x-vercel-id")
-  // );
-
-  // console.log({
-  //   computeRegion,
-  //   proxyRegion,
-  // });
+  console.log(`[perf] requireAuthSession: ${Date.now() - authStart}ms`);
 
   const client = getCarbon(accessToken);
 
+  function timedQuery(name: string, fn: Promise<unknown>) {
+    const start = Date.now();
+    return fn.then((result) => {
+      console.log(`[perf] ${name}: ${Date.now() - start}ms`);
+      return result;
+    });
+  }
+
+  const queryStart = Date.now();
   // parallelize the requests
   const [
     companies,
@@ -94,18 +96,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
     defaults,
     openClockEntry
   ] = await Promise.all([
-    getCompanies(client, userId),
-    getStripeCustomerByCompanyId(companyId, userId),
-    getCustomFieldsSchemas(client, { companyId }),
-    getCompanyIntegrations(client, companyId),
-    getCompanySettings(client, companyId),
-    getSavedViews(client, userId, companyId),
-    getUser(client, userId),
-    getUserClaims(userId, companyId),
-    getUserGroups(client, userId),
-    getUserDefaults(client, userId, companyId),
-    getOpenClockEntry(client, userId, companyId)
+    timedQuery("getCompanies", getCompanies(client, userId)),
+    timedQuery(
+      "getStripeCustomer",
+      getStripeCustomerByCompanyId(companyId, userId)
+    ),
+    timedQuery(
+      "getCustomFields",
+      getCustomFieldsSchemas(client, { companyId })
+    ),
+    timedQuery("getIntegrations", getCompanyIntegrations(client, companyId)),
+    timedQuery("getCompanySettings", getCompanySettings(client, companyId)),
+    timedQuery("getSavedViews", getSavedViews(client, userId, companyId)),
+    timedQuery("getUser", getUser(client, userId)),
+    timedQuery("getUserClaims", getUserClaims(userId, companyId)),
+    timedQuery("getUserGroups", getUserGroups(client, userId)),
+    timedQuery("getUserDefaults", getUserDefaults(client, userId, companyId)),
+    timedQuery(
+      "getOpenClockEntry",
+      getOpenClockEntry(client, userId, companyId)
+    )
   ]);
+  console.log(`[perf] all queries: ${Date.now() - queryStart}ms`);
 
   if (!claims || user.error || !user.data || !groups.data) {
     await destroyAuthSession(request);
