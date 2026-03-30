@@ -277,7 +277,7 @@ const QuoteProperties = () => {
           name="customerEngineeringContactId"
           customer={routeData?.quote?.customerId ?? ""}
           inline
-          label="Engineering Contact"
+          label="Design Contact"
           isReadOnly={isDisabled}
           onChange={(customerEngineeringContact) => {
             if (customerEngineeringContact?.id) {

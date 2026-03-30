@@ -239,7 +239,7 @@ export default function CustomerPortal() {
       },
       {
         accessorKey: "customerEngineeringContactName",
-        header: "Engineer",
+        header: "Design Contact",
         cell: ({ row }) =>
           row.original.customerEngineeringContactName ? (
             <div className="flex items-center gap-2">

@@ -172,7 +172,7 @@ const QuoteForm = ({ initialValues }: QuoteFormProps) => {
               />
               <CustomerContact
                 name="customerEngineeringContactId"
-                label="Engineering Contact"
+                label="Design Contact"
                 isOptional
                 customer={customer.id}
               />

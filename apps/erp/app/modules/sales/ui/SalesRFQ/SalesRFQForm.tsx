@@ -157,7 +157,7 @@ const SalesRFQForm = ({ initialValues }: SalesRFQFormProps) => {
               />
               <CustomerContact
                 name="customerEngineeringContactId"
-                label="Engineering Contact"
+                label="Design Contact"
                 customer={customer.id}
               />
               <CustomerLocation

@@ -260,7 +260,7 @@ const SalesRFQProperties = () => {
           name="customerEngineeringContactId"
           customer={routeData?.rfqSummary?.customerId ?? ""}
           inline
-          label="Engineering Contact"
+          label="Design Contact"
           isReadOnly={isDisabled}
           onChange={(customerEngineeringContact) => {
             if (customerEngineeringContact?.id) {

@@ -171,7 +171,7 @@ const SalesOrderForm = ({ initialValues }: SalesOrderFormProps) => {
               />
               <CustomerContact
                 name="customerEngineeringContactId"
-                label="Engineering Contact"
+                label="Design Contact"
                 customer={customer.id}
               />
               <CustomerLocation

@@ -281,7 +281,7 @@ const SalesOrderProperties = () => {
       >
         <CustomerContact
           name="customerEngineeringContactId"
-          label="Engineering Contact"
+          label="Design Contact"
           customer={routeData?.salesOrder?.customerId ?? ""}
           inline
           isReadOnly={isDisabled}
