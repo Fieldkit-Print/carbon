@@ -783,7 +783,12 @@ export async function calculateQuoteLinePrices(
     };
   });
 
-  // 7. Insert quoteLinePrice rows
+  // 7. Delete existing prices for this line, then insert new ones
+  await client.from("quoteLinePrice").delete().eq("quoteLineId", quoteLineId);
   const insertResult = await client.from("quoteLinePrice").insert(priceRows);
-  if (insertResult.error) throw new Error("Failed to insert quote line prices");
+  if (insertResult.error) {
+    console.error("quoteLinePrice insert error:", JSON.stringify(insertResult.error));
+    console.error("priceRows:", JSON.stringify(priceRows));
+    throw new Error(`Failed to insert quote line prices: ${insertResult.error.message} (${insertResult.error.code})`);
+  }
 }

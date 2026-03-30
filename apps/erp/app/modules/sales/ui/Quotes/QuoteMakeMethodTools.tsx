@@ -166,7 +166,13 @@ const QuoteMakeMethodTools = () => {
         type: "item",
         targetId: `${quoteId}:${lineId}`,
         sourceId,
-        configuration: JSON.stringify(configuration)
+        configuration: JSON.stringify(configuration),
+        billOfMaterial: "on",
+        billOfProcess: "on",
+        parameters: "on",
+        tools: "on",
+        steps: "on",
+        workInstructions: "on"
       },
       {
         method: "post",

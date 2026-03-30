@@ -648,27 +648,40 @@ serve(async (req: Request) => {
             let bopConfiguration: string[] | null = null;
 
             if (configurationCodeByField?.[bopConfigurationKey]) {
-              const mod = await importTypeScript(
-                configurationCodeByField[bopConfigurationKey]
-              );
-              bopConfiguration = await mod.configure(hydratedConfiguration);
+              try {
+                const mod = await importTypeScript(
+                  configurationCodeByField[bopConfigurationKey]
+                );
+                bopConfiguration = await mod.configure(hydratedConfiguration);
+              } catch (err) {
+                console.error("BOP configuration error:", err);
+              }
+            }
+
+            // Track which original operation each insert came from
+            const operationInsertSources: typeof relatedOperations.data = [];
+            for (const op of relatedOperations?.data ?? []) {
+              operationInsertSources.push(op);
             }
 
             if (bopConfiguration) {
-              // @ts-expect-error - we can't assign undefined to materialsWithConfiguredFields but we filter them in the next step
-              jobOperationsInserts = bopConfiguration
-                .map((description, index) => {
-                  const operation = jobOperationsInserts.find(
-                    (operation) => operation.description === description
-                  );
-                  if (operation) {
-                    return {
-                      ...operation,
-                      order: index + 1,
-                    };
-                  }
-                })
-                .filter(Boolean);
+              const filteredInserts: typeof jobOperationsInserts = [];
+              const filteredSources: typeof relatedOperations.data = [];
+              for (const description of bopConfiguration) {
+                const idx = jobOperationsInserts.findIndex(
+                  (op) => op.description === description
+                );
+                if (idx !== -1) {
+                  filteredInserts.push({
+                    ...jobOperationsInserts[idx],
+                    order: filteredInserts.length + 1,
+                  });
+                  filteredSources.push(operationInsertSources[idx]);
+                }
+              }
+              jobOperationsInserts = filteredInserts;
+              operationInsertSources.length = 0;
+              operationInsertSources.push(...filteredSources);
             }
 
             if (jobOperationsInserts?.length > 0) {
@@ -678,10 +691,8 @@ serve(async (req: Request) => {
                 .returning(["id"])
                 .execute();
 
-              for (const [index, operation] of (
-                relatedOperations.data ?? []
-              ).entries()) {
-                const operationId = operationIds[index].id;
+              for (const [index, operation] of operationInsertSources.entries()) {
+                const operationId = operationIds[index]?.id;
 
                 if (operationId) {
                   const {
@@ -779,9 +790,9 @@ serve(async (req: Request) => {
               }
 
               methodOperationsToJobOperations =
-                relatedOperations.data?.reduce<Record<string, string>>(
+                operationInsertSources.reduce<Record<string, string>>(
                   (acc, op, index) => {
-                    if (operationIds[index].id) {
+                    if (operationIds[index]?.id) {
                       acc[op.id!] = operationIds[index].id!;
                     }
                     return acc;
@@ -927,60 +938,65 @@ serve(async (req: Request) => {
               };
             };
 
-            let materialsWithConfiguredFields = await Promise.all(
-              node.children.map(mapMethodMaterialToJobMaterial)
+            // Pair each material with its source child so we maintain
+            // the correct association through BOM configuration filtering
+            let materialChildPairs = await Promise.all(
+              node.children.map(async (child) => ({
+                material: await mapMethodMaterialToJobMaterial(child),
+                child,
+              }))
             );
 
             const bomConfigurationKey = `billOfMaterial:${nodeLevelConfigurationKey}`;
             let bomConfiguration: string[] | null = null;
 
             if (configurationCodeByField?.[bomConfigurationKey]) {
-              const mod = await importTypeScript(
-                configurationCodeByField[bomConfigurationKey]
-              );
-              bomConfiguration = await mod.configure(hydratedConfiguration);
+              try {
+                const mod = await importTypeScript(
+                  configurationCodeByField[bomConfigurationKey]
+                );
+                bomConfiguration = await mod.configure(hydratedConfiguration);
+              } catch (err) {
+                console.error("BOM configuration error:", err);
+              }
             }
 
             if (bomConfiguration) {
-              // @ts-expect-error - we can't assign undefined to materialsWithConfiguredFields but we filter them in the next step
-              materialsWithConfiguredFields = bomConfiguration
-                .map((readableIdWithRevision, index) => {
-                  const material = materialsWithConfiguredFields.find(
-                    (material) => material.itemId === itemId
+              materialChildPairs = bomConfiguration
+                .map((description, index) => {
+                  const pair = materialChildPairs.find(
+                    (p) => p.material.description === description
                   );
-                  if (material) {
+                  if (pair) {
                     return {
-                      ...material,
-                      order: index + 1,
+                      material: { ...pair.material, order: index + 1 },
+                      child: pair.child,
                     };
                   }
+                  return undefined;
                 })
-                .filter(Boolean);
+                .filter(
+                  (p): p is { material: (typeof materialChildPairs)[0]["material"]; child: MethodTreeItem } =>
+                    p !== undefined
+                );
             }
 
-            const madeMaterials = materialsWithConfiguredFields.filter(
-              (material) => material.methodType === "Make"
+            const madePairs = materialChildPairs.filter(
+              (p) => p.material.methodType === "Make"
             );
-
-            const pickedOrBoughtMaterials =
-              materialsWithConfiguredFields.filter(
-                (material) => material.methodType !== "Make"
-              );
-
-            const madeChildren = node.children.filter(
-              (child) => child.data.methodType === "Make"
-            );
+            const pickedOrBoughtMaterials = materialChildPairs
+              .filter((p) => p.material.methodType !== "Make")
+              .map((p) => p.material);
 
             console.log("[traverseMethod] materials", {
-              totalChildren: materialsWithConfiguredFields.length,
-              madeMaterialsCount: madeMaterials.length,
-              madeChildrenCount: madeChildren.length,
+              totalChildren: materialChildPairs.length,
+              madeMaterialsCount: madePairs.length,
               pickedOrBoughtCount: pickedOrBoughtMaterials.length,
             });
 
-            if (madeMaterials.length > 0) {
-              const madeMaterialsWithIds = madeMaterials.map((m) => ({
-                ...m,
+            if (madePairs.length > 0) {
+              const madeMaterialsWithIds = madePairs.map((p) => ({
+                ...p.material,
                 id: nanoid(),
               }));
 
@@ -989,7 +1005,7 @@ serve(async (req: Request) => {
                 .values(madeMaterialsWithIds)
                 .execute();
 
-              for (const [index, child] of madeChildren.entries()) {
+              for (const [index, pair] of madePairs.entries()) {
                 const materialId = madeMaterialsWithIds[index].id;
                 const newMakeMethodId = nanoid();
 
@@ -1003,23 +1019,21 @@ serve(async (req: Request) => {
                   index,
                   materialId,
                   newMakeMethodId,
-                  childItemId: child.data.itemId,
+                  childItemId: pair.child.data.itemId,
                   parentItemId: itemId,
-                  willRecurse: child.data.itemId !== itemId,
+                  willRecurse: pair.child.data.itemId !== itemId,
                   updateResult,
                 });
 
                 // Get the total quantity (estimated + scrap) for this child material
-                // This is what we pass to children for the cascade
-                const material = madeMaterials[index];
                 const childTotalForCascade =
-                  (material?.estimatedQuantity ?? 0) +
-                  (material?.scrapQuantity ?? 0);
+                  (pair.material?.estimatedQuantity ?? 0) +
+                  (pair.material?.scrapQuantity ?? 0);
 
                 // prevent an infinite loop
-                if (child.data.itemId !== itemId) {
+                if (pair.child.data.itemId !== itemId) {
                   await traverseMethod(
-                    child,
+                    pair.child,
                     newMakeMethodId,
                     childTotalForCascade || 1
                   );
@@ -1837,27 +1851,40 @@ serve(async (req: Request) => {
             let bopConfiguration: string[] | null = null;
 
             if (configurationCodeByField?.[bopConfigurationKey]) {
-              const mod = await importTypeScript(
-                configurationCodeByField[bopConfigurationKey]
-              );
-              bopConfiguration = await mod.configure(hydratedConfiguration);
+              try {
+                const mod = await importTypeScript(
+                  configurationCodeByField[bopConfigurationKey]
+                );
+                bopConfiguration = await mod.configure(hydratedConfiguration);
+              } catch (err) {
+                console.error("BOP configuration error:", err);
+              }
+            }
+
+            // Track which original operation each insert came from
+            const operationInsertSources: typeof relatedOperations.data = [];
+            for (const op of relatedOperations?.data ?? []) {
+              operationInsertSources.push(op);
             }
 
             if (bopConfiguration) {
-              // @ts-expect-error - we can't assign undefined to materialsWithConfiguredFields but we filter them in the next step
-              quoteOperationsInserts = bopConfiguration
-                .map((description, index) => {
-                  const operation = quoteOperationsInserts.find(
-                    (operation) => operation.description === description
-                  );
-                  if (operation) {
-                    return {
-                      ...operation,
-                      order: index + 1,
-                    };
-                  }
-                })
-                .filter(Boolean);
+              const filteredInserts: typeof quoteOperationsInserts = [];
+              const filteredSources: typeof relatedOperations.data = [];
+              for (const description of bopConfiguration) {
+                const idx = quoteOperationsInserts.findIndex(
+                  (op) => op.description === description
+                );
+                if (idx !== -1) {
+                  filteredInserts.push({
+                    ...quoteOperationsInserts[idx],
+                    order: filteredInserts.length + 1,
+                  });
+                  filteredSources.push(operationInsertSources[idx]);
+                }
+              }
+              quoteOperationsInserts = filteredInserts;
+              operationInsertSources.length = 0;
+              operationInsertSources.push(...filteredSources);
             }
 
             if (quoteOperationsInserts?.length > 0) {
@@ -1867,10 +1894,8 @@ serve(async (req: Request) => {
                 .returning(["id"])
                 .execute();
 
-              for (const [index, operation] of (
-                relatedOperations.data ?? []
-              ).entries()) {
-                const operationId = operationIds[index].id;
+              for (const [index, operation] of operationInsertSources.entries()) {
+                const operationId = operationIds[index]?.id;
 
                 if (operationId) {
                   const {
@@ -1961,9 +1986,9 @@ serve(async (req: Request) => {
               }
 
               methodOperationsToQuoteOperations =
-                relatedOperations.data?.reduce<Record<string, string>>(
+                operationInsertSources.reduce<Record<string, string>>(
                   (acc, op, index) => {
-                    if (operationIds[index].id) {
+                    if (operationIds[index]?.id) {
                       acc[op.id!] = operationIds[index].id!;
                     }
                     return acc;
@@ -2069,60 +2094,67 @@ serve(async (req: Request) => {
               };
             };
 
-            let materialsWithConfiguredFields = await Promise.all(
-              node.children.map(mapMethodMaterialToQuoteMaterial)
+            // Pair each material with its source child so we maintain
+            // the correct association through BOM configuration filtering
+            let materialChildPairs = (
+              await Promise.all(
+                node.children.map(async (child, i) => ({
+                  material: await mapMethodMaterialToQuoteMaterial(child),
+                  child,
+                }))
+              )
             );
 
             const bomConfigurationKey = `billOfMaterial:${nodeLevelConfigurationKey}`;
             let bomConfiguration: string[] | null = null;
 
             if (configurationCodeByField?.[bomConfigurationKey]) {
-              const mod = await importTypeScript(
-                configurationCodeByField[bomConfigurationKey]
-              );
-              bomConfiguration = await mod.configure(hydratedConfiguration);
+              try {
+                const mod = await importTypeScript(
+                  configurationCodeByField[bomConfigurationKey]
+                );
+                bomConfiguration = await mod.configure(hydratedConfiguration);
+              } catch (err) {
+                console.error("BOM configuration error:", err);
+              }
             }
 
             if (bomConfiguration) {
-              // @ts-expect-error - we can't assign undefined to materialsWithConfiguredFields but we filter them in the next step
-              materialsWithConfiguredFields = bomConfiguration
-                .map((readableIdWithRevision, index) => {
-                  const material = materialsWithConfiguredFields.find(
-                    (material) => material.itemId === itemId
+              materialChildPairs = bomConfiguration
+                .map((description, index) => {
+                  const pair = materialChildPairs.find(
+                    (p) => p.material.description === description
                   );
-                  if (material) {
+                  if (pair) {
                     return {
-                      ...material,
-                      order: index + 1,
+                      material: { ...pair.material, order: index + 1 },
+                      child: pair.child,
                     };
                   }
+                  return undefined;
                 })
-                .filter(Boolean);
+                .filter(
+                  (p): p is { material: (typeof materialChildPairs)[0]["material"]; child: MethodTreeItem } =>
+                    p !== undefined
+                );
             }
 
-            const madeMaterials = materialsWithConfiguredFields.filter(
-              (material) => material.methodType === "Make"
+            const madePairs = materialChildPairs.filter(
+              (p) => p.material.methodType === "Make"
             );
-
-            const pickedOrBoughtMaterials =
-              materialsWithConfiguredFields.filter(
-                (material) => material.methodType !== "Make"
-              );
-
-            const madeChildren = node.children.filter(
-              (child) => child.data.methodType === "Make"
-            );
+            const pickedOrBoughtMaterials = materialChildPairs
+              .filter((p) => p.material.methodType !== "Make")
+              .map((p) => p.material);
 
             console.log("[traverseMethod] materials", {
-              totalChildren: materialsWithConfiguredFields.length,
-              madeMaterialsCount: madeMaterials.length,
-              madeChildrenCount: madeChildren.length,
+              totalChildren: materialChildPairs.length,
+              madeMaterialsCount: madePairs.length,
               pickedOrBoughtCount: pickedOrBoughtMaterials.length,
             });
 
-            if (madeMaterials.length > 0) {
-              const madeMaterialsWithIds = madeMaterials.map((m) => ({
-                ...m,
+            if (madePairs.length > 0) {
+              const madeMaterialsWithIds = madePairs.map((p) => ({
+                ...p.material,
                 id: nanoid(),
               }));
 
@@ -2131,7 +2163,7 @@ serve(async (req: Request) => {
                 .values(madeMaterialsWithIds)
                 .execute();
 
-              for (const [index, child] of madeChildren.entries()) {
+              for (const [index, pair] of madePairs.entries()) {
                 const materialId = madeMaterialsWithIds[index].id;
                 const newMakeMethodId = nanoid();
 
@@ -2145,15 +2177,15 @@ serve(async (req: Request) => {
                   index,
                   materialId,
                   newMakeMethodId,
-                  childItemId: child.data.itemId,
+                  childItemId: pair.child.data.itemId,
                   parentItemId: itemId,
-                  willRecurse: child.data.itemId !== itemId,
+                  willRecurse: pair.child.data.itemId !== itemId,
                   updateResult,
                 });
 
                 // prevent an infinite loop
-                if (child.data.itemId !== itemId) {
-                  await traverseMethod(child, newMakeMethodId);
+                if (pair.child.data.itemId !== itemId) {
+                  await traverseMethod(pair.child, newMakeMethodId);
                 }
               }
             }
@@ -5288,7 +5320,9 @@ serve(async (req: Request) => {
     );
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify(err), {
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    return new Response(JSON.stringify({ error: message, stack }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
