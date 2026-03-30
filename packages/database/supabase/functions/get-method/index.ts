@@ -1721,6 +1721,7 @@ serve(async (req: Request) => {
                 machineUnit,
                 operationOrder,
                 operationType,
+                piecesPerUnit,
               ] = await Promise.all([
                 getConfiguredValue({
                   id: op.id,
@@ -2354,6 +2355,7 @@ serve(async (req: Request) => {
                 order: op.order,
                 operationOrder: op.operationOrder,
                 operationType: op.operationType,
+                piecesPerUnit: op.piecesPerUnit ?? 1,
                 operationUnitCost: op.operationUnitCost ?? 0,
                 operationSupplierProcessId: op.operationSupplierProcessId,
                 ...getOutsideOperationRates(
