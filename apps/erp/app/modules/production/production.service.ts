@@ -3077,3 +3077,98 @@ export async function upsertDemandProjections(
     error: hasError ? results.find((r) => r.error)?.error : null
   };
 }
+
+// -- Proof Approval --
+
+export async function getProofApprovals(
+  client: SupabaseClient<Database>,
+  jobId: string
+) {
+  return client
+    .from("proofApproval")
+    .select("*")
+    .eq("jobId", jobId)
+    .order("version", { ascending: false });
+}
+
+export async function getProofApprovalByExternalId(
+  client: SupabaseClient<Database>,
+  externalLinkId: string
+) {
+  return client
+    .from("proofApproval")
+    .select("*, job:jobId(id, name, status, modelUploadId)")
+    .eq("externalLinkId", externalLinkId)
+    .single();
+}
+
+export async function createProofApproval(
+  client: SupabaseClient<Database>,
+  params: {
+    jobId: string;
+    companyId: string;
+    requestedBy: string;
+    modelUploadId?: string | null;
+    externalLinkId?: string;
+  }
+) {
+  const { jobId, companyId, requestedBy, modelUploadId, externalLinkId } =
+    params;
+
+  // Supersede any existing Pending proofs for this job
+  await client
+    .from("proofApproval")
+    .update({ status: "Superseded" })
+    .eq("jobId", jobId)
+    .eq("status", "Pending");
+
+  // Get the next version number
+  const { data: existing } = await client
+    .from("proofApproval")
+    .select("version")
+    .eq("jobId", jobId)
+    .order("version", { ascending: false })
+    .limit(1);
+
+  const nextVersion =
+    existing && existing.length > 0 ? existing[0].version + 1 : 1;
+
+  return client
+    .from("proofApproval")
+    .insert({
+      jobId,
+      companyId,
+      requestedBy,
+      modelUploadId: modelUploadId ?? null,
+      version: nextVersion,
+      externalLinkId: externalLinkId ?? undefined
+    })
+    .select("id")
+    .single();
+}
+
+export async function updateProofApprovalStatus(
+  client: SupabaseClient<Database>,
+  params: {
+    id: string;
+    status: "Approved" | "Rejected";
+    decidedBy: string;
+    decidedByEmail: string;
+    decisionNotes?: string;
+  }
+) {
+  const { id, status, decidedBy, decidedByEmail, decisionNotes } = params;
+
+  return client
+    .from("proofApproval")
+    .update({
+      status,
+      decidedBy,
+      decidedByEmail,
+      decisionNotes: decisionNotes ?? null,
+      decidedAt: new Date().toISOString()
+    })
+    .eq("id", id)
+    .select("id, jobId, companyId, status")
+    .single();
+}

@@ -6,11 +6,14 @@ import { FunctionRegion } from "@supabase/supabase-js";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import {
+  createProofApproval,
+  getProofApprovals,
   jobStatus,
   recalculateJobRequirements,
   runMRP,
   updateJobStatus
 } from "~/modules/production";
+import { upsertExternalLink } from "~/modules/shared";
 import { path, requestReferrer } from "~/utils/path";
 
 export async function action({ request, params }: ActionFunctionArgs) {
@@ -26,7 +29,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const shouldSchedule = url.searchParams.get("schedule") === "1";
 
   const formData = await request.formData();
-  const status = formData.get("status") as (typeof jobStatus)[number];
+  let status = formData.get("status") as (typeof jobStatus)[number];
+  const skipProofApproval = formData.get("skipProofApproval") === "true";
   const selectedPurchaseOrdersBySupplierId = formData.get(
     "selectedPurchaseOrdersBySupplierId"
   ) as string | null;
@@ -41,7 +45,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   if (status === "Ready") {
     const { data } = await client
       .from("job")
-      .select("item(itemReplenishment(manufacturingBlocked))")
+      .select("item(itemReplenishment(manufacturingBlocked)), modelUploadId")
       .eq("id", id)
       .single();
 
@@ -50,6 +54,34 @@ export async function action({ request, params }: ActionFunctionArgs) {
         requestReferrer(request) ?? path.to.job(id),
         await flash(request, error(null, "Manufacturing is blocked"))
       );
+    }
+
+    // Gate: route through Awaiting Proof Approval unless skipping or already approved
+    if (!skipProofApproval) {
+      const { data: proofs } = await getProofApprovals(client, id);
+      const hasApprovedProof = proofs?.some((p) => p.status === "Approved");
+
+      if (!hasApprovedProof) {
+        // Create an external link for proof sharing
+        const serviceRole = getCarbonServiceRole();
+        const externalLink = await upsertExternalLink(serviceRole, {
+          companyId,
+          documentType: "ProofApproval",
+          documentId: id
+        });
+
+        // Create proof approval record
+        await createProofApproval(serviceRole, {
+          jobId: id,
+          companyId,
+          requestedBy: userId,
+          modelUploadId: data?.modelUploadId ?? null,
+          externalLinkId: externalLink.data?.id
+        });
+
+        // Set status to Awaiting Proof Approval instead of Ready
+        status = "Awaiting Proof Approval";
+      }
     }
   }
 

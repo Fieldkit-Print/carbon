@@ -5,6 +5,18 @@
 ALTER TABLE "quoteMaterial"
   ADD COLUMN "piecesPerUnit" INTEGER NOT NULL DEFAULT 1;
 
+-- Recreate the view so it picks up the new column
+DROP VIEW IF EXISTS "quoteMaterialWithMakeMethodId";
+CREATE OR REPLACE VIEW "quoteMaterialWithMakeMethodId" WITH(SECURITY_INVOKER=true) AS
+  SELECT
+    qm.*,
+    qmm."id" AS "quoteMaterialMakeMethodId",
+    qmm.version AS "version"
+  FROM "quoteMaterial" qm
+  LEFT JOIN "quoteMakeMethod" qmm
+    ON qmm."parentMaterialId" = qm."id";
+
+
 -- Update get_quote_methods_by_method_id to include piecesPerUnit
 DROP FUNCTION IF EXISTS get_quote_methods_by_method_id;
 CREATE OR REPLACE FUNCTION get_quote_methods_by_method_id(mid TEXT)

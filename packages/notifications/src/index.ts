@@ -30,6 +30,8 @@ export enum NotificationEvent {
   MaintenanceDispatchAssignment = "maintenance-dispatch-assignment",
   MaintenanceDispatchCreated = "maintenance-dispatch-created",
   NonConformanceAssignment = "issue-assignment",
+  ProofApprovalRequested = "proof-approval-requested",
+  ProofApprovalResponse = "proof-approval-response",
   ProcedureAssignment = "procedure-assignment",
   PurchaseInvoiceAssignment = "purchase-invoice-assignment",
   PurchaseOrderAssignment = "purchase-order-assignment",

@@ -12,6 +12,7 @@ const STATUS_COLOR_MAP: Record<
 > = {
   Draft: "gray",
   Planned: "yellow",
+  "Awaiting Proof Approval": "orange",
   Ready: "blue",
   "In Progress": "blue",
   Paused: "orange",
