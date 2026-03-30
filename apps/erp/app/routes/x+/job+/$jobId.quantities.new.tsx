@@ -23,7 +23,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const { jobId } = params;
   if (!jobId) throw notFound("jobId not found");
 
-  const [jobOperations] = await Promise.all([getJobOperations(client, jobId)]);
+  const [job, jobOperations] = await Promise.all([
+    getJob(client, jobId),
+    getJobOperations(client, jobId)
+  ]);
 
   const operationOptions =
     jobOperations.data?.map((operation) => ({
@@ -31,7 +34,36 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       value: operation.id
     })) ?? [];
 
-  return { operationOptions };
+  const { data: dependencies } = await client
+    .from("jobOperationDependency")
+    .select("operationId, dependsOnId")
+    .eq("jobId", jobId);
+
+  const operationsMap = new Map(
+    (jobOperations.data ?? []).map((op) => [op.id, op])
+  );
+  const operationWarnings: Record<string, string[]> = {};
+  for (const op of jobOperations.data ?? []) {
+    const warnings: string[] = [];
+    const deps = (dependencies ?? []).filter((d) => d.operationId === op.id);
+    for (const dep of deps) {
+      const pred = operationsMap.get(dep.dependsOnId);
+      if (pred && pred.status !== "Done") {
+        warnings.push(
+          `Previous step "${pred.description}" is not yet complete`
+        );
+      }
+    }
+    if (warnings.length > 0) {
+      operationWarnings[op.id] = warnings;
+    }
+  }
+
+  return {
+    operationOptions,
+    operationWarnings,
+    jobPaused: job.data?.status === "Paused"
+  };
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
@@ -98,7 +130,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
 }
 
 export default function NewProductionQuantityRoute() {
-  const { operationOptions } = useLoaderData<typeof loader>();
+  const { operationOptions, operationWarnings, jobPaused } =
+    useLoaderData<typeof loader>();
   const initialValues = {
     type: "Production" as const,
     jobOperationId: "",
@@ -112,6 +145,8 @@ export default function NewProductionQuantityRoute() {
     <ProductionQuantityForm
       initialValues={initialValues}
       operationOptions={operationOptions ?? []}
+      operationWarnings={operationWarnings}
+      jobPaused={jobPaused}
     />
   );
 }

@@ -1,5 +1,8 @@
 import { TextArea, ValidatedForm } from "@carbon/form";
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
   Button,
   Drawer,
   DrawerBody,
@@ -17,6 +20,7 @@ import {
   toCalendarDateTime
 } from "@internationalized/date";
 import { useState } from "react";
+import { LuAlertTriangle } from "react-icons/lu";
 import { useNavigate } from "react-router";
 import type { z } from "zod";
 import {
@@ -37,16 +41,23 @@ type ProductionEventFormProps = {
     value: string;
     helperText?: string;
   }[];
+  operationWarnings?: Record<string, string[]>;
+  jobPaused?: boolean;
 };
 
 const ProductionEventForm = ({
   initialValues,
-  operationOptions
+  operationOptions,
+  operationWarnings,
+  jobPaused
 }: ProductionEventFormProps) => {
   const permissions = usePermissions();
   const navigate = useNavigate();
   const onClose = () => navigate(-1);
 
+  const [selectedOperationId, setSelectedOperationId] = useState(
+    initialValues.jobOperationId
+  );
   const [startTime, setStartTime] = useState(
     toCalendarDateTime(
       parseAbsolute(initialValues.startTime, getLocalTimeZone())
@@ -63,6 +74,12 @@ const ProductionEventForm = ({
   const isDisabled = isEditing
     ? !permissions.can("update", "production")
     : !permissions.can("create", "production");
+
+  const warnings: string[] = [];
+  if (jobPaused) warnings.push("This job is currently paused");
+  if (selectedOperationId && operationWarnings?.[selectedOperationId]) {
+    warnings.push(...operationWarnings[selectedOperationId]);
+  }
   return (
     <Drawer
       open
@@ -86,10 +103,22 @@ const ProductionEventForm = ({
             <Hidden name="id" />
 
             <VStack spacing={4}>
+              {warnings.length > 0 && (
+                <Alert className="border-amber-500/30 bg-gradient-to-tr from-amber-500/10 via-card to-card text-amber-600 [&>svg]:text-amber-600 dark:text-amber-400 dark:[&>svg]:text-amber-400">
+                  <LuAlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Warning</AlertTitle>
+                  <AlertDescription>
+                    {warnings.map((w) => (
+                      <p key={w}>{w}</p>
+                    ))}
+                  </AlertDescription>
+                </Alert>
+              )}
               <Select
                 name="jobOperationId"
                 label="Operation"
                 options={operationOptions ?? []}
+                onChange={(value) => setSelectedOperationId(value?.value ?? "")}
               />
               <Employee name="employeeId" label="Employee" />
               <WorkCenter

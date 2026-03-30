@@ -1,5 +1,8 @@
 import { ValidatedForm } from "@carbon/form";
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
   Button,
   Drawer,
   DrawerBody,
@@ -11,6 +14,7 @@ import {
   VStack
 } from "@carbon/react";
 import { useState } from "react";
+import { LuAlertTriangle } from "react-icons/lu";
 import { useNavigate } from "react-router";
 import type { z } from "zod";
 import {
@@ -33,16 +37,23 @@ type ProductionQuantityFormProps = {
     value: string;
     helperText?: string;
   }[];
+  operationWarnings?: Record<string, string[]>;
+  jobPaused?: boolean;
 };
 
 const ProductionQuantityForm = ({
   initialValues,
-  operationOptions
+  operationOptions,
+  operationWarnings,
+  jobPaused
 }: ProductionQuantityFormProps) => {
   const permissions = usePermissions();
   const navigate = useNavigate();
   const onClose = () => navigate(-1);
 
+  const [selectedOperationId, setSelectedOperationId] = useState(
+    initialValues.jobOperationId
+  );
   const [type, setType] = useState<"Production" | "Scrap" | "Rework">(
     initialValues.type
   );
@@ -51,6 +62,12 @@ const ProductionQuantityForm = ({
   const isDisabled = isEditing
     ? !permissions.can("update", "production")
     : !permissions.can("create", "production");
+
+  const warnings: string[] = [];
+  if (jobPaused) warnings.push("This job is currently paused");
+  if (selectedOperationId && operationWarnings?.[selectedOperationId]) {
+    warnings.push(...operationWarnings[selectedOperationId]);
+  }
   return (
     <Drawer
       open
@@ -75,6 +92,17 @@ const ProductionQuantityForm = ({
           <DrawerBody>
             <Hidden name="id" />
             <VStack spacing={4}>
+              {warnings.length > 0 && (
+                <Alert className="border-amber-500/30 bg-gradient-to-tr from-amber-500/10 via-card to-card text-amber-600 [&>svg]:text-amber-600 dark:text-amber-400 dark:[&>svg]:text-amber-400">
+                  <LuAlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Warning</AlertTitle>
+                  <AlertDescription>
+                    {warnings.map((w) => (
+                      <p key={w}>{w}</p>
+                    ))}
+                  </AlertDescription>
+                </Alert>
+              )}
               {isEditing ? (
                 <Hidden name="jobOperationId" />
               ) : (
@@ -82,6 +110,9 @@ const ProductionQuantityForm = ({
                   name="jobOperationId"
                   label="Operation"
                   options={operationOptions ?? []}
+                  onChange={(value) =>
+                    setSelectedOperationId(value?.value ?? "")
+                  }
                 />
               )}
               <Employee name="createdBy" label="Employee" />
