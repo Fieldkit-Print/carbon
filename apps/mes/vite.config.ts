@@ -5,10 +5,9 @@ import { defineConfig, PluginOption } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 /**
- * Workaround for react-router's cleanViteManifests crashing when
- * build/client/.vite doesn't exist after the SSR build phase.
- * Runs on both buildStart and closeBundle to ensure the directory
- * exists before cleanViteManifests scans it and after each phase.
+ * Workaround for react-router crashing when build/client/.vite
+ * doesn't exist after the SSR build phase. Ensures the directory
+ * exists at every build lifecycle hook.
  */
 function ensureViteDir(): PluginOption {
   const ensure = () => {
@@ -17,7 +16,9 @@ function ensureViteDir(): PluginOption {
   };
   return {
     name: "ensure-vite-dir",
+    enforce: "post",
     buildStart: ensure,
+    writeBundle: ensure,
     closeBundle: ensure,
   };
 }
