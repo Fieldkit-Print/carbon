@@ -78,14 +78,18 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   const { email_id, from, subject, attachments, text, html } = event.data;
 
-  // Log full payload keys for debugging
+  // Log full payload structure for debugging
   console.log(
     "Resend inbound webhook data keys:",
     Object.keys(event.data),
     "has text:",
     !!text,
     "has html:",
-    !!html
+    !!html,
+    "attachments count:",
+    attachments?.length ?? 0,
+    "attachment keys:",
+    attachments?.[0] ? Object.keys(attachments[0]) : "none"
   );
 
   // Idempotency: check if sales RFQ already exists for this email ID
@@ -219,44 +223,50 @@ export async function action({ request, params }: ActionFunctionArgs) {
   if (attachments?.length > 0) {
     for (const attachment of attachments) {
       try {
-        // Fetch attachment metadata with download URL
-        const attResponse = await fetch(
-          `https://api.resend.com/emails/${email_id}/attachments/${attachment.id}`,
-          {
-            headers: { Authorization: `Bearer ${apiKey}` }
-          }
-        );
-
-        if (!attResponse.ok) {
-          console.error(
-            `Failed to fetch attachment metadata for ${attachment.id}:`,
-            attResponse.status,
-            await attResponse.text()
-          );
-          continue;
-        }
-
-        const attData = await attResponse.json();
-        if (!attData.download_url) {
-          console.error(
-            `No download_url for attachment ${attachment.id}:`,
-            attData
-          );
-          continue;
-        }
-
-        // Download the file content
-        const fileResponse = await fetch(attData.download_url);
-        if (!fileResponse.ok) {
-          console.error(
-            `Failed to download attachment ${attachment.id}:`,
-            fileResponse.status
-          );
-          continue;
-        }
-
-        const fileBuffer = await fileResponse.arrayBuffer();
         const fileName = attachment.filename || `attachment-${attachment.id}`;
+        let fileBuffer: ArrayBuffer | null = null;
+
+        // Try inline content first (inbound emails include base64 content)
+        if (attachment.content) {
+          fileBuffer = Buffer.from(attachment.content, "base64").buffer;
+        }
+
+        // Fall back to download_url if provided
+        if (!fileBuffer && attachment.download_url) {
+          const fileResponse = await fetch(attachment.download_url);
+          if (fileResponse.ok) {
+            fileBuffer = await fileResponse.arrayBuffer();
+          }
+        }
+
+        // Last resort: try the Resend API (works for sent emails only)
+        if (!fileBuffer) {
+          try {
+            const attResponse = await fetch(
+              `https://api.resend.com/emails/${email_id}/attachments/${attachment.id}`,
+              { headers: { Authorization: `Bearer ${apiKey}` } }
+            );
+            if (attResponse.ok) {
+              const attData = await attResponse.json();
+              if (attData.download_url) {
+                const fileResponse = await fetch(attData.download_url);
+                if (fileResponse.ok) {
+                  fileBuffer = await fileResponse.arrayBuffer();
+                }
+              }
+            }
+          } catch {
+            // API fallback failed
+          }
+        }
+
+        if (!fileBuffer) {
+          console.error(
+            `Could not retrieve content for attachment ${attachment.id} (${fileName}). Keys:`,
+            Object.keys(attachment)
+          );
+          continue;
+        }
 
         // Upload to Supabase storage
         const storagePath = `${companyId}/sales-rfq/${rfq.id}/${fileName}`;
