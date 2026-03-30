@@ -116,6 +116,9 @@ const JobHeader = () => {
   }>(path.to.job(jobId));
 
   const latestProof = routeData?.proofApprovals?.[0];
+  const hasApprovedProof = routeData?.proofApprovals?.some(
+    (p) => p.status === "Approved"
+  );
 
   const statusFetcher = useFetcher<{}>();
   const status = routeData?.job?.status;
@@ -359,6 +362,7 @@ const JobHeader = () => {
             }
             isDisabled={
               !["Draft", "Planned"].includes(status ?? "") ||
+              !hasApprovedProof ||
               statusFetcher.state !== "idle" ||
               !permissions.can("update", "production") ||
               (routeData?.job?.quantity === 0 &&
