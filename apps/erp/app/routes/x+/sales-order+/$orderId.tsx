@@ -112,6 +112,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     const orderCurrency = salesOrder.data?.currencyCode;
 
     for (const invoice of invoices.data ?? []) {
+      // Skip voided invoices
+      if (invoice.status === "Voided") continue;
+
       const invoiceTotal = invoice.invoiceTotal ?? 0;
       const invoiceCurrency = invoice.currencyCode;
 

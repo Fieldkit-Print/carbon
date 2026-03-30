@@ -41,7 +41,8 @@ enum InvoiceState {
   Valid,
   Paid,
   Expired,
-  NotFound
+  NotFound,
+  Voided
 }
 
 export async function loader({ params }: LoaderFunctionArgs) {
@@ -89,9 +90,15 @@ export async function loader({ params }: LoaderFunctionArgs) {
     paymentTerms.data?.find((pt) => pt.id === invoice.data.paymentTermId)
       ?.name ?? null;
 
+  const invoiceState =
+    invoice.data.status === "Paid"
+      ? InvoiceState.Paid
+      : invoice.data.status === "Voided"
+        ? InvoiceState.Voided
+        : InvoiceState.Valid;
+
   return {
-    state:
-      invoice.data.status === "Paid" ? InvoiceState.Paid : InvoiceState.Valid,
+    state: invoiceState,
     data: {
       invoice: invoice.data,
       company: company.data,
@@ -145,47 +152,45 @@ export default function DigitalInvoicePage() {
   const balanceDue = (invoice.balance ?? 0) + shippingCost + taxAmount;
 
   return (
-    <div className="min-h-screen bg-muted/50">
-      <VStack spacing={8} className="w-full items-center p-2 md:p-8">
-        {logo && (
-          <img
-            src={logo}
-            alt={company?.name ?? ""}
-            className="w-auto mx-auto max-w-5xl"
-          />
-        )}
-
-        <PaymentCard
-          invoice={invoice}
-          state={state}
-          externalLinkId={data.externalLinkId}
-          company={company}
-          logo={logo}
-          balanceDue={balanceDue}
+    <VStack spacing={8} className="w-full items-center p-2 md:p-8">
+      {logo && (
+        <img
+          src={logo}
+          alt={company?.name ?? ""}
+          className="w-auto mx-auto max-w-5xl"
         />
+      )}
 
-        <Card className="w-full max-w-5xl mx-auto">
-          <CardHeader>
-            <div className="w-full text-center">
-              <StatusBadge status={invoice.status} state={state} />
-            </div>
-            <InvoiceHeader
-              company={company}
-              invoice={invoice}
-              locations={locations}
-              paymentTermName={paymentTermName}
-            />
-          </CardHeader>
-          <CardContent>
-            <InvoiceLineItems
-              lines={lines}
-              invoice={invoice}
-              shipment={shipment}
-            />
-          </CardContent>
-        </Card>
-      </VStack>
-    </div>
+      <PaymentCard
+        invoice={invoice}
+        state={state}
+        externalLinkId={data.externalLinkId}
+        company={company}
+        logo={logo}
+        balanceDue={balanceDue}
+      />
+
+      <Card className="w-full max-w-5xl mx-auto">
+        <CardHeader>
+          <div className="w-full text-center">
+            <StatusBadge status={invoice.status} state={state} />
+          </div>
+          <InvoiceHeader
+            company={company}
+            invoice={invoice}
+            locations={locations}
+            paymentTermName={paymentTermName}
+          />
+        </CardHeader>
+        <CardContent>
+          <InvoiceLineItems
+            lines={lines}
+            invoice={invoice}
+            shipment={shipment}
+          />
+        </CardContent>
+      </Card>
+    </VStack>
   );
 }
 
@@ -208,6 +213,9 @@ function StatusBadge({
   status: string;
   state: InvoiceState;
 }) {
+  if (state === InvoiceState.Voided || status === "Voided") {
+    return <Badge variant="red">Voided</Badge>;
+  }
   if (state === InvoiceState.Paid || status === "Paid") {
     return <Badge variant="green">Paid</Badge>;
   }
@@ -420,7 +428,21 @@ function PaymentCard({
   });
 
   const isPaid = state === InvoiceState.Paid || invoice.status === "Paid";
+  const isVoided = state === InvoiceState.Voided || invoice.status === "Voided";
   const isSubmitting = fetcher.state !== "idle";
+
+  if (isVoided) {
+    return (
+      <Card className="w-full max-w-xl mx-auto">
+        <CardContent className="p-6 text-center">
+          <Heading size="h4">Invoice Voided</Heading>
+          <p className="text-muted-foreground mt-2">
+            This invoice has been voided and is no longer payable.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isPaid || paymentResult === "success") {
     return (

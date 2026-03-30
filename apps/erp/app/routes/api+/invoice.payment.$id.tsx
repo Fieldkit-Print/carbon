@@ -29,6 +29,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return { success: false, message: "Invoice is already paid" };
   }
 
+  if (invoice.data.status === "Voided") {
+    return { success: false, message: "Invoice has been voided" };
+  }
+
   const [company, shipment] = await Promise.all([
     serviceRole
       .from("company")
