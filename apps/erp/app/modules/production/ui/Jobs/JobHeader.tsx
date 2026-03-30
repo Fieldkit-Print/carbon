@@ -55,6 +55,7 @@ import {
   LuPanelLeft,
   LuPanelRight,
   LuQrCode,
+  LuSend,
   LuSettings,
   LuShoppingCart,
   LuSkipForward,
@@ -100,6 +101,7 @@ const JobHeader = () => {
   });
 
   const releaseModal = useDisclosure();
+  const skipProofModal = useDisclosure();
   const cancelModal = useDisclosure();
   const completeModal = useDisclosure();
   const deleteJobModal = useDisclosure();
@@ -119,8 +121,11 @@ const JobHeader = () => {
   const hasApprovedProof = routeData?.proofApprovals?.some(
     (p) => p.status === "Approved"
   );
+  const proofSkipped = routeData?.job?.proofSkipped ?? false;
+  const proofReady = hasApprovedProof || proofSkipped;
 
   const statusFetcher = useFetcher<{}>();
+  const proofFetcher = useFetcher<{}>();
   const status = routeData?.job?.status;
 
   const getOptionFromPath = (jobId: string) => {
@@ -354,6 +359,40 @@ const JobHeader = () => {
             </statusFetcher.Form>
           )}
 
+          {["Draft", "Planned"].includes(status ?? "") && !proofReady && (
+            <>
+              <proofFetcher.Form method="post" action={path.to.jobProof(jobId)}>
+                <input type="hidden" name="type" value="send" />
+                <Button
+                  type="submit"
+                  isLoading={
+                    proofFetcher.state !== "idle" &&
+                    proofFetcher.formData?.get("type") === "send"
+                  }
+                  isDisabled={
+                    proofFetcher.state !== "idle" ||
+                    !permissions.can("update", "production")
+                  }
+                  leftIcon={<LuSend />}
+                  variant="primary"
+                >
+                  Send Proof
+                </Button>
+              </proofFetcher.Form>
+              <Button
+                onClick={skipProofModal.onOpen}
+                isDisabled={
+                  proofFetcher.state !== "idle" ||
+                  !permissions.can("update", "production")
+                }
+                leftIcon={<LuSkipForward />}
+                variant="secondary"
+              >
+                Skip Proof
+              </Button>
+            </>
+          )}
+
           <SplitButton
             onClick={releaseModal.onOpen}
             isLoading={
@@ -362,7 +401,7 @@ const JobHeader = () => {
             }
             isDisabled={
               !["Draft", "Planned"].includes(status ?? "") ||
-              !hasApprovedProof ||
+              !proofReady ||
               statusFetcher.state !== "idle" ||
               !permissions.can("update", "production") ||
               (routeData?.job?.quantity === 0 &&
@@ -486,6 +525,38 @@ const JobHeader = () => {
             deleteJobModal.onClose();
           }}
         />
+      )}
+      {skipProofModal.isOpen && (
+        <Modal
+          open={skipProofModal.isOpen}
+          onOpenChange={skipProofModal.onToggle}
+        >
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Skip Proof Approval</ModalTitle>
+              <ModalDescription>
+                Are you sure you want to skip customer proof approval for this
+                job? This means production will proceed without the customer
+                reviewing and approving a proof.
+              </ModalDescription>
+            </ModalHeader>
+            <ModalFooter>
+              <Button variant="ghost" onClick={skipProofModal.onClose}>
+                Cancel
+              </Button>
+              <proofFetcher.Form
+                method="post"
+                action={path.to.jobProof(jobId)}
+                onSubmit={() => skipProofModal.onClose()}
+              >
+                <input type="hidden" name="type" value="skip" />
+                <Button type="submit" variant="destructive">
+                  Yes, Skip Proof
+                </Button>
+              </proofFetcher.Form>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       )}
       {auditLogDrawer}
     </>

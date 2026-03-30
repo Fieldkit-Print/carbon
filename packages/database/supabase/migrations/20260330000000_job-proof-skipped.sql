@@ -1,0 +1,1 @@
+ALTER TABLE "job" ADD COLUMN "proofSkipped" BOOLEAN NOT NULL DEFAULT false;

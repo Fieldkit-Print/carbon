@@ -6,14 +6,12 @@ import { FunctionRegion } from "@supabase/supabase-js";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import {
-  createProofApproval,
   getProofApprovals,
   jobStatus,
   recalculateJobRequirements,
   runMRP,
   updateJobStatus
 } from "~/modules/production";
-import { upsertExternalLink } from "~/modules/shared";
 import { path, requestReferrer } from "~/utils/path";
 
 export async function action({ request, params }: ActionFunctionArgs) {
@@ -45,7 +43,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   if (status === "Ready") {
     const { data } = await client
       .from("job")
-      .select("item(itemReplenishment(manufacturingBlocked)), modelUploadId")
+      .select("item(itemReplenishment(manufacturingBlocked))")
       .eq("id", id)
       .single();
 
@@ -56,31 +54,25 @@ export async function action({ request, params }: ActionFunctionArgs) {
       );
     }
 
-    // Gate: route through Awaiting Proof Approval unless skipping or already approved
+    // Proof must be approved or skipped before release (unless skipProofApproval from legacy flow)
     if (!skipProofApproval) {
+      const { data: jobData } = await client
+        .from("job")
+        .select("proofSkipped")
+        .eq("id", id)
+        .single();
+
       const { data: proofs } = await getProofApprovals(client, id);
       const hasApprovedProof = proofs?.some((p) => p.status === "Approved");
 
-      if (!hasApprovedProof) {
-        // Create an external link for proof sharing
-        const serviceRole = getCarbonServiceRole();
-        const externalLink = await upsertExternalLink(serviceRole, {
-          companyId,
-          documentType: "ProofApproval",
-          documentId: id
-        });
-
-        // Create proof approval record
-        await createProofApproval(serviceRole, {
-          jobId: id,
-          companyId,
-          requestedBy: userId,
-          modelUploadId: data?.modelUploadId ?? null,
-          externalLinkId: externalLink.data?.id
-        });
-
-        // Set status to Awaiting Proof Approval instead of Ready
-        status = "Awaiting Proof Approval";
+      if (!hasApprovedProof && !jobData?.proofSkipped) {
+        throw redirect(
+          requestReferrer(request) ?? path.to.job(id),
+          await flash(
+            request,
+            error(null, "Proof must be approved or skipped before release")
+          )
+        );
       }
     }
   }

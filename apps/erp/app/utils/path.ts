@@ -907,6 +907,7 @@ export const path = {
     jobProductionQuantities: (id: string) =>
       generatePath(`${x}/job/${id}/quantities`),
     jobs: `${x}/production/jobs`,
+    jobProof: (id: string) => generatePath(`${x}/job/${id}/proof`),
     jobRecalculate: (id: string) => generatePath(`${x}/job/${id}/recalculate`),
     jobRelease: (id: string) => generatePath(`${x}/job/${id}/release`),
     jobStatus: (id: string) => generatePath(`${x}/job/${id}/status`),
