@@ -10767,6 +10767,7 @@ export type Database = {
           quantityShipped: number
           quoteId: string | null
           quoteLineId: string | null
+          proofSkipped: boolean
           releasedDate: string | null
           salesOrderId: string | null
           salesOrderLineId: string | null
@@ -10801,6 +10802,7 @@ export type Database = {
           notes?: Json | null
           priority?: number
           productionQuantity?: number | null
+          proofSkipped?: boolean
           quantity?: number
           quantityComplete?: number
           quantityReceivedToInventory?: number
@@ -10841,6 +10843,7 @@ export type Database = {
           notes?: Json | null
           priority?: number
           productionQuantity?: number | null
+          proofSkipped?: boolean
           quantity?: number
           quantityComplete?: number
           quantityReceivedToInventory?: number
@@ -46602,6 +46605,7 @@ export type Database = {
           name: string | null
           notes: Json | null
           productionQuantity: number | null
+          proofSkipped: boolean | null
           quantity: number | null
           quantityComplete: number | null
           quantityReceivedToInventory: number | null
@@ -52933,6 +52937,7 @@ export type Database = {
           datePaid: string | null
           exchangeRate: number | null
           exchangeRateUpdatedAt: string | null
+          externalLinkId: string | null
           externalNotes: Json | null
           id: string | null
           internalNotes: Json | null
