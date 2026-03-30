@@ -28,11 +28,19 @@ export const Resend = defineIntegration({
       type: "text",
       required: true,
       value: ""
+    },
+    {
+      name: "webhookSecret",
+      label: "Inbound Webhook Secret",
+      type: "text",
+      required: false,
+      value: ""
     }
   ],
   schema: z.object({
     apiKey: z.string().min(1, { message: "API Key is required" }),
-    fromEmail: z.string().email()
+    fromEmail: z.string().email(),
+    webhookSecret: z.string().optional()
   })
 });
 
