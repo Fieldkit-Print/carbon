@@ -39543,6 +39543,7 @@ export type Database = {
       }
       terms: {
         Row: {
+          cardOnFileTerms: Json | null
           id: string
           purchasingTerms: Json | null
           salesTerms: Json | null
@@ -39550,6 +39551,7 @@ export type Database = {
           updatedBy: string | null
         }
         Insert: {
+          cardOnFileTerms?: Json | null
           id?: string
           purchasingTerms?: Json | null
           salesTerms?: Json | null
@@ -39557,6 +39559,7 @@ export type Database = {
           updatedBy?: string | null
         }
         Update: {
+          cardOnFileTerms?: Json | null
           id?: string
           purchasingTerms?: Json | null
           salesTerms?: Json | null
