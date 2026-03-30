@@ -11,6 +11,7 @@ import {
   getShipmentRelatedItems,
   getShipmentTracking
 } from "~/modules/inventory";
+import { getShipmentParcels } from "~/modules/inventory/easypost.service";
 import ShipmentHeader from "~/modules/inventory/ui/Shipments/ShipmentHeader";
 import type { Handle } from "~/utils/handle";
 import { path } from "~/utils/path";
@@ -28,11 +29,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const { shipmentId } = params;
   if (!shipmentId) throw new Error("Could not find shipmentId");
 
-  const [shipment, shipmentLines, shipmentLineTracking] = await Promise.all([
-    getShipment(client, shipmentId),
-    getShipmentLines(client, shipmentId),
-    getShipmentTracking(client, shipmentId, companyId)
-  ]);
+  const [shipment, shipmentLines, shipmentLineTracking, parcels] =
+    await Promise.all([
+      getShipment(client, shipmentId),
+      getShipmentLines(client, shipmentId),
+      getShipmentTracking(client, shipmentId, companyId),
+      getShipmentParcels(client, shipmentId)
+    ]);
 
   if (shipment.error) {
     throw redirect(
@@ -49,6 +52,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     shipment: shipment.data,
     shipmentLines: shipmentLines.data ?? [],
     shipmentLineTracking: shipmentLineTracking.data ?? [],
+    parcels: parcels.data ?? [],
     relatedItems: getShipmentRelatedItems(
       client,
       shipmentId,

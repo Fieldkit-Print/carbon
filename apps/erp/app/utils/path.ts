@@ -1499,7 +1499,9 @@ export const path = {
     shipmentLineSplit: `${x}/shipment/lines/split`,
     shipmentLinesTracking: (id: string) =>
       generatePath(`${x}/shipment/lines/tracking`),
+    shipmentParcels: `${x}/shipment/parcels`,
     shipmentPost: (id: string) => generatePath(`${x}/shipment/${id}/post`),
+    shipmentRates: `${x}/shipment/rates`,
     shipmentVoid: (id: string) => generatePath(`${x}/shipment/${id}/void`),
     shippingMethod: (id: string) =>
       generatePath(`${x}/inventory/shipping-methods/${id}`),

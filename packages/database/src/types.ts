@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -7,6 +8,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.4"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -2177,6 +2183,42 @@ export type Database = {
         }
         Relationships: []
       }
+      auditLog_d742au0gqeb4g2dcj3rg: {
+        Row: {
+          actorId: string | null
+          createdAt: string
+          diff: Json | null
+          entityId: string
+          entityType: string
+          id: string
+          metadata: Json | null
+          operation: string
+          tableName: string
+        }
+        Insert: {
+          actorId?: string | null
+          createdAt?: string
+          diff?: Json | null
+          entityId: string
+          entityType: string
+          id?: string
+          metadata?: Json | null
+          operation: string
+          tableName: string
+        }
+        Update: {
+          actorId?: string | null
+          createdAt?: string
+          diff?: Json | null
+          entityId?: string
+          entityType?: string
+          id?: string
+          metadata?: Json | null
+          operation?: string
+          tableName?: string
+        }
+        Relationships: []
+      }
       auditLogArchive: {
         Row: {
           archivePath: string
@@ -3144,12 +3186,15 @@ export type Database = {
           createdAt: string
           createdBy: string
           dataType: Database["public"]["Enums"]["configurationParameterDataType"]
+          defaultValue: string | null
+          description: string | null
           id: string
           itemId: string
           key: string
           label: string
           listOptions: string[] | null
           materialFormFilterId: string | null
+          required: boolean
           sortOrder: number
           updatedAt: string | null
           updatedBy: string | null
@@ -3160,12 +3205,15 @@ export type Database = {
           createdAt?: string
           createdBy: string
           dataType: Database["public"]["Enums"]["configurationParameterDataType"]
+          defaultValue?: string | null
+          description?: string | null
           id?: string
           itemId: string
           key: string
           label: string
           listOptions?: string[] | null
           materialFormFilterId?: string | null
+          required?: boolean
           sortOrder?: number
           updatedAt?: string | null
           updatedBy?: string | null
@@ -3176,12 +3224,15 @@ export type Database = {
           createdAt?: string
           createdBy?: string
           dataType?: Database["public"]["Enums"]["configurationParameterDataType"]
+          defaultValue?: string | null
+          description?: string | null
           id?: string
           itemId?: string
           key?: string
           label?: string
           listOptions?: string[] | null
           materialFormFilterId?: string | null
+          required?: boolean
           sortOrder?: number
           updatedAt?: string | null
           updatedBy?: string | null
@@ -21284,6 +21335,157 @@ export type Database = {
           },
         ]
       }
+      parcel: {
+        Row: {
+          companyId: string
+          createdAt: string
+          createdBy: string
+          height: number
+          id: string
+          length: number
+          predefinedPackage: string | null
+          shipmentId: string
+          updatedAt: string | null
+          updatedBy: string | null
+          weight: number
+          width: number
+        }
+        Insert: {
+          companyId: string
+          createdAt?: string
+          createdBy: string
+          height?: number
+          id?: string
+          length?: number
+          predefinedPackage?: string | null
+          shipmentId: string
+          updatedAt?: string | null
+          updatedBy?: string | null
+          weight?: number
+          width?: number
+        }
+        Update: {
+          companyId?: string
+          createdAt?: string
+          createdBy?: string
+          height?: number
+          id?: string
+          length?: number
+          predefinedPackage?: string | null
+          shipmentId?: string
+          updatedAt?: string | null
+          updatedBy?: string | null
+          weight?: number
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcel_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "customFieldTables"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "parcel_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "parcel_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employeesAcrossCompanies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employeeSummary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "userDefaults"
+            referencedColumns: ["userId"]
+          },
+          {
+            foreignKeyName: "parcel_shipmentId_fkey"
+            columns: ["shipmentId"]
+            isOneToOne: false
+            referencedRelation: "shipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_updatedBy_fkey"
+            columns: ["updatedBy"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_updatedBy_fkey"
+            columns: ["updatedBy"]
+            isOneToOne: false
+            referencedRelation: "employeesAcrossCompanies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_updatedBy_fkey"
+            columns: ["updatedBy"]
+            isOneToOne: false
+            referencedRelation: "employeeSummary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_updatedBy_fkey"
+            columns: ["updatedBy"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_updatedBy_fkey"
+            columns: ["updatedBy"]
+            isOneToOne: false
+            referencedRelation: "userDefaults"
+            referencedColumns: ["userId"]
+          },
+        ]
+      }
       part: {
         Row: {
           approved: boolean
@@ -33722,7 +33924,7 @@ export type Database = {
           },
         ]
       }
-      searchIndex_d73u63o0c0lg264c6tqg: {
+      searchIndex_d742au0gqeb4g2dcj3rg: {
         Row: {
           createdAt: string
           description: string | null
@@ -34485,15 +34687,21 @@ export type Database = {
           createdBy: string
           customerId: string | null
           customFields: Json | null
+          easypostShipmentId: string | null
+          easypostTrackerId: string | null
+          estimatedDeliveryDate: string | null
           externalDocumentId: string | null
           externalNotes: Json | null
           id: string
           internalNotes: Json | null
           invoiced: boolean | null
+          labelFormat: string | null
+          labelUrl: string | null
           locationId: string | null
           opportunityId: string | null
           postedBy: string | null
           postingDate: string | null
+          selectedRate: Json | null
           shipmentId: string
           shippingMethodId: string | null
           sourceDocument:
@@ -34506,6 +34714,8 @@ export type Database = {
           supplierInteractionId: string | null
           tags: string[] | null
           trackingNumber: string | null
+          trackingStatus: string | null
+          trackingUpdatedAt: string | null
           updatedAt: string | null
           updatedBy: string | null
         }
@@ -34516,15 +34726,21 @@ export type Database = {
           createdBy: string
           customerId?: string | null
           customFields?: Json | null
+          easypostShipmentId?: string | null
+          easypostTrackerId?: string | null
+          estimatedDeliveryDate?: string | null
           externalDocumentId?: string | null
           externalNotes?: Json | null
           id?: string
           internalNotes?: Json | null
           invoiced?: boolean | null
+          labelFormat?: string | null
+          labelUrl?: string | null
           locationId?: string | null
           opportunityId?: string | null
           postedBy?: string | null
           postingDate?: string | null
+          selectedRate?: Json | null
           shipmentId: string
           shippingMethodId?: string | null
           sourceDocument?:
@@ -34537,6 +34753,8 @@ export type Database = {
           supplierInteractionId?: string | null
           tags?: string[] | null
           trackingNumber?: string | null
+          trackingStatus?: string | null
+          trackingUpdatedAt?: string | null
           updatedAt?: string | null
           updatedBy?: string | null
         }
@@ -34547,15 +34765,21 @@ export type Database = {
           createdBy?: string
           customerId?: string | null
           customFields?: Json | null
+          easypostShipmentId?: string | null
+          easypostTrackerId?: string | null
+          estimatedDeliveryDate?: string | null
           externalDocumentId?: string | null
           externalNotes?: Json | null
           id?: string
           internalNotes?: Json | null
           invoiced?: boolean | null
+          labelFormat?: string | null
+          labelUrl?: string | null
           locationId?: string | null
           opportunityId?: string | null
           postedBy?: string | null
           postingDate?: string | null
+          selectedRate?: Json | null
           shipmentId?: string
           shippingMethodId?: string | null
           sourceDocument?:
@@ -34568,6 +34792,8 @@ export type Database = {
           supplierInteractionId?: string | null
           tags?: string[] | null
           trackingNumber?: string | null
+          trackingStatus?: string | null
+          trackingUpdatedAt?: string | null
           updatedAt?: string | null
           updatedBy?: string | null
         }
@@ -35042,6 +35268,8 @@ export type Database = {
           createdAt: string
           createdBy: string
           customFields: Json | null
+          easypostCarrier: string | null
+          easypostService: string | null
           id: string
           name: string
           tags: string[] | null
@@ -35057,6 +35285,8 @@ export type Database = {
           createdAt?: string
           createdBy: string
           customFields?: Json | null
+          easypostCarrier?: string | null
+          easypostService?: string | null
           id?: string
           name: string
           tags?: string[] | null
@@ -35072,6 +35302,8 @@ export type Database = {
           createdAt?: string
           createdBy?: string
           customFields?: Json | null
+          easypostCarrier?: string | null
+          easypostService?: string | null
           id?: string
           name?: string
           tags?: string[] | null
@@ -49746,14 +49978,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["customerCountryCode"]
+            columns: ["supplierCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
           },
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["supplierCountryCode"]
+            columns: ["customerCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
@@ -52890,14 +53122,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["customerCountryCode"]
+            columns: ["shipmentCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
           },
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["shipmentCountryCode"]
+            columns: ["customerCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
@@ -58388,7 +58620,22 @@ export type Database = {
         Returns: undefined
       }
       users_for_groups: { Args: { groups: string[] }; Returns: Json }
+      uuid_generate_v1: { Args: never; Returns: string }
+      uuid_generate_v1mc: { Args: never; Returns: string }
+      uuid_generate_v3: {
+        Args: { name: string; namespace: string }
+        Returns: string
+      }
       uuid_generate_v4: { Args: never; Returns: string }
+      uuid_generate_v5: {
+        Args: { name: string; namespace: string }
+        Returns: string
+      }
+      uuid_nil: { Args: never; Returns: string }
+      uuid_ns_dns: { Args: never; Returns: string }
+      uuid_ns_oid: { Args: never; Returns: string }
+      uuid_ns_url: { Args: never; Returns: string }
+      uuid_ns_x500: { Args: never; Returns: string }
       uuid_to_base58: { Args: { _uuid: string }; Returns: string }
       xid: { Args: { _at?: string }; Returns: unknown }
       xid_counter: { Args: { _xid: unknown }; Returns: number }
@@ -58935,103 +59182,53 @@ export type Database = {
       buckets_analytics: {
         Row: {
           created_at: string
+          deleted_at: string | null
           format: string
+          id: string
+          name: string
+          type: Database["storage"]["Enums"]["buckettype"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          format?: string
+          id?: string
+          name: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          format?: string
+          id?: string
+          name?: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      buckets_vectors: {
+        Row: {
+          created_at: string
           id: string
           type: Database["storage"]["Enums"]["buckettype"]
           updated_at: string
         }
         Insert: {
           created_at?: string
-          format?: string
           id: string
           type?: Database["storage"]["Enums"]["buckettype"]
           updated_at?: string
         }
         Update: {
           created_at?: string
-          format?: string
           id?: string
           type?: Database["storage"]["Enums"]["buckettype"]
           updated_at?: string
         }
         Relationships: []
-      }
-      iceberg_namespaces: {
-        Row: {
-          bucket_id: string
-          created_at: string
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iceberg_namespaces_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_analytics"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      iceberg_tables: {
-        Row: {
-          bucket_id: string
-          created_at: string
-          id: string
-          location: string
-          name: string
-          namespace_id: string
-          updated_at: string
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string
-          id?: string
-          location: string
-          name: string
-          namespace_id: string
-          updated_at?: string
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string
-          id?: string
-          location?: string
-          name?: string
-          namespace_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iceberg_tables_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_analytics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "iceberg_tables_namespace_id_fkey"
-            columns: ["namespace_id"]
-            isOneToOne: false
-            referencedRelation: "iceberg_namespaces"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       migrations: {
         Row: {
@@ -59060,7 +59257,6 @@ export type Database = {
           created_at: string | null
           id: string
           last_accessed_at: string | null
-          level: number | null
           metadata: Json | null
           name: string | null
           owner: string | null
@@ -59075,7 +59271,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           last_accessed_at?: string | null
-          level?: number | null
           metadata?: Json | null
           name?: string | null
           owner?: string | null
@@ -59090,7 +59285,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           last_accessed_at?: string | null
-          level?: number | null
           metadata?: Json | null
           name?: string | null
           owner?: string | null
@@ -59103,38 +59297,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "objects_bucketId_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      prefixes: {
-        Row: {
-          bucket_id: string
-          created_at: string | null
-          level: number
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string | null
-          level?: number
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string | null
-          level?: number
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prefixes_bucketId_fkey"
             columns: ["bucket_id"]
             isOneToOne: false
             referencedRelation: "buckets"
@@ -59240,33 +59402,66 @@ export type Database = {
           },
         ]
       }
+      vector_indexes: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          data_type: string
+          dimension: number
+          distance_metric: string
+          id: string
+          metadata_configuration: Json | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          data_type: string
+          dimension: number
+          distance_metric: string
+          id?: string
+          metadata_configuration?: Json | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          data_type?: string
+          dimension?: number
+          distance_metric?: string
+          id?: string
+          metadata_configuration?: Json | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vector_indexes_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_vectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      add_prefixes: {
-        Args: { _bucket_id: string; _name: string }
-        Returns: undefined
-      }
       can_insert_object: {
         Args: { bucketid: string; metadata: Json; name: string; owner: string }
         Returns: undefined
       }
-      delete_leaf_prefixes: {
-        Args: { bucket_ids: string[]; names: string[] }
-        Returns: undefined
-      }
-      delete_prefix: {
-        Args: { _bucket_id: string; _name: string }
-        Returns: boolean
-      }
       extension: { Args: { name: string }; Returns: string }
       filename: { Args: { name: string }; Returns: string }
       foldername: { Args: { name: string }; Returns: string[] }
-      get_level: { Args: { name: string }; Returns: number }
-      get_prefix: { Args: { name: string }; Returns: string }
-      get_prefixes: { Args: { name: string }; Returns: string[] }
+      get_common_prefix: {
+        Args: { p_delimiter: string; p_key: string; p_prefix: string }
+        Returns: string
+      }
       get_size_by_bucket: {
         Args: never
         Returns: {
@@ -59291,23 +59486,22 @@ export type Database = {
       }
       list_objects_with_delimiter: {
         Args: {
-          bucket_id: string
+          _bucket_id: string
           delimiter_param: string
           max_keys?: number
           next_token?: string
           prefix_param: string
+          sort_order?: string
           start_after?: string
         }
         Returns: {
+          created_at: string
           id: string
+          last_accessed_at: string
           metadata: Json
           name: string
           updated_at: string
         }[]
-      }
-      lock_top_prefixes: {
-        Args: { bucket_ids: string[]; names: string[] }
-        Returns: undefined
       }
       operation: { Args: never; Returns: string }
       search: {
@@ -59330,40 +59524,21 @@ export type Database = {
           updated_at: string
         }[]
       }
-      search_legacy_v1: {
+      search_by_timestamp: {
         Args: {
-          bucketname: string
-          levels?: number
-          limits?: number
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
+          p_bucket_id: string
+          p_level: number
+          p_limit: number
+          p_prefix: string
+          p_sort_column: string
+          p_sort_column_after: string
+          p_sort_order: string
+          p_start_after: string
         }
         Returns: {
           created_at: string
           id: string
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }[]
-      }
-      search_v1_optimised: {
-        Args: {
-          bucketname: string
-          levels?: number
-          limits?: number
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
-        }
-        Returns: {
-          created_at: string
-          id: string
+          key: string
           last_accessed_at: string
           metadata: Json
           name: string
@@ -59393,7 +59568,7 @@ export type Database = {
       }
     }
     Enums: {
-      buckettype: "STANDARD" | "ANALYTICS"
+      buckettype: "STANDARD" | "ANALYTICS" | "VECTOR"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -60059,7 +60234,9 @@ export const Constants = {
   },
   storage: {
     Enums: {
-      buckettype: ["STANDARD", "ANALYTICS"],
+      buckettype: ["STANDARD", "ANALYTICS", "VECTOR"],
     },
   },
 } as const
+A new version of Supabase CLI is available: v2.84.2 (currently installed v2.54.11)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

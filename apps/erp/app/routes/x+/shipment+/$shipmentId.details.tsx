@@ -17,7 +17,8 @@ import {
 import {
   ShipmentForm,
   ShipmentLines,
-  ShipmentNotes
+  ShipmentNotes,
+  ShipmentParcels
 } from "~/modules/inventory/ui/Shipments";
 import type { Note } from "~/modules/shared";
 import { getCustomFields, setCustomFields } from "~/utils/form";
@@ -206,6 +207,8 @@ export default function ShipmentDetailsRoute() {
       />
 
       <ShipmentLines />
+
+      <ShipmentParcels />
 
       <ShipmentNotes
         key={`notes-${initialValues.id}`}

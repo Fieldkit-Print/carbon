@@ -1,3 +1,4 @@
+import { EasyPost } from "./easypost/config";
 import { ExchangeRates } from "./exchange-rates/config";
 import { Jira } from "./jira/config";
 import { Linear } from "./linear/config";
@@ -29,6 +30,7 @@ export type {
 
 export const integrations = [
   // Radan,
+  EasyPost,
   ExchangeRates,
   Jira,
   Linear,

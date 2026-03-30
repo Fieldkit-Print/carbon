@@ -38,6 +38,7 @@ import type { ItemTracking, Shipment, ShipmentLine } from "~/modules/inventory";
 import type { SalesInvoice } from "~/modules/invoicing/types";
 import SalesInvoiceStatus from "~/modules/invoicing/ui/SalesInvoice/SalesInvoiceStatus";
 import { path } from "~/utils/path";
+import RateShoppingModal from "./RateShoppingModal";
 import ShipmentPostModal from "./ShipmentPostModal";
 import ShipmentStatus from "./ShipmentStatus";
 import ShipmentVoidModal from "./ShipmentVoidModal";
@@ -62,6 +63,7 @@ const ShipmentHeader = () => {
   const postModal = useDisclosure();
   const voidModal = useDisclosure();
   const deleteModal = useDisclosure();
+  const rateShoppingModal = useDisclosure();
   const navigate = useNavigate();
   const { trigger: auditLogTrigger, drawer: auditLogDrawer } = useAuditLog({
     entityType: "shipment",
@@ -357,6 +359,15 @@ const ShipmentHeader = () => {
                 )}
               </>
             )}
+            {!isPosted && !isVoided && (
+              <Button
+                variant="secondary"
+                onClick={rateShoppingModal.onOpen}
+                leftIcon={<LuTruck />}
+              >
+                Get Rates
+              </Button>
+            )}
             <Button
               variant={
                 canPost && !isPosted && !isVoided ? "primary" : "secondary"
@@ -385,6 +396,13 @@ const ShipmentHeader = () => {
 
       {postModal.isOpen && <ShipmentPostModal onClose={postModal.onClose} />}
       {voidModal.isOpen && <ShipmentVoidModal onClose={voidModal.onClose} />}
+      {rateShoppingModal.isOpen && (
+        <RateShoppingModal
+          shipmentId={shipmentId}
+          isOpen={rateShoppingModal.isOpen}
+          onClose={rateShoppingModal.onClose}
+        />
+      )}
       {deleteModal.isOpen && (
         <ConfirmDelete
           action={path.to.deleteShipment(shipmentId)}
