@@ -32970,6 +32970,7 @@ export type Database = {
           customerLocationId: string | null
           customerReference: string | null
           customFields: Json | null
+          emailId: string | null
           employeeId: string | null
           expirationDate: string | null
           externalNotes: Json | null
@@ -32999,6 +33000,7 @@ export type Database = {
           customerLocationId?: string | null
           customerReference?: string | null
           customFields?: Json | null
+          emailId?: string | null
           employeeId?: string | null
           expirationDate?: string | null
           externalNotes?: Json | null
@@ -33028,6 +33030,7 @@ export type Database = {
           customerLocationId?: string | null
           customerReference?: string | null
           customFields?: Json | null
+          emailId?: string | null
           employeeId?: string | null
           expirationDate?: string | null
           externalNotes?: Json | null
@@ -53989,6 +53992,7 @@ export type Database = {
           customerLocationId: string | null
           customerReference: string | null
           customFields: Json | null
+          emailId: string | null
           employeeId: string | null
           expirationDate: string | null
           externalNotes: Json | null

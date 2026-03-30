@@ -1,4 +1,6 @@
+import { openai } from "@ai-sdk/openai";
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
+import { generateText } from "ai";
 import crypto from "crypto";
 import type { ActionFunctionArgs } from "react-router";
 import { z } from "zod";
@@ -76,12 +78,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   const { email_id, from, subject, attachments } = event.data;
 
-  // Idempotency: check if RFQ already exists for this email
+  // Idempotency: check if sales RFQ already exists for this email ID
   const existing = await client
-    .from("purchasingRfq")
+    .from("salesRfq")
     .select("id")
     .eq("companyId", companyId)
-    .ilike("internalNotes", `%[email:${email_id}]%`)
+    .eq("emailId", email_id)
     .maybeSingle();
 
   if (existing.data) {
@@ -90,6 +92,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   // Fetch full email content from Resend API
   let emailText = "";
+  let emailHtml = "";
   try {
     const emailResponse = await fetch(
       `https://api.resend.com/emails/${email_id}`,
@@ -100,53 +103,106 @@ export async function action({ request, params }: ActionFunctionArgs) {
     if (emailResponse.ok) {
       const emailData = await emailResponse.json();
       emailText = emailData.text || "";
+      emailHtml = emailData.html || "";
     }
   } catch {
     // Continue without email body if fetch fails
   }
 
+  // Generate AI summary of the email
+  let summary = "";
+  const emailContent = emailText || emailHtml;
+  if (emailContent) {
+    try {
+      const result = await generateText({
+        model: openai("gpt-4o-mini"),
+        prompt: `Summarize the following email into a concise RFQ summary. Extract key details like: what is being requested, quantities, materials, deadlines, and any special requirements. Keep it brief and actionable.\n\nFrom: ${from}\nSubject: ${subject}\n\n${emailContent}`,
+        temperature: 0.2
+      });
+      summary = result.text;
+    } catch {
+      summary = `From: ${from}\nSubject: ${subject}`;
+    }
+  } else {
+    summary = `From: ${from}\nSubject: ${subject}\n\n(no email body retrieved)`;
+  }
+
   // Generate RFQ sequence ID
-  const nextSequence = await getNextSequence(
-    client,
-    "purchasingRfq",
-    companyId
-  );
+  const nextSequence = await getNextSequence(client, "salesRfq", companyId);
   if (nextSequence.error) {
     return new Response("Failed to get next sequence", { status: 500 });
   }
 
   const rfqId = nextSequence.data;
-  const today = new Date().toISOString().split("T")[0];
 
-  const notesText = [
-    `From: ${from}`,
-    `Subject: ${subject}`,
-    "",
-    emailText || "(no text body)"
-  ].join("\n");
+  // Create opportunity (salesRfq requires an associated opportunity)
+  const { data: opportunity, error: oppError } = await client
+    .from("opportunity")
+    .insert({ companyId })
+    .select("id")
+    .single();
 
-  // Create RFQ
+  if (oppError || !opportunity) {
+    console.error("Failed to create opportunity:", oppError);
+    return new Response("Failed to create opportunity", { status: 500 });
+  }
+
+  // Create sales RFQ with AI summary in notes and emailId for idempotency
   const { data: rfq, error: rfqError } = await client
-    .from("purchasingRfq")
+    .from("salesRfq")
     .insert({
       rfqId,
-      rfqDate: today,
       status: "Draft",
-      notes: notesText,
-      internalNotes: `[email:${email_id}] Created from inbound email`,
+      externalNotes: summary,
+      emailId: email_id,
+      opportunityId: opportunity.id,
       companyId
     })
     .select("id")
     .single();
 
   if (rfqError || !rfq) {
-    console.error("Failed to create RFQ:", rfqError);
-    return new Response("Failed to create RFQ", { status: 500 });
+    console.error("Failed to create sales RFQ:", rfqError);
+    return new Response("Failed to create sales RFQ", { status: 500 });
   }
 
-  // Process attachments
+  // Upload the raw email chain as a file
   const uploadedFiles: string[] = [];
 
+  if (emailContent) {
+    const isHtml = !!emailHtml;
+    const emailFileName = `email-chain.${isHtml ? "html" : "txt"}`;
+    const emailFileContent = isHtml ? emailHtml : emailText;
+    const emailStoragePath = `${companyId}/sales-rfq/${rfq.id}/${emailFileName}`;
+
+    const { error: emailUploadError } = await client.storage
+      .from("private")
+      .upload(emailStoragePath, new TextEncoder().encode(emailFileContent), {
+        contentType: isHtml ? "text/html" : "text/plain",
+        upsert: true
+      });
+
+    if (!emailUploadError) {
+      const sizeKb = Math.round(
+        new TextEncoder().encode(emailFileContent).byteLength / 1024
+      );
+      await client.from("document").insert({
+        path: emailStoragePath,
+        name: emailFileName,
+        size: sizeKb || 1,
+        type: isHtml ? "html" : "txt",
+        sourceDocument: "Request for Quote",
+        sourceDocumentId: rfq.id,
+        readGroups: [],
+        writeGroups: [],
+        companyId,
+        createdBy: companyId
+      });
+      uploadedFiles.push(emailFileName);
+    }
+  }
+
+  // Process email attachments
   if (attachments?.length > 0) {
     for (const attachment of attachments) {
       try {
@@ -158,20 +214,39 @@ export async function action({ request, params }: ActionFunctionArgs) {
           }
         );
 
-        if (!attResponse.ok) continue;
+        if (!attResponse.ok) {
+          console.error(
+            `Failed to fetch attachment metadata for ${attachment.id}:`,
+            attResponse.status,
+            await attResponse.text()
+          );
+          continue;
+        }
 
         const attData = await attResponse.json();
-        if (!attData.download_url) continue;
+        if (!attData.download_url) {
+          console.error(
+            `No download_url for attachment ${attachment.id}:`,
+            attData
+          );
+          continue;
+        }
 
         // Download the file content
         const fileResponse = await fetch(attData.download_url);
-        if (!fileResponse.ok) continue;
+        if (!fileResponse.ok) {
+          console.error(
+            `Failed to download attachment ${attachment.id}:`,
+            fileResponse.status
+          );
+          continue;
+        }
 
         const fileBuffer = await fileResponse.arrayBuffer();
         const fileName = attachment.filename || `attachment-${attachment.id}`;
 
         // Upload to Supabase storage
-        const storagePath = `${companyId}/purchasing-rfq/${rfq.id}/${fileName}`;
+        const storagePath = `${companyId}/sales-rfq/${rfq.id}/${fileName}`;
         const { error: uploadError } = await client.storage
           .from("private")
           .upload(storagePath, fileBuffer, {
@@ -189,9 +264,9 @@ export async function action({ request, params }: ActionFunctionArgs) {
         await client.from("document").insert({
           path: storagePath,
           name: fileName,
-          size: Math.round(fileBuffer.byteLength / 1024),
+          size: Math.round(fileBuffer.byteLength / 1024) || 1,
           type: fileExtension,
-          sourceDocument: "Purchasing Request for Quote",
+          sourceDocument: "Request for Quote",
           sourceDocumentId: rfq.id,
           readGroups: [],
           writeGroups: [],
