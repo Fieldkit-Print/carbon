@@ -1,4 +1,4 @@
-import { assertIsPost } from "@carbon/auth";
+import { assertIsPost, getAppUrl } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { SalesInvoiceEmail } from "@carbon/documents/email";
@@ -211,7 +211,6 @@ export async function action(args: ActionFunctionArgs) {
     }
 
     if (externalLink.data) {
-      const { getAppUrl } = await import("@carbon/auth");
       digitalInvoiceUrl = `${getAppUrl()}/share/invoice/${externalLink.data.id}`;
     }
   } catch {
