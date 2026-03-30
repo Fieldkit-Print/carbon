@@ -714,7 +714,7 @@ export async function getSalesInvoiceByExternalId(
   externalLinkId: string
 ) {
   return client
-    .from("salesInvoices")
+    .from("salesInvoice")
     .select("*")
     .eq("externalLinkId", externalLinkId)
     .single();
