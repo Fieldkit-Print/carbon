@@ -3,6 +3,10 @@ import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { isPdfFile } from "@carbon/utils";
 
 import { task } from "@trigger.dev/sdk";
+import { execFile } from "child_process";
+import { promises as fs } from "fs";
+import os from "os";
+import path from "path";
 
 const isLocal = VERCEL_URL === undefined || VERCEL_URL.includes("localhost");
 
@@ -14,7 +18,7 @@ const getModelUrl = (modelId: string) => {
 async function generatePdfThumbnail(
   client: ReturnType<typeof getCarbonServiceRole>,
   modelPath: string,
-): Promise<Uint8Array> {
+): Promise<Buffer> {
   const { data: fileData, error: downloadError } = await client.storage
     .from("private")
     .download(modelPath);
@@ -24,16 +28,28 @@ async function generatePdfThumbnail(
   }
 
   const pdfBuffer = Buffer.from(await fileData.arrayBuffer());
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "pdf-thumb-"));
+  const inputPath = path.join(tmpDir, "input.pdf");
+  const outputPrefix = path.join(tmpDir, "output");
 
-  const { pdf } = await import("pdf-to-img");
-  const pages = await pdf(pdfBuffer, { scale: 2 });
+  try {
+    await fs.writeFile(inputPath, pdfBuffer);
 
-  // Render only the first page
-  for await (const page of pages) {
-    return page;
+    await new Promise<void>((resolve, reject) => {
+      execFile(
+        "pdftoppm",
+        ["-png", "-f", "1", "-l", "1", "-singlefile", "-r", "300", inputPath, outputPrefix],
+        (error) => {
+          if (error) reject(new Error(`pdftoppm failed: ${error.message}`));
+          else resolve();
+        },
+      );
+    });
+
+    return await fs.readFile(`${outputPrefix}.png`);
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
   }
-
-  throw new Error("PDF has no pages");
 }
 
 export const modelThumbnailTask = task({

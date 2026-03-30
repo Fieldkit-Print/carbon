@@ -22,14 +22,9 @@ export default defineConfig({
   dirs: ["./trigger"],
   build: {
     extensions: [
-      // Required by pdf-to-img's canvas dependency for PDF thumbnail rendering
       aptGet({
         packages: [
-          "libcairo2-dev",
-          "libpango1.0-dev",
-          "libjpeg-dev",
-          "libgif-dev",
-          "librsvg2-dev",
+          "poppler-utils",
         ],
       }),
     ],
