@@ -81,7 +81,8 @@ export const locationValidator = z
     countryCode: z.string().min(1, { message: "Country is required" }),
     timezone: z.string().min(1, { message: "Timezone is required" }),
     latitude: zfd.numeric(z.number().optional()),
-    longitude: zfd.numeric(z.number().optional())
+    longitude: zfd.numeric(z.number().optional()),
+    ignoreRelease: zfd.checkbox()
   })
   .superRefine(({ latitude, longitude }, ctx) => {
     if ((latitude && !longitude) || (!latitude && longitude)) {

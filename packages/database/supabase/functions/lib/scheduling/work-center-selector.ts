@@ -10,16 +10,16 @@ import type { ScheduledOperation, WorkCenterLoad, WorkCenterSelection } from "./
 export class WorkCenterSelector {
   private db: Kysely<DB>;
   private companyId: string;
-  private locationId: string;
+  private locationIds: string[];
   private workCentersByProcess: Map<string, string[]> = new Map();
   private activeWorkCenters: Set<string> = new Set();
   // Track in-memory load from operations assigned in current scheduling run
   private inMemoryLoadByWorkCenter: Map<string, number> = new Map();
 
-  constructor(db: Kysely<DB>, companyId: string, locationId: string) {
+  constructor(db: Kysely<DB>, companyId: string, locationIds: string[]) {
     this.db = db;
     this.companyId = companyId;
-    this.locationId = locationId;
+    this.locationIds = locationIds;
   }
 
   /**
@@ -55,11 +55,11 @@ export class WorkCenterSelector {
       .where("companyId", "=", this.companyId)
       .execute();
 
-    // Get active work centers at this location
+    // Get active work centers at any of the relevant locations
     const workCenters = await this.db
       .selectFrom("workCenter")
       .select(["id", "locationId"])
-      .where("locationId", "=", this.locationId)
+      .where("locationId", "in", this.locationIds)
       .where("companyId", "=", this.companyId)
       .where("active", "=", true)
       .execute();

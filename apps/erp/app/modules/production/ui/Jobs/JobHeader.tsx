@@ -146,7 +146,7 @@ const JobHeader = () => {
       {
         status: "Planned"
       },
-      { method: "post", action: path.to.jobStatus(jobId) }
+      { method: "post", action: `${path.to.jobStatus(jobId)}?schedule=1` }
     );
   };
 

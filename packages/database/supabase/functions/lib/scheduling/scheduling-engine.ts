@@ -98,16 +98,6 @@ export class SchedulingEngine {
 
     this.job = job;
 
-    // Initialize work center selector with location
-    if (job.locationId) {
-      this.workCenterSelector = new WorkCenterSelector(
-        this.db,
-        this.companyId,
-        job.locationId
-      );
-      await this.workCenterSelector.initialize();
-    }
-
     // Load operations
     this.operations = (await this.db
       .selectFrom("jobOperation")
@@ -116,6 +106,38 @@ export class SchedulingEngine {
       .where("status", "not in", ["Done", "Canceled"])
       .orderBy("order")
       .execute()) as BaseOperation[];
+
+    // Collect all relevant locations: job location + locations from operations' work centers
+    const operationWorkCenterIds = this.operations
+      .map((op) => op.workCenterId)
+      .filter(Boolean) as string[];
+
+    const workCenterLocations =
+      operationWorkCenterIds.length > 0
+        ? await this.db
+            .selectFrom("workCenter")
+            .select("locationId")
+            .where("id", "in", operationWorkCenterIds)
+            .where("locationId", "is not", null)
+            .execute()
+        : [];
+
+    const locationIds = [
+      ...(job.locationId ? [job.locationId] : []),
+      ...workCenterLocations
+        .map((wc) => wc.locationId!)
+        .filter(Boolean),
+    ].filter((v, i, a) => a.indexOf(v) === i); // dedupe
+
+    // Initialize work center selector with all relevant locations
+    if (locationIds.length > 0) {
+      this.workCenterSelector = new WorkCenterSelector(
+        this.db,
+        this.companyId,
+        locationIds
+      );
+      await this.workCenterSelector.initialize();
+    }
 
     // Load existing dependencies (for reschedule mode)
     if (this.mode === "reschedule") {
