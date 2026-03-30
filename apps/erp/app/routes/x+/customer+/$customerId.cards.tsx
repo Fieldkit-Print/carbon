@@ -128,13 +128,23 @@ export async function action({ request, params }: ActionFunctionArgs) {
         userId
       });
 
-      // Create external link for add-card page
-      const externalLink = await upsertExternalLink(serviceRole, {
-        documentType: "PaymentMethod",
-        documentId: customerId,
-        customerId,
-        companyId
-      });
+      // Find or create external link for add-card page
+      const existingLink = await serviceRole
+        .from("externalLink")
+        .select("id")
+        .eq("documentId", customerId)
+        .eq("documentType", "PaymentMethod")
+        .eq("companyId", companyId)
+        .maybeSingle();
+
+      const externalLink = existingLink.data
+        ? existingLink
+        : await upsertExternalLink(serviceRole, {
+            documentType: "PaymentMethod",
+            documentId: customerId,
+            customerId,
+            companyId
+          });
 
       if (!externalLink.data) {
         throw redirect(
