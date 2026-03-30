@@ -17,6 +17,7 @@
     "./slack/messages": "./src/slack/lib/messages.ts",
     "./hooks.server": "./src/hooks.server.ts",
     "./xero": "./src/accounting/providers/xero.ts",
+    "./quickbooks/hooks.server": "./src/quickbooks/hooks.server.ts",
     "./xero/hooks.server": "./src/xero/hooks.server.ts"
   },
   "jest": {

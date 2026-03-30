@@ -6,7 +6,7 @@ import { defineIntegration } from "../fns";
 export const QuickBooks = defineIntegration({
   name: "QuickBooks",
   id: "quickbooks",
-  active: false,
+  active: true,
   category: "Accounting",
   logo: Logo,
   description:

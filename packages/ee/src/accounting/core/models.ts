@@ -11,8 +11,8 @@ function withNullable<T extends z.ZodTypeAny>(schema: T) {
 }
 
 export enum ProviderID {
-  XERO = "xero"
-  // QUICKBOOKS = "quickbooks"
+  XERO = "xero",
+  QUICKBOOKS = "quickbooks"
   // SAGE = "sage",
 }
 

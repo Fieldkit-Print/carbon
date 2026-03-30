@@ -1,5 +1,10 @@
 import { jiraHealthcheck } from "./jira/hooks.server";
 import { linearHealthcheck } from "./linear/hooks.server";
+import {
+  quickbooksHealthcheck,
+  quickbooksOnInstall,
+  quickbooksOnUninstall
+} from "./quickbooks/hooks.server";
 import type { IntegrationServerHooks } from "./types";
 import {
   xeroHealthcheck,
@@ -21,6 +26,11 @@ const serverHooks: Record<string, IntegrationServerHooks> = {
   },
   linear: {
     onHealthcheck: linearHealthcheck
+  },
+  quickbooks: {
+    onHealthcheck: quickbooksHealthcheck,
+    onInstall: quickbooksOnInstall,
+    onUninstall: quickbooksOnUninstall
   },
   xero: {
     onHealthcheck: xeroHealthcheck,

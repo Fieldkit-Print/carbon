@@ -1,5 +1,6 @@
 import type { Database } from "@carbon/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { QuickBooksProvider } from "../providers/quickbooks/provider";
 import { XeroProvider } from "../providers/xero";
 import type { ProviderID } from "./models";
 import {
@@ -88,20 +89,28 @@ export const getProviderIntegration = (
   };
 
   switch (provider) {
-    // case "quickbooks": {
-    //   const environment = process.env.QUICKBOOKS_ENVIRONMENT as
-    //     | "production"
-    //     | "sandbox";
-    //   return new QuickBooksProvider({
-    //     companyId,
-    //     tenantId,
-    //     environment: environment || "sandbox",
-    //     clientId: process.env.QUICKBOOKS_CLIENT_ID!,
-    //     clientSecret: process.env.QUICKBOOKS_CLIENT_SECRET!,
-    //     redirectUri: process.env.QUICKBOOKS_REDIRECT_URI,
-    //     onTokenRefresh
-    //   });
-    // }
+    case "quickbooks": {
+      const environment =
+        (process.env.QUICKBOOKS_ENVIRONMENT as "production" | "sandbox") ||
+        "sandbox";
+      const settings = {
+        defaultSalesAccountCode: config?.defaultSalesAccountCode,
+        defaultPurchaseAccountCode: config?.defaultPurchaseAccountCode
+      };
+      return new QuickBooksProvider({
+        companyId,
+        tenantId,
+        environment,
+        accessToken,
+        refreshToken,
+        clientId: process.env.QUICKBOOKS_CLIENT_ID!,
+        clientSecret: process.env.QUICKBOOKS_CLIENT_SECRET!,
+        redirectUri: process.env.QUICKBOOKS_REDIRECT_URI,
+        syncConfig,
+        onTokenRefresh,
+        settings
+      });
+    }
     case "xero": {
       const settings = {
         defaultSalesAccountCode: config?.defaultSalesAccountCode,
