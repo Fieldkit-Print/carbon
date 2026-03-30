@@ -32,6 +32,7 @@ import {
   LuCreditCard,
   LuDollarSign,
   LuEllipsisVertical,
+  LuExternalLink,
   LuEye,
   LuFile,
   LuPanelLeft,
@@ -295,6 +296,20 @@ const SalesInvoiceHeader = () => {
                     PDF
                   </a>
                 </DropdownMenuItem>
+                {salesInvoice.externalLinkId && (
+                  <DropdownMenuItem asChild>
+                    <a
+                      target="_blank"
+                      href={path.to.externalInvoice(
+                        salesInvoice.externalLinkId
+                      )}
+                      rel="noreferrer"
+                    >
+                      <DropdownMenuIcon icon={<LuExternalLink />} />
+                      Digital Invoice
+                    </a>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
             <Button
