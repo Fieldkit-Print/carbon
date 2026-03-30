@@ -76,7 +76,17 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return Response.json({ success: true, message: "Ignored event type" });
   }
 
-  const { email_id, from, subject, attachments } = event.data;
+  const { email_id, from, subject, attachments, text, html } = event.data;
+
+  // Log full payload keys for debugging
+  console.log(
+    "Resend inbound webhook data keys:",
+    Object.keys(event.data),
+    "has text:",
+    !!text,
+    "has html:",
+    !!html
+  );
 
   // Idempotency: check if sales RFQ already exists for this email ID
   const existing = await client
@@ -90,23 +100,26 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return Response.json({ success: true, message: "Already processed" });
   }
 
-  // Fetch full email content from Resend API
-  let emailText = "";
-  let emailHtml = "";
-  try {
-    const emailResponse = await fetch(
-      `https://api.resend.com/emails/${email_id}`,
-      {
-        headers: { Authorization: `Bearer ${apiKey}` }
+  // Get email content — prefer inline webhook data, fall back to API
+  let emailText: string = text || "";
+  let emailHtml: string = html || "";
+
+  if (!emailText && !emailHtml) {
+    try {
+      const emailResponse = await fetch(
+        `https://api.resend.com/emails/${email_id}`,
+        {
+          headers: { Authorization: `Bearer ${apiKey}` }
+        }
+      );
+      if (emailResponse.ok) {
+        const emailData = await emailResponse.json();
+        emailText = emailData.text || "";
+        emailHtml = emailData.html || "";
       }
-    );
-    if (emailResponse.ok) {
-      const emailData = await emailResponse.json();
-      emailText = emailData.text || "";
-      emailHtml = emailData.html || "";
+    } catch {
+      // Continue without email body if fetch fails
     }
-  } catch {
-    // Continue without email body if fetch fails
   }
 
   // Generate AI summary of the email
@@ -153,7 +166,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     .insert({
       rfqId,
       status: "Draft",
-      externalNotes: summary,
+      internalNotes: summary,
       emailId: email_id,
       opportunityId: opportunity.id,
       companyId
