@@ -18,6 +18,7 @@ import {
 } from "~/modules/invoicing";
 import { getCustomerContact, salesConfirmValidator } from "~/modules/sales";
 import { getCompany } from "~/modules/settings";
+import { upsertExternalLink } from "~/modules/shared";
 import { getUser } from "~/modules/users/users.server";
 import { loader as pdfLoader } from "~/routes/file+/sales-invoice+/$id[.]pdf";
 import { stripSpecialCharacters } from "~/utils/string";
@@ -185,6 +186,38 @@ export async function action(args: ActionFunctionArgs) {
     };
   }
 
+  // Create or update external link for digital invoice
+  let digitalInvoiceUrl: string | undefined;
+  try {
+    const externalLink = await upsertExternalLink(serviceRole, {
+      id: salesInvoice.data.externalLinkId ?? undefined,
+      documentType: "SalesInvoice",
+      documentId: invoiceId,
+      customerId: salesInvoice.data.customerId,
+      expiresAt: salesInvoice.data.dateDue
+        ? new Date(salesInvoice.data.dateDue).toISOString()
+        : undefined,
+      companyId
+    });
+
+    if (
+      externalLink.data &&
+      salesInvoice.data.externalLinkId !== externalLink.data.id
+    ) {
+      await serviceRole
+        .from("salesInvoice")
+        .update({ externalLinkId: externalLink.data.id })
+        .eq("id", invoiceId);
+    }
+
+    if (externalLink.data) {
+      const { getAppUrl } = await import("@carbon/auth");
+      digitalInvoiceUrl = `${getAppUrl()}/share/invoice/${externalLink.data.id}`;
+    }
+  } catch {
+    // Non-fatal: invoice still posts even if external link fails
+  }
+
   const validation = await validator(salesConfirmValidator).validate(
     await request.formData()
   );
@@ -278,6 +311,7 @@ export async function action(args: ActionFunctionArgs) {
           salesInvoiceLines: salesInvoiceLines.data ?? [],
           salesInvoiceLocations: salesInvoiceLocations.data,
           salesInvoiceShipment: salesInvoiceShipment.data,
+          digitalInvoiceUrl,
           recipient: {
             email: customer.data.contact.email,
             firstName: customer.data.contact.firstName ?? undefined,

@@ -708,3 +708,90 @@ export async function upsertSalesInvoiceLine(
     .select("id")
     .single();
 }
+
+export async function getSalesInvoiceByExternalId(
+  client: SupabaseClient<Database>,
+  externalLinkId: string
+) {
+  return client
+    .from("salesInvoices")
+    .select("*")
+    .eq("externalLinkId", externalLinkId)
+    .single();
+}
+
+export async function getInvoicePayments(
+  client: SupabaseClient<Database>,
+  invoiceId: string
+) {
+  return client
+    .from("invoicePayment")
+    .select("*")
+    .eq("invoiceId", invoiceId)
+    .order("createdAt", { ascending: false });
+}
+
+export async function recordInvoicePayment(
+  client: SupabaseClient<Database>,
+  params: {
+    invoiceId: string;
+    amount: number;
+    currency: string;
+    stripePaymentIntentId: string;
+    stripeCheckoutSessionId?: string;
+    paidByEmail?: string;
+    companyId: string;
+  }
+) {
+  const payment = await client
+    .from("invoicePayment")
+    .insert({
+      invoiceId: params.invoiceId,
+      amount: params.amount,
+      currency: params.currency,
+      stripePaymentIntentId: params.stripePaymentIntentId,
+      stripeCheckoutSessionId: params.stripeCheckoutSessionId ?? null,
+      paidByEmail: params.paidByEmail ?? null,
+      status: "succeeded",
+      paidAt: new Date().toISOString(),
+      companyId: params.companyId
+    })
+    .select("id")
+    .single();
+
+  if (payment.error) return payment;
+
+  // Get current invoice balance
+  const invoice = await client
+    .from("salesInvoice")
+    .select("balance, totalAmount")
+    .eq("id", params.invoiceId)
+    .single();
+
+  if (invoice.error) return invoice;
+
+  const newBalance = Math.max(0, (invoice.data.balance ?? 0) - params.amount);
+  const status = newBalance <= 0 ? "Paid" : "Partially Paid";
+
+  return client
+    .from("salesInvoice")
+    .update({
+      balance: newBalance,
+      status,
+      datePaid: newBalance <= 0 ? new Date().toISOString().split("T")[0] : null
+    })
+    .eq("id", params.invoiceId);
+}
+
+export async function getCustomerStripeAccount(
+  client: SupabaseClient<Database>,
+  customerId: string,
+  companyId: string
+) {
+  return client
+    .from("customerStripeAccount")
+    .select("stripeCustomerId")
+    .eq("customerId", customerId)
+    .eq("companyId", companyId)
+    .maybeSingle();
+}

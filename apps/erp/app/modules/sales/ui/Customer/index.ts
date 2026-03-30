@@ -1,3 +1,4 @@
+import CustomerCardsOnFile from "./CustomerCardsOnFile";
 import CustomerContactForm from "./CustomerContactForm";
 import CustomerContacts from "./CustomerContacts";
 import CustomerForm from "./CustomerForm";
@@ -9,6 +10,7 @@ import CustomerShippingForm from "./CustomerShippingForm";
 import CustomerSidebar from "./CustomerSidebar";
 
 export {
+  CustomerCardsOnFile,
   CustomerContactForm,
   CustomerContacts,
   CustomerForm,

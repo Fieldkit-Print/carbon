@@ -2,6 +2,7 @@ import type { Database } from "@carbon/database";
 import { formatCityStatePostalCode } from "@carbon/utils";
 import {
   Body,
+  Button,
   Column,
   Container,
   Hr,
@@ -31,6 +32,7 @@ interface SalesInvoiceEmailProps extends Email {
   salesInvoiceLocations: Database["public"]["Views"]["salesInvoiceLocations"]["Row"];
   salesInvoiceShipment: Database["public"]["Tables"]["salesInvoiceShipment"]["Row"];
   paymentTerms: { id: string; name: string }[];
+  digitalInvoiceUrl?: string;
 }
 
 const SalesInvoiceEmail = ({
@@ -42,7 +44,8 @@ const SalesInvoiceEmail = ({
   salesInvoiceShipment,
   recipient,
   sender,
-  paymentTerms
+  paymentTerms,
+  digitalInvoiceUrl
 }: SalesInvoiceEmailProps) => {
   const {
     invoiceCustomerName,
@@ -282,7 +285,29 @@ const SalesInvoiceEmail = ({
               </Column>
             </Row>
           </Section>
-          <Hr className="mb-20" />
+          {digitalInvoiceUrl && (
+            <>
+              <Section className="text-center my-8">
+                <Button
+                  href={digitalInvoiceUrl}
+                  className="bg-blue-600 text-white font-semibold px-8 py-3 rounded-md text-sm no-underline"
+                  style={{
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    padding: "12px 32px",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    textDecoration: "none"
+                  }}
+                >
+                  View &amp; Pay Invoice
+                </Button>
+              </Section>
+              <Hr className="mb-8" />
+            </>
+          )}
+          {!digitalInvoiceUrl && <Hr className="mb-20" />}
           <Section>
             <Row>
               <Column className="text-center">

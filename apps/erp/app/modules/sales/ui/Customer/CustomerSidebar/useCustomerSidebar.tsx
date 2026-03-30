@@ -4,7 +4,8 @@ import {
   LuCreditCard,
   LuMapPin,
   LuShieldAlert,
-  LuTruck
+  LuTruck,
+  LuWallet
 } from "react-icons/lu";
 import {
   RiProgress2Line,
@@ -54,6 +55,12 @@ export function useCustomerSidebar({ contacts, locations }: Props) {
       role: ["employee"],
       icon: <LuCreditCard />,
       shortcut: "Command+Shift+p"
+    },
+    {
+      name: "Cards on File",
+      to: path.to.customerCards(customerId),
+      role: ["employee"],
+      icon: <LuWallet />
     },
     {
       name: "Shipping",

@@ -23,7 +23,8 @@
     "zod": "^3.25.76"
   },
   "exports": {
-    "./stripe.server": "./src/stripe.server.ts"
+    "./stripe.server": "./src/stripe.server.ts",
+    "./invoice-payments.server": "./src/invoice-payments.server.ts"
   },
   "private": true,
   "scripts": {

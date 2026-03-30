@@ -5448,6 +5448,121 @@ export type Database = {
           },
         ]
       }
+      customerStripeAccount: {
+        Row: {
+          companyId: string
+          createdAt: string
+          createdBy: string
+          customerId: string
+          id: string
+          stripeCustomerId: string
+          updatedAt: string | null
+        }
+        Insert: {
+          companyId: string
+          createdAt?: string
+          createdBy: string
+          customerId: string
+          id?: string
+          stripeCustomerId: string
+          updatedAt?: string | null
+        }
+        Update: {
+          companyId?: string
+          createdAt?: string
+          createdBy?: string
+          customerId?: string
+          id?: string
+          stripeCustomerId?: string
+          updatedAt?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customerStripeAccount_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "customFieldTables"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employeesAcrossCompanies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employeeSummary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "userDefaults"
+            referencedColumns: ["userId"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerStripeAccount_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "salesOrderCustomers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customerType: {
         Row: {
           companyId: string
@@ -9086,6 +9201,98 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "userDefaults"
             referencedColumns: ["userId"]
+          },
+        ]
+      }
+      invoicePayment: {
+        Row: {
+          amount: number
+          companyId: string
+          createdAt: string
+          currency: string
+          id: string
+          invoiceId: string
+          paidAt: string | null
+          paidByEmail: string | null
+          status: string
+          stripeCheckoutSessionId: string | null
+          stripePaymentIntentId: string | null
+        }
+        Insert: {
+          amount: number
+          companyId: string
+          createdAt?: string
+          currency?: string
+          id?: string
+          invoiceId: string
+          paidAt?: string | null
+          paidByEmail?: string | null
+          status?: string
+          stripeCheckoutSessionId?: string | null
+          stripePaymentIntentId?: string | null
+        }
+        Update: {
+          amount?: number
+          companyId?: string
+          createdAt?: string
+          currency?: string
+          id?: string
+          invoiceId?: string
+          paidAt?: string | null
+          paidByEmail?: string | null
+          status?: string
+          stripeCheckoutSessionId?: string | null
+          stripePaymentIntentId?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoicePayment_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoicePayment_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoicePayment_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "customFieldTables"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "invoicePayment_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "invoicePayment_invoiceId_fkey"
+            columns: ["invoiceId"]
+            isOneToOne: false
+            referencedRelation: "salesInvoice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoicePayment_invoiceId_fkey"
+            columns: ["invoiceId"]
+            isOneToOne: false
+            referencedRelation: "salesInvoiceLocations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoicePayment_invoiceId_fkey"
+            columns: ["invoiceId"]
+            isOneToOne: false
+            referencedRelation: "salesInvoices"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -23573,6 +23780,152 @@ export type Database = {
           },
         ]
       }
+      proofApproval: {
+        Row: {
+          companyId: string
+          createdAt: string
+          decidedAt: string | null
+          decidedBy: string | null
+          decidedByEmail: string | null
+          decisionNotes: string | null
+          externalLinkId: string | null
+          id: string
+          jobId: string
+          modelUploadId: string | null
+          requestedAt: string
+          requestedBy: string
+          status: Database["public"]["Enums"]["proofApprovalStatus"]
+          updatedAt: string
+          version: number
+        }
+        Insert: {
+          companyId: string
+          createdAt?: string
+          decidedAt?: string | null
+          decidedBy?: string | null
+          decidedByEmail?: string | null
+          decisionNotes?: string | null
+          externalLinkId?: string | null
+          id?: string
+          jobId: string
+          modelUploadId?: string | null
+          requestedAt?: string
+          requestedBy: string
+          status?: Database["public"]["Enums"]["proofApprovalStatus"]
+          updatedAt?: string
+          version?: number
+        }
+        Update: {
+          companyId?: string
+          createdAt?: string
+          decidedAt?: string | null
+          decidedBy?: string | null
+          decidedByEmail?: string | null
+          decisionNotes?: string | null
+          externalLinkId?: string | null
+          id?: string
+          jobId?: string
+          modelUploadId?: string | null
+          requestedAt?: string
+          requestedBy?: string
+          status?: Database["public"]["Enums"]["proofApprovalStatus"]
+          updatedAt?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proofApproval_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofApproval_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofApproval_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "customFieldTables"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "proofApproval_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "proofApproval_externalLinkId_fkey"
+            columns: ["externalLinkId"]
+            isOneToOne: false
+            referencedRelation: "externalLink"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofApproval_jobId_fkey"
+            columns: ["jobId"]
+            isOneToOne: false
+            referencedRelation: "job"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofApproval_jobId_fkey"
+            columns: ["jobId"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofApproval_jobId_fkey"
+            columns: ["jobId"]
+            isOneToOne: false
+            referencedRelation: "openProductionOrders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofApproval_requestedBy_fkey"
+            columns: ["requestedBy"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofApproval_requestedBy_fkey"
+            columns: ["requestedBy"]
+            isOneToOne: false
+            referencedRelation: "employeesAcrossCompanies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofApproval_requestedBy_fkey"
+            columns: ["requestedBy"]
+            isOneToOne: false
+            referencedRelation: "employeeSummary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofApproval_requestedBy_fkey"
+            columns: ["requestedBy"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proofApproval_requestedBy_fkey"
+            columns: ["requestedBy"]
+            isOneToOne: false
+            referencedRelation: "userDefaults"
+            referencedColumns: ["userId"]
+          },
+        ]
+      }
       purchaseInvoice: {
         Row: {
           assignee: string | null
@@ -30539,6 +30892,7 @@ export type Database = {
           datePaid: string | null
           exchangeRate: number
           exchangeRateUpdatedAt: string | null
+          externalLinkId: string | null
           externalNotes: Json
           id: string
           internalNotes: Json
@@ -30575,6 +30929,7 @@ export type Database = {
           datePaid?: string | null
           exchangeRate?: number
           exchangeRateUpdatedAt?: string | null
+          externalLinkId?: string | null
           externalNotes?: Json
           id?: string
           internalNotes?: Json
@@ -30611,6 +30966,7 @@ export type Database = {
           datePaid?: string | null
           exchangeRate?: number
           exchangeRateUpdatedAt?: string | null
+          externalLinkId?: string | null
           externalNotes?: Json
           id?: string
           internalNotes?: Json
@@ -30722,6 +31078,13 @@ export type Database = {
             columns: ["customerId"]
             isOneToOne: false
             referencedRelation: "salesOrderCustomers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salesInvoice_externalLinkId_fkey"
+            columns: ["externalLinkId"]
+            isOneToOne: false
+            referencedRelation: "externalLink"
             referencedColumns: ["id"]
           },
           {
@@ -58122,6 +58485,9 @@ export type Database = {
         | "SupplierQuote"
         | "Customer"
         | "Non-Conformance Supplier"
+        | "ProofApproval"
+        | "SalesInvoice"
+        | "PaymentMethod"
       factor:
         | "Hours/Piece"
         | "Hours/100 Pieces"
@@ -58236,6 +58602,7 @@ export type Database = {
         | "Overdue"
         | "Due Today"
         | "Planned"
+        | "Awaiting Proof Approval"
       journalLineDocumentType:
         | "Receipt"
         | "Invoice"
@@ -58342,6 +58709,7 @@ export type Database = {
       processType: "Inside" | "Outside" | "Inside and Outside"
       productionEventType: "Setup" | "Labor" | "Machine"
       productionQuantityType: "Rework" | "Scrap" | "Production"
+      proofApprovalStatus: "Pending" | "Approved" | "Rejected" | "Superseded"
       purchaseInvoiceStatus:
         | "Draft"
         | "Pending"
@@ -59249,6 +59617,9 @@ export const Constants = {
         "SupplierQuote",
         "Customer",
         "Non-Conformance Supplier",
+        "ProofApproval",
+        "SalesInvoice",
+        "PaymentMethod",
       ],
       factor: [
         "Hours/Piece",
@@ -59373,6 +59744,7 @@ export const Constants = {
         "Overdue",
         "Due Today",
         "Planned",
+        "Awaiting Proof Approval",
       ],
       journalLineDocumentType: [
         "Receipt",
@@ -59491,6 +59863,7 @@ export const Constants = {
       processType: ["Inside", "Outside", "Inside and Outside"],
       productionEventType: ["Setup", "Labor", "Machine"],
       productionQuantityType: ["Rework", "Scrap", "Production"],
+      proofApprovalStatus: ["Pending", "Approved", "Rejected", "Superseded"],
       purchaseInvoiceStatus: [
         "Draft",
         "Pending",
