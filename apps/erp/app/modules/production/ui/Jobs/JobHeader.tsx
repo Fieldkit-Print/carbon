@@ -131,6 +131,8 @@ const JobHeader = () => {
       return "events";
     if (location.pathname.includes(path.to.jobProductionQuantities(jobId)))
       return "quantities";
+    if (location.pathname.includes(path.to.jobProofApprovals(jobId)))
+      return "proofs";
     return "details";
   };
 
@@ -257,7 +259,7 @@ const JobHeader = () => {
                   </DropdownMenuRadioItem>
                 ))}
                 <DropdownMenuSeparator />
-                {["events", "quantities", "step-records"].map((i) => (
+                {["events", "quantities", "step-records", "proofs"].map((i) => (
                   <DropdownMenuRadioItem value={i} key={i}>
                     <DropdownMenuIcon icon={getExplorerMenuIcon(i)} />
                     {getExplorerLabel(i)}
@@ -356,9 +358,7 @@ const JobHeader = () => {
               statusFetcher.formData?.get("status") === "Ready"
             }
             isDisabled={
-              !["Draft", "Planned", "Awaiting Proof Approval"].includes(
-                status ?? ""
-              ) ||
+              !["Draft", "Planned"].includes(status ?? "") ||
               statusFetcher.state !== "idle" ||
               !permissions.can("update", "production") ||
               (routeData?.job?.quantity === 0 &&
@@ -502,6 +502,8 @@ function getExplorerLabel(type: string) {
       return "Production Events";
     case "quantities":
       return "Production Quantities";
+    case "proofs":
+      return "Proof Approvals";
     default:
       return "Job";
   }
@@ -519,6 +521,8 @@ function getExplorerMenuIcon(type: string) {
       return <LuClock />;
     case "quantities":
       return <LuSquareSigma />;
+    case "proofs":
+      return <LuCheckCheck />;
     default:
       return <LuCirclePlay />;
   }
@@ -536,6 +540,8 @@ const getExplorePath = (jobId: string, type: string) => {
       return path.to.jobProductionEvents(jobId);
     case "quantities":
       return path.to.jobProductionQuantities(jobId);
+    case "proofs":
+      return path.to.jobProofApprovals(jobId);
     default:
       return path.to.jobDetails(jobId);
   }
