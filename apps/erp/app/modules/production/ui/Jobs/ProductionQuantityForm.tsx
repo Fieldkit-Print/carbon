@@ -14,7 +14,7 @@ import {
   VStack
 } from "@carbon/react";
 import { useState } from "react";
-import { LuAlertTriangle } from "react-icons/lu";
+import { LuTriangleAlert } from "react-icons/lu";
 import { useNavigate } from "react-router";
 import type { z } from "zod";
 import {
@@ -94,7 +94,7 @@ const ProductionQuantityForm = ({
             <VStack spacing={4}>
               {warnings.length > 0 && (
                 <Alert className="border-amber-500/30 bg-gradient-to-tr from-amber-500/10 via-card to-card text-amber-600 [&>svg]:text-amber-600 dark:text-amber-400 dark:[&>svg]:text-amber-400">
-                  <LuAlertTriangle className="h-4 w-4" />
+                  <LuTriangleAlert className="h-4 w-4" />
                   <AlertTitle>Warning</AlertTitle>
                   <AlertDescription>
                     {warnings.map((w) => (
