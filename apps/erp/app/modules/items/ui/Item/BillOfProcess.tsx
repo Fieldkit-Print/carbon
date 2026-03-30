@@ -197,7 +197,8 @@ const initialOperation: Omit<
   workInstruction: {},
   operationMinimumCost: 0,
   operationLeadTime: 0,
-  operationUnitCost: 0
+  operationUnitCost: 0,
+  piecesPerUnit: 1
 };
 
 const BillOfProcess = ({
@@ -956,6 +957,7 @@ function OperationForm({
     operationMinimumCost: number;
     operationLeadTime: number;
     operationUnitCost: number;
+    piecesPerUnit: number;
   }>({
     description: item.data.description ?? "",
     laborTime: item.data.laborTime ?? 0,
@@ -974,7 +976,8 @@ function OperationForm({
     setupUnitHint: getUnitHint(item.data.setupUnit),
     operationMinimumCost: item.data.operationMinimumCost ?? 0,
     operationLeadTime: item.data.operationLeadTime ?? 0,
-    operationUnitCost: item.data.operationUnitCost ?? 0
+    operationUnitCost: item.data.operationUnitCost ?? 0,
+    piecesPerUnit: item.data.piecesPerUnit ?? 1
   });
 
   const onProcessChange = async (processId: string) => {
@@ -1170,6 +1173,36 @@ function OperationForm({
                     defaultValue: processData.description,
                     returnType: {
                       type: "text"
+                    }
+                  });
+                }
+              : undefined
+          }
+        />
+
+        <NumberControlled
+          name="piecesPerUnit"
+          label="Pieces Per Unit"
+          minValue={1}
+          formatOptions={{ maximumFractionDigits: 0 }}
+          value={processData.piecesPerUnit}
+          onChange={(newValue) =>
+            setProcessData((d) => ({
+              ...d,
+              piecesPerUnit: newValue
+            }))
+          }
+          isConfigured={rulesByField.has(key("piecesPerUnit"))}
+          onConfigure={
+            configurable && !temporaryItems[item.id]
+              ? () => {
+                  onConfigure({
+                    label: "Pieces Per Unit",
+                    field: key("piecesPerUnit"),
+                    code: rulesByField.get(key("piecesPerUnit"))?.code,
+                    defaultValue: processData.piecesPerUnit,
+                    returnType: {
+                      type: "numeric"
                     }
                   });
                 }

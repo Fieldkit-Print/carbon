@@ -2537,6 +2537,7 @@ async function buildCostEffects(
     );
 
     for (const op of nodeOps) {
+      const opPpu = op.piecesPerUnit ?? 1;
       if (op.operationType === "Inside") {
         if (op.setupTime) {
           const { fixedHours, hoursPerUnit } = normalizeTime(
@@ -2546,7 +2547,7 @@ async function buildCostEffects(
           effects.laborCost.push((outerQty) => {
             return (
               hoursPerUnit *
-                Math.ceil(prodCoeff * outerQty) *
+                Math.ceil((prodCoeff * outerQty) / opPpu) *
                 (op.laborRate ?? 0) +
               fixedHours * (op.laborRate ?? 0)
             );
@@ -2554,7 +2555,7 @@ async function buildCostEffects(
           effects.overheadCost.push((outerQty) => {
             return (
               hoursPerUnit *
-                Math.ceil(prodCoeff * outerQty) *
+                Math.ceil((prodCoeff * outerQty) / opPpu) *
                 (op.overheadRate ?? 0) +
               fixedHours * (op.overheadRate ?? 0)
             );
@@ -2573,7 +2574,7 @@ async function buildCostEffects(
           effects.laborCost.push((outerQty) => {
             return (
               laborHoursPerUnit *
-                Math.ceil(prodCoeff * outerQty) *
+                Math.ceil((prodCoeff * outerQty) / opPpu) *
                 (op.laborRate ?? 0) +
               laborFixedHours * (op.laborRate ?? 0)
             );
@@ -2587,7 +2588,7 @@ async function buildCostEffects(
           effects.machineCost.push((outerQty) => {
             return (
               machineHoursPerUnit *
-                Math.ceil(prodCoeff * outerQty) *
+                Math.ceil((prodCoeff * outerQty) / opPpu) *
                 (op.machineRate ?? 0) +
               machineFixedHours * (op.machineRate ?? 0)
             );
@@ -2597,7 +2598,7 @@ async function buildCostEffects(
         const hpu = Math.max(laborHoursPerUnit, machineHoursPerUnit);
         const fh = Math.max(laborFixedHours, machineFixedHours);
         effects.overheadCost.push((outerQty) => {
-          const prodQty = Math.ceil(prodCoeff * outerQty);
+          const prodQty = Math.ceil((prodCoeff * outerQty) / opPpu);
           if (hpu * prodQty > fh) {
             return hpu * prodQty * (op.overheadRate ?? 0);
           }
@@ -2605,7 +2606,8 @@ async function buildCostEffects(
         });
       } else if (op.operationType === "Outside") {
         effects.outsideCost.push((outerQty) => {
-          const cost = op.operationUnitCost * Math.ceil(prodCoeff * outerQty);
+          const cost =
+            op.operationUnitCost * Math.ceil((prodCoeff * outerQty) / opPpu);
           return Math.max(op.operationMinimumCost, cost);
         });
       }

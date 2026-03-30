@@ -275,7 +275,8 @@ export const methodOperationValidator = z
     operationSupplierProcessId: zfd.text(z.string().optional()),
     operationMinimumCost: zfd.numeric(z.number().min(0).optional()),
     operationUnitCost: zfd.numeric(z.number().min(0).optional()),
-    operationLeadTime: zfd.numeric(z.number().min(0).optional())
+    operationLeadTime: zfd.numeric(z.number().min(0).optional()),
+    piecesPerUnit: zfd.numeric(z.number().int().min(1).default(1))
   })
   .refine(
     (data) => {

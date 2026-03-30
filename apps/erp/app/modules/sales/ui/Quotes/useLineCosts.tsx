@@ -151,6 +151,7 @@ export function useLineCosts({
       }
 
       data.operations?.forEach((operation: QuotationOperation) => {
+        const opPpu = operation.piecesPerUnit ?? 1;
         if (operation.operationType === "Inside") {
           if (operation.setupTime) {
             // normalize production standard to hours
@@ -197,14 +198,15 @@ export function useLineCosts({
 
             effects.setupHours.push((quantity) => {
               return (
-                hoursPerUnit * Math.ceil(data.quantity * quantity) + fixedHours
+                hoursPerUnit * Math.ceil((data.quantity * quantity) / opPpu) +
+                fixedHours
               );
             });
 
             effects.laborCost.push((quantity) => {
               return (
                 hoursPerUnit *
-                  Math.ceil(data.quantity * quantity) *
+                  Math.ceil((data.quantity * quantity) / opPpu) *
                   (operation.laborRate ?? 0) +
                 fixedHours * (operation.laborRate ?? 0)
               );
@@ -213,7 +215,7 @@ export function useLineCosts({
             effects.overheadCost.push((quantity) => {
               return (
                 hoursPerUnit *
-                  Math.ceil(data.quantity * quantity) *
+                  Math.ceil((data.quantity * quantity) / opPpu) *
                   (operation.overheadRate ?? 0) +
                 fixedHours * (operation.overheadRate ?? 0)
               );
@@ -269,7 +271,8 @@ export function useLineCosts({
 
             effects.laborHours.push((quantity) => {
               return (
-                laborHoursPerUnit * Math.ceil(data.quantity * quantity) +
+                laborHoursPerUnit *
+                  Math.ceil((data.quantity * quantity) / opPpu) +
                 laborFixedHours
               );
             });
@@ -277,7 +280,7 @@ export function useLineCosts({
             effects.laborCost.push((quantity) => {
               return (
                 laborHoursPerUnit *
-                  Math.ceil(data.quantity * quantity) *
+                  Math.ceil((data.quantity * quantity) / opPpu) *
                   (operation.laborRate ?? 0) +
                 laborFixedHours * (operation.laborRate ?? 0)
               );
@@ -328,7 +331,8 @@ export function useLineCosts({
 
             effects.machineHours.push((quantity) => {
               return (
-                machineHoursPerUnit * Math.ceil(data.quantity * quantity) +
+                machineHoursPerUnit *
+                  Math.ceil((data.quantity * quantity) / opPpu) +
                 machineFixedHours
               );
             });
@@ -336,7 +340,7 @@ export function useLineCosts({
             effects.machineCost.push((quantity) => {
               return (
                 machineHoursPerUnit *
-                  Math.ceil(data.quantity * quantity) *
+                  Math.ceil((data.quantity * quantity) / opPpu) *
                   (operation.machineRate ?? 0) +
                 machineFixedHours * (operation.machineRate ?? 0)
               );
@@ -347,7 +351,7 @@ export function useLineCosts({
           const fixedHours = Math.max(laborFixedHours, machineFixedHours);
 
           effects.overheadCost.push((quantity) => {
-            const prodQty = Math.ceil(data.quantity * quantity);
+            const prodQty = Math.ceil((data.quantity * quantity) / opPpu);
             if (hoursPerUnit * prodQty > fixedHours) {
               return hoursPerUnit * prodQty * (operation.overheadRate ?? 0);
             } else {
@@ -357,7 +361,8 @@ export function useLineCosts({
         } else if (operation.operationType === "Outside") {
           effects.outsideCost.push((quantity) => {
             const unitCost =
-              operation.operationUnitCost * Math.ceil(data.quantity * quantity);
+              operation.operationUnitCost *
+              Math.ceil((data.quantity * quantity) / opPpu);
             return Math.max(operation.operationMinimumCost, unitCost);
           });
         }

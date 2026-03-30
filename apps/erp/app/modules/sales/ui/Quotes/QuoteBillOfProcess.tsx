@@ -241,7 +241,8 @@ const initialOperation: Omit<
   setupUnit: "Total Minutes",
   tags: [],
   workCenterId: "",
-  workInstruction: {}
+  workInstruction: {},
+  piecesPerUnit: 1
 };
 
 const usePendingOperations = () => {
@@ -1786,6 +1787,7 @@ function OperationForm({
     setupTime: number;
     setupUnit: string;
     setupUnitHint: string;
+    piecesPerUnit: number;
   }>({
     description: item.data.description ?? "",
     laborRate: item.data.laborRate ?? 0,
@@ -1805,7 +1807,8 @@ function OperationForm({
     procedureId: item.data.procedureId ?? "",
     setupTime: item.data.setupTime ?? 0,
     setupUnit: item.data.setupUnit ?? "Total Minutes",
-    setupUnitHint: getUnitHint(item.data.setupUnit)
+    setupUnitHint: getUnitHint(item.data.setupUnit),
+    piecesPerUnit: item.data.piecesPerUnit ?? 1
   });
 
   const onProcessChange = async (processId: string) => {
@@ -1981,6 +1984,20 @@ function OperationForm({
             setProcessData((d) => ({ ...d, description: newValue }));
           }}
           className="col-span-2"
+        />
+
+        <NumberControlled
+          name="piecesPerUnit"
+          label="Pieces Per Unit"
+          minValue={1}
+          formatOptions={{ maximumFractionDigits: 0 }}
+          value={processData.piecesPerUnit}
+          onChange={(newValue) =>
+            setProcessData((d) => ({
+              ...d,
+              piecesPerUnit: newValue
+            }))
+          }
         />
 
         {processData.operationType === "Outside" ? (

@@ -543,6 +543,7 @@ serve(async (req: Request) => {
                 machineUnit,
                 operationOrder,
                 operationType,
+                piecesPerUnit,
               ] = await Promise.all([
                 getConfiguredValue({
                   id: op.id,
@@ -604,6 +605,11 @@ serve(async (req: Request) => {
                   field: "operationType",
                   defaultValue: op.operationType,
                 }),
+                getConfiguredValue({
+                  id: op.id,
+                  field: "piecesPerUnit",
+                  defaultValue: op.piecesPerUnit ?? 1,
+                }),
               ]);
 
               jobOperationsInserts.push({
@@ -623,6 +629,7 @@ serve(async (req: Request) => {
                 order: op.order,
                 operationOrder,
                 operationType,
+                piecesPerUnit: Number(piecesPerUnit) || 1,
                 operationSupplierProcessId: op.operationSupplierProcessId,
                 ...getOutsideOperationRates(
                   processId,
@@ -1775,6 +1782,11 @@ serve(async (req: Request) => {
                   field: "operationType",
                   defaultValue: op.operationType,
                 }),
+                getConfiguredValue({
+                  id: op.id,
+                  field: "piecesPerUnit",
+                  defaultValue: op.piecesPerUnit ?? 1,
+                }),
               ]);
 
               const operationRates = getLaborAndOverheadRates(
@@ -1804,6 +1816,7 @@ serve(async (req: Request) => {
                 order: op.order,
                 operationOrder,
                 operationType,
+                piecesPerUnit: Number(piecesPerUnit) || 1,
                 operationSupplierProcessId: op.operationSupplierProcessId,
                 operationUnitCost: op.operationUnitCost ?? 0,
                 ...getOutsideOperationRates(
