@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
   Heading,
   HStack,
   Separator,
@@ -137,86 +136,68 @@ export default function DigitalInvoicePage() {
   const { invoice, company, lines, locations, shipment, paymentTermName } =
     data;
 
+  const logo = mode === "dark" ? company?.logoDark : company?.logoLight;
+
+  // Compute the real balance including shipping and tax
+  const shippingCost = shipment?.shippingCost ?? 0;
+  const taxAmount = invoice.totalTax ?? 0;
+  // balance only tracks line item subtotal; add shipping + tax for real balance
+  const balanceDue = (invoice.balance ?? 0) + shippingCost + taxAmount;
+
   return (
-    <div
-      className={`min-h-screen ${mode === "dark" ? "bg-zinc-950 text-white" : "bg-gray-50 text-gray-900"}`}
-    >
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <InvoiceHeader company={company} invoice={invoice} state={state} />
-        <div className="mt-6 grid gap-6 md:grid-cols-3">
-          <div className="md:col-span-2">
-            <InvoiceDetails
+    <div className="min-h-screen bg-muted/50">
+      <VStack spacing={8} className="w-full items-center p-2 md:p-8">
+        {logo && (
+          <img
+            src={logo}
+            alt={company?.name ?? ""}
+            className="w-auto mx-auto max-w-5xl"
+          />
+        )}
+
+        <PaymentCard
+          invoice={invoice}
+          state={state}
+          externalLinkId={data.externalLinkId}
+          company={company}
+          logo={logo}
+          balanceDue={balanceDue}
+        />
+
+        <Card className="w-full max-w-5xl mx-auto">
+          <CardHeader>
+            <div className="w-full text-center">
+              <StatusBadge status={invoice.status} state={state} />
+            </div>
+            <InvoiceHeader
+              company={company}
               invoice={invoice}
               locations={locations}
               paymentTermName={paymentTermName}
             />
-            <div className="mt-6">
-              <InvoiceLineItems
-                lines={lines}
-                invoice={invoice}
-                shipment={shipment}
-              />
-            </div>
-          </div>
-          <div>
-            <PaymentCard
+          </CardHeader>
+          <CardContent>
+            <InvoiceLineItems
+              lines={lines}
               invoice={invoice}
-              state={state}
-              externalLinkId={data.externalLinkId}
+              shipment={shipment}
             />
-          </div>
-        </div>
-      </div>
+          </CardContent>
+        </Card>
+      </VStack>
     </div>
   );
 }
 
 function CenteredMessage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-muted/50">
       <Card className="w-full max-w-md text-center">
         <CardContent className="p-8">
           <VStack spacing={4}>{children}</VStack>
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-function InvoiceHeader({
-  company,
-  invoice,
-  state
-}: {
-  company: any;
-  invoice: any;
-  state: InvoiceState;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            {company?.logoLightIcon ? (
-              <img
-                src={company.logoLightIcon}
-                alt={company.name}
-                className="h-10"
-              />
-            ) : (
-              <Heading size="h3">{company?.name}</Heading>
-            )}
-          </div>
-          <div className="text-right">
-            <Heading size="h2">Invoice</Heading>
-            <p className="text-muted-foreground text-lg">{invoice.invoiceId}</p>
-            <div className="mt-2">
-              <StatusBadge status={invoice.status} state={state} />
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -239,11 +220,13 @@ function StatusBadge({
   return <Badge variant="blue">Due</Badge>;
 }
 
-function InvoiceDetails({
+function InvoiceHeader({
+  company,
   invoice,
   locations,
   paymentTermName
 }: {
+  company: any;
   invoice: any;
   locations: any;
   paymentTermName: string | null;
@@ -251,70 +234,52 @@ function InvoiceDetails({
   const { locale } = useLocale();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Invoice Details</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-muted-foreground text-xs font-medium uppercase">
-              Bill To
-            </p>
-            <p className="mt-1 font-medium">
-              {locations?.invoiceCustomerName ?? locations?.customerName}
-            </p>
-            {locations?.invoiceAddressLine1 && (
-              <p className="text-muted-foreground text-sm">
-                {locations.invoiceAddressLine1}
-              </p>
-            )}
-            {locations?.invoiceAddressLine2 && (
-              <p className="text-muted-foreground text-sm">
-                {locations.invoiceAddressLine2}
-              </p>
-            )}
-            {(locations?.invoiceCity ||
-              locations?.invoiceStateProvince ||
-              locations?.invoicePostalCode) && (
-              <p className="text-muted-foreground text-sm">
-                {formatCityStatePostalCode(
-                  locations.invoiceCity,
-                  locations.invoiceStateProvince,
-                  locations.invoicePostalCode
-                )}
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            {invoice.dateIssued && (
-              <div>
-                <p className="text-muted-foreground text-xs font-medium uppercase">
-                  Date Issued
-                </p>
-                <p className="mt-1">{formatDate(invoice.dateIssued, locale)}</p>
-              </div>
-            )}
-            {invoice.dateDue && (
-              <div>
-                <p className="text-muted-foreground text-xs font-medium uppercase">
-                  Due Date
-                </p>
-                <p className="mt-1">{formatDate(invoice.dateDue, locale)}</p>
-              </div>
-            )}
-            {paymentTermName && (
-              <div>
-                <p className="text-muted-foreground text-xs font-medium uppercase">
-                  Payment Terms
-                </p>
-                <p className="mt-1">{paymentTermName}</p>
-              </div>
-            )}
-          </div>
+    <div className="grid gap-6 sm:grid-cols-2 w-full mt-4">
+      <div>
+        <div className="mb-4">
+          <Heading size="h3">{company?.name}</Heading>
         </div>
-      </CardContent>
-    </Card>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p className="font-medium text-foreground">
+            Invoice {invoice.invoiceId}
+          </p>
+          {invoice.dateIssued && (
+            <p>Issued: {formatDate(invoice.dateIssued, locale)}</p>
+          )}
+          {invoice.dateDue && <p>Due: {formatDate(invoice.dateDue, locale)}</p>}
+          {paymentTermName && <p>Terms: {paymentTermName}</p>}
+        </div>
+      </div>
+      <div>
+        <p className="text-muted-foreground text-xs font-medium uppercase mb-2">
+          Bill To
+        </p>
+        <p className="font-medium">
+          {locations?.invoiceCustomerName ?? locations?.customerName}
+        </p>
+        {locations?.invoiceAddressLine1 && (
+          <p className="text-muted-foreground text-sm">
+            {locations.invoiceAddressLine1}
+          </p>
+        )}
+        {locations?.invoiceAddressLine2 && (
+          <p className="text-muted-foreground text-sm">
+            {locations.invoiceAddressLine2}
+          </p>
+        )}
+        {(locations?.invoiceCity ||
+          locations?.invoiceStateProvince ||
+          locations?.invoicePostalCode) && (
+          <p className="text-muted-foreground text-sm">
+            {formatCityStatePostalCode(
+              locations.invoiceCity,
+              locations.invoiceStateProvince,
+              locations.invoicePostalCode
+            )}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -344,97 +309,105 @@ function InvoiceLineItems({
   const total = subtotal + shippingCost + taxAmount;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Line Items</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <Table>
-          <Thead>
-            <Tr>
-              <Th>Description</Th>
-              <Th className="text-right">Qty</Th>
-              <Th className="text-right">Unit Price</Th>
-              <Th className="text-right">Amount</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {lines.map((line) => (
-              <Tr key={line.id}>
-                <Td>
-                  <p className="font-medium">
-                    {line.itemName ?? line.description}
+    <>
+      <Table>
+        <Thead>
+          <Tr>
+            <Th>Description</Th>
+            <Th className="text-right">Qty</Th>
+            <Th className="text-right">Unit Price</Th>
+            <Th className="text-right">Amount</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {lines.map((line) => (
+            <Tr key={line.id}>
+              <Td>
+                <p className="font-medium">
+                  {line.itemName ?? line.description}
+                </p>
+                {line.itemDescription && (
+                  <p className="text-muted-foreground text-xs">
+                    {line.itemDescription}
                   </p>
-                  {line.itemDescription && (
-                    <p className="text-muted-foreground text-xs">
-                      {line.itemDescription}
-                    </p>
-                  )}
-                </Td>
-                <Td className="text-right">
-                  {line.invoiceLineType === "Comment"
-                    ? "-"
-                    : (line.quantity ?? 0)}
-                </Td>
-                <Td className="text-right">
-                  {line.invoiceLineType === "Comment"
-                    ? "-"
-                    : formatter.format(line.convertedUnitPrice ?? 0)}
-                </Td>
-                <Td className="text-right">
-                  {line.invoiceLineType === "Comment"
-                    ? "-"
-                    : formatter.format(
-                        (line.quantity ?? 0) * (line.convertedUnitPrice ?? 0)
-                      )}
-                </Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-        <Separator />
-        <div className="space-y-2 p-4">
+                )}
+              </Td>
+              <Td className="text-right">
+                {line.invoiceLineType === "Comment"
+                  ? "-"
+                  : (line.quantity ?? 0)}
+              </Td>
+              <Td className="text-right">
+                {line.invoiceLineType === "Comment"
+                  ? "-"
+                  : formatter.format(line.convertedUnitPrice ?? 0)}
+              </Td>
+              <Td className="text-right">
+                {line.invoiceLineType === "Comment"
+                  ? "-"
+                  : formatter.format(
+                      (line.quantity ?? 0) * (line.convertedUnitPrice ?? 0)
+                    )}
+              </Td>
+            </Tr>
+          ))}
+        </Tbody>
+      </Table>
+      <Separator />
+      <div className="space-y-2 p-4">
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span>{formatter.format(subtotal)}</span>
+        </div>
+        {shippingCost > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>{formatter.format(subtotal)}</span>
+            <span className="text-muted-foreground">Shipping</span>
+            <span>{formatter.format(shippingCost)}</span>
           </div>
-          {shippingCost > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Shipping</span>
-              <span>{formatter.format(shippingCost)}</span>
-            </div>
-          )}
-          {taxAmount > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tax</span>
-              <span>{formatter.format(taxAmount)}</span>
-            </div>
-          )}
-          <Separator />
-          <div className="flex justify-between text-lg font-semibold">
-            <span>Total</span>
-            <span>{formatter.format(total)}</span>
+        )}
+        {taxAmount > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Tax</span>
+            <span>{formatter.format(taxAmount)}</span>
           </div>
-          {invoice.balance != null && invoice.balance !== total && (
+        )}
+        <Separator />
+        <div className="flex justify-between text-lg font-semibold">
+          <span>Total</span>
+          <span>{formatter.format(total)}</span>
+        </div>
+        {invoice.balance != null &&
+          (invoice.balance ?? 0) < (invoice.totalAmount ?? 0) && (
             <div className="flex justify-between text-lg font-semibold text-blue-600">
               <span>Balance Due</span>
-              <span>{formatter.format(invoice.balance)}</span>
+              <span>
+                {formatter.format(
+                  (invoice.balance ?? 0) +
+                    (shipment?.shippingCost ?? 0) +
+                    (invoice.totalTax ?? 0)
+                )}
+              </span>
             </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </>
   );
 }
 
 function PaymentCard({
   invoice,
   state,
-  externalLinkId
+  externalLinkId,
+  company,
+  logo,
+  balanceDue
 }: {
   invoice: any;
   state: InvoiceState;
   externalLinkId: string;
+  company: any;
+  logo: string | null | undefined;
+  balanceDue: number;
 }) {
   const fetcher = useFetcher();
   const [searchParams] = useSearchParams();
@@ -448,11 +421,10 @@ function PaymentCard({
 
   const isPaid = state === InvoiceState.Paid || invoice.status === "Paid";
   const isSubmitting = fetcher.state !== "idle";
-  const balanceDue = invoice.balance ?? 0;
 
   if (isPaid || paymentResult === "success") {
     return (
-      <Card>
+      <Card className="w-full max-w-xl mx-auto">
         <CardContent className="p-6 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <LuCheck className="h-8 w-8 text-green-600" />
@@ -468,7 +440,7 @@ function PaymentCard({
 
   if (paymentResult === "cancelled") {
     return (
-      <Card>
+      <Card className="w-full max-w-xl mx-auto">
         <CardContent className="p-6">
           <VStack spacing={4}>
             <div className="text-center">
@@ -492,28 +464,20 @@ function PaymentCard({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Payment</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card className="w-full max-w-xl mx-auto">
+      <CardContent className="p-6">
         <VStack spacing={4}>
-          <div className="w-full space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status</span>
-              <StatusBadge status={invoice.status} state={state} />
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Balance Due</span>
-              <span className="text-lg font-semibold">
-                {formatter.format(balanceDue)}
-              </span>
-            </div>
+          <div className="text-center w-full">
+            <p className="text-muted-foreground text-sm">
+              {company?.name} has sent you an invoice
+            </p>
+            <p className="text-3xl font-bold mt-1">
+              {formatter.format(balanceDue)}
+            </p>
             {invoice.dateDue && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Due Date</span>
-                <span>{formatDate(invoice.dateDue, locale)}</span>
-              </div>
+              <p className="text-muted-foreground text-sm mt-1">
+                Due {formatDate(invoice.dateDue, locale)}
+              </p>
             )}
           </div>
           {balanceDue > 0 && (

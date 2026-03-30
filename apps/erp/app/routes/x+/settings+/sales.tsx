@@ -313,6 +313,9 @@ export default function SalesSettingsRoute() {
   const [salesTermsStatus, setSalesTermsStatus] = useState<"saved" | "draft">(
     "saved"
   );
+  const [cardOnFileTermsStatus, setCardOnFileTermsStatus] = useState<
+    "saved" | "draft"
+  >("saved");
 
   const handleUpdateSalesTerms = (content: JSONContent) => {
     setSalesTermsStatus("draft");
@@ -331,6 +334,28 @@ export default function SalesSettingsRoute() {
         })
         .eq("id", companyId);
       setSalesTermsStatus("saved");
+    },
+    2500,
+    true
+  );
+
+  const handleUpdateCardOnFileTerms = (content: JSONContent) => {
+    setCardOnFileTermsStatus("draft");
+    onUpdateCardOnFileTerms(content);
+  };
+
+  const onUpdateCardOnFileTerms = useDebounce(
+    async (content: JSONContent) => {
+      setCardOnFileTermsStatus("draft");
+      await carbon
+        ?.from("terms")
+        .update({
+          cardOnFileTerms: content,
+          updatedAt: today(getLocalTimeZone()).toString(),
+          updatedBy: userId
+        })
+        .eq("id", companyId);
+      setCardOnFileTermsStatus("saved");
     },
     2500,
     true
@@ -378,6 +403,43 @@ export default function SalesSettingsRoute() {
                 className="prose dark:prose-invert"
                 dangerouslySetInnerHTML={{
                   __html: generateHTML(terms?.salesTerms as JSONContent)
+                }}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <HStack className="justify-between items-start">
+            <CardHeader>
+              <CardTitle>Card on File Terms</CardTitle>
+              <CardDescription>
+                Define the terms shown to customers when adding a card on file.
+                Customers must agree to these terms before saving their card.
+              </CardDescription>
+            </CardHeader>
+            <CardAction className="py-6">
+              {cardOnFileTermsStatus === "draft" ? (
+                <Badge variant="secondary">Draft</Badge>
+              ) : (
+                <LuCircleCheck className="w-4 h-4 text-emerald-500" />
+              )}
+            </CardAction>
+          </HStack>
+          <CardContent>
+            {permissions.can("update", "settings") ? (
+              <Editor
+                initialValue={(terms?.cardOnFileTerms ?? {}) as JSONContent}
+                onUpload={onUploadImage}
+                onChange={handleUpdateCardOnFileTerms}
+              />
+            ) : (
+              <div
+                className="prose dark:prose-invert"
+                dangerouslySetInnerHTML={{
+                  __html: generateHTML(
+                    (terms?.cardOnFileTerms ?? {}) as JSONContent
+                  )
                 }}
               />
             )}

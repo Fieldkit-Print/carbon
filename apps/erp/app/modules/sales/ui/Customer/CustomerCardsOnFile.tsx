@@ -2,7 +2,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
   HStack,
@@ -50,8 +49,28 @@ const CustomerCardsOnFile = ({
   return (
     <Card>
       <CardHeader>
-        <HStack className="justify-between">
+        <HStack className="justify-between w-full">
           <CardTitle>Cards on File</CardTitle>
+          {canUpdate && (
+            <sendLinkFetcher.Form method="post">
+              <input type="hidden" name="type" value="sendAddCardLink" />
+              <Button
+                type="submit"
+                variant="secondary"
+                size="sm"
+                isDisabled={sendLinkFetcher.state !== "idle"}
+              >
+                <HStack spacing={2}>
+                  <LuSend className="h-4 w-4" />
+                  <span>
+                    {sendLinkFetcher.state !== "idle"
+                      ? "Sending..."
+                      : "Send Add Card Link"}
+                  </span>
+                </HStack>
+              </Button>
+            </sendLinkFetcher.Form>
+          )}
         </HStack>
       </CardHeader>
       <CardContent>
@@ -110,27 +129,6 @@ const CustomerCardsOnFile = ({
           </Table>
         )}
       </CardContent>
-      {canUpdate && (
-        <CardFooter>
-          <sendLinkFetcher.Form method="post">
-            <input type="hidden" name="type" value="sendAddCardLink" />
-            <Button
-              type="submit"
-              variant="secondary"
-              isDisabled={sendLinkFetcher.state !== "idle"}
-            >
-              <HStack spacing={2}>
-                <LuSend className="h-4 w-4" />
-                <span>
-                  {sendLinkFetcher.state !== "idle"
-                    ? "Sending..."
-                    : "Send Add Card Link to Customer"}
-                </span>
-              </HStack>
-            </Button>
-          </sendLinkFetcher.Form>
-        </CardFooter>
-      )}
     </Card>
   );
 };

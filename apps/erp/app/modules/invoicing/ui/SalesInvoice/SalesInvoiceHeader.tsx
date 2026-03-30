@@ -8,11 +8,20 @@ import {
   DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
   Heading,
   HStack,
   IconButton,
-  useDisclosure
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+  toast,
+  useDisclosure,
+  VStack
 } from "@carbon/react";
 import { getItemReadableId } from "@carbon/utils";
 import { useEffect, useState } from "react";
@@ -20,6 +29,7 @@ import { flushSync } from "react-dom";
 import {
   LuCheckCheck,
   LuChevronDown,
+  LuCreditCard,
   LuDollarSign,
   LuEllipsisVertical,
   LuEye,
@@ -37,6 +47,7 @@ import { usePermissions, useRouteData, useUser } from "~/hooks";
 import { ShipmentStatus } from "~/modules/inventory/ui/Shipments";
 import type { SalesInvoice, SalesInvoiceLine } from "~/modules/invoicing";
 import { salesInvoiceStatusType } from "~/modules/invoicing";
+import type { loader as chargeCardLoader } from "~/routes/x+/sales-invoice+/$invoiceId.charge-card";
 import type { action } from "~/routes/x+/sales-invoice+/$invoiceId.post";
 import type { action as statusAction } from "~/routes/x+/sales-invoice+/$invoiceId.status";
 import { useItems } from "~/stores";
@@ -60,6 +71,7 @@ const SalesInvoiceHeader = () => {
 
   const postFetcher = useFetcher<typeof action>();
   const statusFetcher = useFetcher<typeof statusAction>();
+  const chargeCardModal = useDisclosure();
 
   const { carbon } = useCarbon();
   const [linesNotAssociatedWithSO, setLinesNotAssociatedWithSO] = useState<
@@ -329,6 +341,11 @@ const SalesInvoiceHeader = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
+                <DropdownMenuItem onClick={chargeCardModal.onOpen}>
+                  <DropdownMenuIcon icon={<LuCreditCard />} />
+                  Charge Card on File
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuRadioGroup
                   value={salesInvoice.status ?? "Draft"}
                   onValueChange={handleStatusChange}
@@ -371,9 +388,135 @@ const SalesInvoiceHeader = () => {
       {voidModal.isOpen && (
         <SalesInvoiceVoidModal onClose={voidModal.onClose} />
       )}
+      {chargeCardModal.isOpen && (
+        <ChargeCardModal
+          invoiceId={invoiceId}
+          isOpen={chargeCardModal.isOpen}
+          onClose={chargeCardModal.onClose}
+        />
+      )}
       {auditLogDrawer}
     </>
   );
 };
+
+function ChargeCardModal({
+  invoiceId,
+  isOpen,
+  onClose
+}: {
+  invoiceId: string;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const cardsFetcher = useFetcher<typeof chargeCardLoader>();
+  const chargeFetcher = useFetcher();
+  const [selectedCard, setSelectedCard] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      cardsFetcher.load(path.to.salesInvoiceChargeCard(invoiceId));
+    }
+  }, [isOpen, invoiceId]);
+
+  useEffect(() => {
+    if (chargeFetcher.data) {
+      const data = chargeFetcher.data as {
+        success: boolean;
+        message: string;
+      };
+      if (data.success) {
+        toast.success(data.message);
+        onClose();
+      } else {
+        toast.error(data.message);
+      }
+    }
+  }, [chargeFetcher.data, onClose]);
+
+  const paymentMethods = cardsFetcher.data?.paymentMethods ?? [];
+  const isLoading = cardsFetcher.state === "loading";
+  const isCharging = chargeFetcher.state !== "idle";
+
+  const formatBrand = (brand: string | null) => {
+    if (!brand) return "Card";
+    return brand.charAt(0).toUpperCase() + brand.slice(1);
+  };
+
+  return (
+    <Modal open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <ModalContent>
+        <ModalHeader>
+          <ModalTitle>Charge Card on File</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <VStack spacing={4}>
+            {isLoading && (
+              <p className="text-muted-foreground text-sm">
+                Loading payment methods...
+              </p>
+            )}
+            {!isLoading && paymentMethods.length === 0 && (
+              <p className="text-muted-foreground text-sm">
+                No cards on file for this customer. Send the customer an
+                add-card link from their profile first.
+              </p>
+            )}
+            {!isLoading &&
+              paymentMethods.length > 0 &&
+              paymentMethods.map((pm) => (
+                <label
+                  key={pm.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedCard === pm.id
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={pm.id}
+                    checked={selectedCard === pm.id}
+                    onChange={() => setSelectedCard(pm.id)}
+                    className="accent-primary"
+                  />
+                  <LuCreditCard className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">
+                    {formatBrand(pm.brand)} •••• {pm.last4}
+                  </span>
+                  <span className="text-muted-foreground text-sm">
+                    {pm.expMonth}/{pm.expYear}
+                  </span>
+                </label>
+              ))}
+          </VStack>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <chargeFetcher.Form
+            method="post"
+            action={path.to.salesInvoiceChargeCard(invoiceId)}
+          >
+            <input
+              type="hidden"
+              name="paymentMethodId"
+              value={selectedCard ?? ""}
+            />
+            <Button
+              type="submit"
+              isDisabled={!selectedCard || isCharging}
+              isLoading={isCharging}
+            >
+              Charge Card
+            </Button>
+          </chargeFetcher.Form>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+}
 
 export default SalesInvoiceHeader;

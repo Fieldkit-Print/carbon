@@ -5,7 +5,8 @@ import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import {
   getCustomerStripeAccount,
-  getSalesInvoiceByExternalId
+  getSalesInvoiceByExternalId,
+  getSalesInvoiceShipment
 } from "~/modules/invoicing";
 
 export async function action({ request, params }: ActionFunctionArgs) {
@@ -28,15 +29,22 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return { success: false, message: "Invoice is already paid" };
   }
 
-  const company = await serviceRole
-    .from("company")
-    .select("name")
-    .eq("id", invoice.data.companyId)
-    .single();
+  const [company, shipment] = await Promise.all([
+    serviceRole
+      .from("company")
+      .select("name")
+      .eq("id", invoice.data.companyId)
+      .single(),
+    getSalesInvoiceShipment(serviceRole, invoice.data.id)
+  ]);
 
   switch (type) {
     case "checkout": {
-      const balanceDue = invoice.data.balance ?? 0;
+      // balance only tracks line item subtotal; include shipping + tax
+      const shippingCost = shipment.data?.shippingCost ?? 0;
+      const taxAmount = invoice.data.totalTax ?? 0;
+      const balanceDue = (invoice.data.balance ?? 0) + shippingCost + taxAmount;
+
       if (balanceDue <= 0) {
         return { success: false, message: "No balance due" };
       }

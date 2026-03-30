@@ -1373,6 +1373,8 @@ export const path = {
     routings: `${x}/items/routing`,
     sales: `${x}/sales`,
     salesInvoice: (id: string) => generatePath(`${x}/sales-invoice/${id}`),
+    salesInvoiceChargeCard: (id: string) =>
+      generatePath(`${x}/sales-invoice/${id}/charge-card`),
     salesInvoiceDetails: (id: string) =>
       generatePath(`${x}/sales-invoice/${id}/details`),
     salesInvoiceExchangeRate: (id: string) =>
