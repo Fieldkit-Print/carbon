@@ -165,16 +165,11 @@ export async function action({ request, params }: ActionFunctionArgs) {
           from: sender.data?.email,
           subject: `Add your payment card on file`,
           html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>Add Your Card on File</h2>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333; font-size: 14px; line-height: 1.6; max-width: 600px;">
               <p>Hi${contactFirstName ? ` ${contactFirstName}` : ""},</p>
-              <p>We'd like to securely save your payment card for future invoices. Click the button below to add your card:</p>
-              <div style="text-align: center; margin: 32px 0;">
-                <a href="${addCardUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 32px; border-radius: 6px; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-block;">
-                  Add Card on File
-                </a>
-              </div>
-              <p style="color: #6b7280; font-size: 14px;">Your card information is securely handled by Stripe. We never see or store your full card number.</p>
+              <p>We'd like to securely save your payment card for future invoices. You can add your card here:</p>
+              <p><a href="${addCardUrl}">${addCardUrl}</a></p>
+              <p style="color: #666; font-size: 13px;">Your card information is securely handled by Stripe. We never see or store your full card number.</p>
             </div>
           `,
           text: `Add your payment card on file: ${addCardUrl}`,

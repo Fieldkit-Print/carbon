@@ -1,17 +1,6 @@
 import type { Database } from "@carbon/database";
 import { formatCityStatePostalCode } from "@carbon/utils";
-import {
-  Body,
-  Button,
-  Column,
-  Container,
-  Hr,
-  Img,
-  Preview,
-  Row,
-  Section,
-  Text
-} from "@react-email/components";
+import { Body, Hr, Html, Link, Preview, Text } from "@react-email/components";
 import type { Email } from "../types";
 import {
   getLineDescription,
@@ -20,11 +9,6 @@ import {
   getTotal
 } from "../utils/sales-invoice";
 import { getCurrencyFormatter } from "../utils/shared";
-import {
-  EmailThemeProvider,
-  getEmailInlineStyles,
-  getEmailThemeClasses
-} from "./components/Theme";
 
 interface SalesInvoiceEmailProps extends Email {
   salesInvoice: Database["public"]["Views"]["salesInvoices"]["Row"];
@@ -34,6 +18,17 @@ interface SalesInvoiceEmailProps extends Email {
   paymentTerms: { id: string; name: string }[];
   digitalInvoiceUrl?: string;
 }
+
+const bodyStyle = {
+  fontFamily:
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  color: "#333",
+  fontSize: "14px",
+  lineHeight: "1.6",
+  maxWidth: "600px"
+};
+
+const mutedStyle = { color: "#666", fontSize: "13px" };
 
 const SalesInvoiceEmail = ({
   company,
@@ -59,279 +54,93 @@ const SalesInvoiceEmail = ({
 
   const currencyCode = salesInvoice.currencyCode ?? company.baseCurrencyCode;
   const formatter = getCurrencyFormatter(currencyCode, locale);
-  const preview = (
-    <Preview>{`${salesInvoice.invoiceId} from ${company.name}`}</Preview>
+  const paymentTerm = paymentTerms?.find(
+    (term) => term.id === salesInvoice.paymentTermId
   );
-  const themeClasses = getEmailThemeClasses();
-  const lightStyles = getEmailInlineStyles("light");
+
+  const addressParts = [
+    invoiceCustomerName,
+    invoiceAddressLine1,
+    invoiceAddressLine2,
+    formatCityStatePostalCode(
+      invoiceCity,
+      invoiceStateProvince,
+      invoicePostalCode
+    ),
+    invoiceCountryName
+  ].filter(Boolean);
 
   return (
-    <EmailThemeProvider preview={preview}>
-      <Body
-        className={`my-auto mx-auto font-sans ${themeClasses.body}`}
-        style={lightStyles.body}
-      >
-        <Container
-          className={`mx-auto py-5 px-0 w-[660px] max-w-full ${themeClasses.container}`}
-          style={{
-            borderStyle: "solid",
-            borderWidth: "1px",
-            borderColor: lightStyles.container.borderColor
-          }}
-        >
-          <Section>
-            <Row>
-              <Column>
-                {company.logoLightIcon ? (
-                  <Img
-                    src={company.logoLightIcon}
-                    width="auto"
-                    height="42"
-                    alt={`${company.name} Logo`}
-                  />
-                ) : (
-                  <Text
-                    className={`text-3xl font-bold ${themeClasses.text}`}
-                    style={{ color: lightStyles.text.color }}
-                  >
-                    {company.name}
-                  </Text>
-                )}
-              </Column>
-              <Column className="text-right">
-                <Text
-                  className={`text-3xl font-light ${themeClasses.mutedText}`}
-                  style={{ color: lightStyles.mutedText.color }}
-                >
-                  Sales Invoice
-                </Text>
-              </Column>
-            </Row>
-          </Section>
-          <Section>
-            <Text
-              className={`text-left text-sm font-medium ${themeClasses.text} my-9`}
-              style={{ color: lightStyles.text.color }}
-            >
-              {recipient.firstName ? `Hi ${recipient.firstName}, ` : "Hi, "}
-              please see the attached invoice and let me know if you have any
-              questions.
+    <Html>
+      <Preview>{`${salesInvoice.invoiceId} from ${company.name}`}</Preview>
+      <Body style={bodyStyle}>
+        <Text>
+          {recipient.firstName ? `Hi ${recipient.firstName},` : "Hi,"}
+        </Text>
+        <Text>
+          Please see the attached invoice and let me know if you have any
+          questions.
+        </Text>
+        {digitalInvoiceUrl && (
+          <Text>
+            You can view and pay this invoice here:{" "}
+            <Link href={digitalInvoiceUrl}>{digitalInvoiceUrl}</Link>
+          </Text>
+        )}
+        <Hr style={{ borderColor: "#eee" }} />
+        <Text style={{ margin: "4px 0" }}>
+          <strong>Invoice:</strong> {salesInvoice.invoiceId}
+        </Text>
+        {salesInvoice.dateDue && (
+          <Text style={{ margin: "4px 0" }}>
+            <strong>Due Date:</strong> {salesInvoice.dateDue}
+          </Text>
+        )}
+        {paymentTerm && (
+          <Text style={{ margin: "4px 0" }}>
+            <strong>Payment Terms:</strong> {paymentTerm.name}
+          </Text>
+        )}
+        {addressParts.length > 0 && (
+          <Text style={{ margin: "4px 0" }}>
+            <strong>Ship To:</strong> {addressParts.join(", ")}
+          </Text>
+        )}
+        <Hr style={{ borderColor: "#eee" }} />
+        {salesInvoiceLines.map((line) => {
+          if (line.invoiceLineType === "Comment") {
+            return (
+              <Text key={line.id} style={{ ...mutedStyle, margin: "4px 0" }}>
+                {getLineDescription(line)}
+              </Text>
+            );
+          }
+          const details = getLineDescriptionDetails(line);
+          return (
+            <Text key={line.id} style={{ margin: "4px 0" }}>
+              {getLineDescription(line)} — Qty: {line.quantity} x{" "}
+              {formatter.format(line.convertedUnitPrice ?? 0)} ={" "}
+              {formatter.format(getLineTotal(line))}
+              {details && (
+                <>
+                  <br />
+                  <span style={mutedStyle}>{details}</span>
+                </>
+              )}
             </Text>
-          </Section>
-          <Section className={`bg-gray-50 rounded-lg text-xs`}>
-            <Row>
-              <Column className="p-5" colSpan={2}>
-                <Section>
-                  <Row>
-                    <Column>
-                      <Text
-                        className={`${themeClasses.mutedText} uppercase text-[10px]`}
-                        style={{ color: lightStyles.mutedText.color }}
-                      >
-                        Payment Terms
-                      </Text>
-                      <Text>
-                        {
-                          paymentTerms?.find(
-                            (term) => term.id === salesInvoice.paymentTermId
-                          )?.name
-                        }
-                      </Text>
-                    </Column>
-                  </Row>
-                  <Row>
-                    <Column>
-                      <Text
-                        className={`${themeClasses.mutedText} uppercase text-[10px]`}
-                        style={{ color: lightStyles.mutedText.color }}
-                      >
-                        Invoice ID
-                      </Text>
-                      <Text>{salesInvoice.invoiceId}</Text>
-                    </Column>
-                    <Column>
-                      <Text
-                        className={`${themeClasses.mutedText} uppercase text-[10px]`}
-                        style={{ color: lightStyles.mutedText.color }}
-                      >
-                        Due Date
-                      </Text>
-                      <Text>{salesInvoice.dateDue ?? "-"}</Text>
-                    </Column>
-                  </Row>
-                </Section>
-              </Column>
-              <Column className="p-5" colSpan={2}>
-                <Text
-                  className={`${themeClasses.mutedText} uppercase text-[10px]`}
-                  style={{ color: lightStyles.mutedText.color }}
-                >
-                  Ship To
-                </Text>
-                <Text>{invoiceCustomerName}</Text>
-                {invoiceAddressLine1 && <Text>{invoiceAddressLine1}</Text>}
-                {invoiceAddressLine2 && <Text>{invoiceAddressLine2}</Text>}
-                <Text>
-                  {formatCityStatePostalCode(
-                    invoiceCity,
-                    invoiceStateProvince,
-                    invoicePostalCode
-                  )}
-                </Text>
-                <Text>{invoiceCountryName}</Text>
-              </Column>
-            </Row>
-          </Section>
-
-          <Section>
-            <Row className="mb-2.5 pl-5">
-              <Column>
-                <Text
-                  className={`text-xs uppercase ${themeClasses.mutedText}`}
-                  style={{ color: lightStyles.mutedText.color }}
-                >
-                  Description
-                </Text>
-              </Column>
-              <Column className="text-right pr-5 align-top w-[100px]">
-                <Text
-                  className={`text-xs uppercase ${themeClasses.mutedText}`}
-                  style={{ color: lightStyles.mutedText.color }}
-                >
-                  Quantity
-                </Text>
-              </Column>
-              <Column className="text-right pr-5 align-top w-[100px]">
-                <Text
-                  className={`text-xs uppercase ${themeClasses.mutedText}`}
-                  style={{ color: lightStyles.mutedText.color }}
-                >
-                  Unit Price
-                </Text>
-              </Column>
-              <Column className="text-right pr-5 align-top w-[100px]">
-                <Text
-                  className={`text-xs uppercase ${themeClasses.mutedText}`}
-                  style={{ color: lightStyles.mutedText.color }}
-                >
-                  Subtotal
-                </Text>
-              </Column>
-            </Row>
-            {salesInvoiceLines.map((line) => (
-              <Row key={line.id} className="mb-2.5 pl-5">
-                <Column>
-                  <Text className="text-xs font-semibold">
-                    {getLineDescription(line)}
-                  </Text>
-                  {getLineDescriptionDetails(line)
-                    ?.split("\n")
-                    .map((l, i) => (
-                      <Text
-                        key={i}
-                        className={`text-xs ${themeClasses.mutedText}`}
-                        style={{ color: lightStyles.mutedText.color }}
-                      >
-                        {l}
-                      </Text>
-                    ))}
-                </Column>
-                <Column className="text-right pr-5 align-top w-[100px]">
-                  <Text className="text-xs font-semibold">
-                    {line.invoiceLineType === "Comment"
-                      ? ""
-                      : `${line.quantity}`}
-                  </Text>
-                </Column>
-                <Column className="text-right pr-5 align-top w-[100px]">
-                  <Text className="text-xs font-semibold">
-                    {line.invoiceLineType === "Comment"
-                      ? "-"
-                      : formatter.format(line.convertedUnitPrice ?? 0)}
-                  </Text>
-                </Column>
-                <Column className="text-right pr-5 align-top w-[100px]">
-                  <Text className="text-xs font-semibold">
-                    {line.invoiceLineType === "Comment"
-                      ? "-"
-                      : formatter.format(getLineTotal(line))}
-                  </Text>
-                </Column>
-              </Row>
-            ))}
-          </Section>
-          <Hr className="my-8" />
-          <Section className="text-right">
-            <Row>
-              <Column className="pr-8">
-                <Text
-                  className={`text-[10px] font-semibold ${themeClasses.mutedText}`}
-                  style={{ color: lightStyles.mutedText.color }}
-                >
-                  TOTAL
-                </Text>
-              </Column>
-              <Column className={`border-l border-gray-200 h-12`}></Column>
-              <Column className="w-[90px] pr-5">
-                <Text className="text-base font-semibold whitespace-nowrap">
-                  {formatter.format(
-                    getTotal(
-                      salesInvoiceLines,
-                      salesInvoice,
-                      salesInvoiceShipment
-                    )
-                  )}
-                </Text>
-              </Column>
-            </Row>
-          </Section>
-          {digitalInvoiceUrl && (
-            <>
-              <Section className="text-center my-8">
-                <Button
-                  href={digitalInvoiceUrl}
-                  className="bg-blue-600 text-white font-semibold px-8 py-3 rounded-md text-sm no-underline"
-                  style={{
-                    backgroundColor: "#2563eb",
-                    color: "#ffffff",
-                    padding: "12px 32px",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    textDecoration: "none"
-                  }}
-                >
-                  View &amp; Pay Invoice
-                </Button>
-              </Section>
-              <Hr className="mb-8" />
-            </>
+          );
+        })}
+        <Hr style={{ borderColor: "#eee" }} />
+        <Text style={{ fontWeight: "bold" }}>
+          Total:{" "}
+          {formatter.format(
+            getTotal(salesInvoiceLines, salesInvoice, salesInvoiceShipment)
           )}
-          {!digitalInvoiceUrl && <Hr className="mb-20" />}
-          <Section>
-            <Row>
-              <Column className="text-center">
-                {company.logoLightIcon ? (
-                  <Img
-                    src={company.logoLightIcon}
-                    width="60"
-                    height="auto"
-                    alt={`${company.name} Logo`}
-                  />
-                ) : (
-                  <Text
-                    className={`text-3xl font-bold ${themeClasses.text}`}
-                    style={{ color: lightStyles.text.color }}
-                  >
-                    {company.name}
-                  </Text>
-                )}
-              </Column>
-            </Row>
-          </Section>
-        </Container>
+        </Text>
+        <Hr style={{ borderColor: "#eee" }} />
+        <Text style={mutedStyle}>{company.name}</Text>
       </Body>
-    </EmailThemeProvider>
+    </Html>
   );
 };
 
