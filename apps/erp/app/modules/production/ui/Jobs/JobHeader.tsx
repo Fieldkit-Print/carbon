@@ -526,38 +526,32 @@ const JobHeader = () => {
           }}
         />
       )}
-      {skipProofModal.isOpen && (
-        <Modal
-          open={skipProofModal.isOpen}
-          onOpenChange={skipProofModal.onToggle}
-        >
-          <ModalContent>
-            <ModalHeader>
-              <ModalTitle>Skip Proof Approval</ModalTitle>
-              <ModalDescription>
-                Are you sure you want to skip customer proof approval for this
-                job? This means production will proceed without the customer
-                reviewing and approving a proof.
-              </ModalDescription>
-            </ModalHeader>
-            <ModalFooter>
-              <Button variant="ghost" onClick={skipProofModal.onClose}>
-                Cancel
+      <Modal
+        open={skipProofModal.isOpen}
+        onOpenChange={skipProofModal.onToggle}
+      >
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Skip Proof Approval</ModalTitle>
+            <ModalDescription>
+              Are you sure you want to skip customer proof approval for this
+              job? This means production will proceed without the customer
+              reviewing and approving a proof.
+            </ModalDescription>
+          </ModalHeader>
+          <ModalFooter>
+            <Button variant="ghost" onClick={skipProofModal.onClose}>
+              Cancel
+            </Button>
+            <proofFetcher.Form method="post" action={path.to.jobProof(jobId)}>
+              <input type="hidden" name="type" value="skip" />
+              <Button type="submit" variant="destructive">
+                Yes, Skip Proof
               </Button>
-              <proofFetcher.Form
-                method="post"
-                action={path.to.jobProof(jobId)}
-                onSubmit={() => skipProofModal.onClose()}
-              >
-                <input type="hidden" name="type" value="skip" />
-                <Button type="submit" variant="destructive">
-                  Yes, Skip Proof
-                </Button>
-              </proofFetcher.Form>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-      )}
+            </proofFetcher.Form>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       {auditLogDrawer}
     </>
   );
