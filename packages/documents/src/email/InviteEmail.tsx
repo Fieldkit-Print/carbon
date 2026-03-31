@@ -34,12 +34,12 @@ export const InviteEmail = ({
 }: Props) => {
   return (
     <Html>
-      <Preview>{`Join ${companyName} on Carbon`}</Preview>
+      <Preview>{`You're invited to join ${companyName}`}</Preview>
       <Body style={bodyStyle}>
         <Text>Hi{name ? ` ${name}` : ""},</Text>
         <Text>
           {invitedByName} ({invitedByEmail}) has invited you to join{" "}
-          <strong>{companyName}</strong> on Carbon.
+          <strong>{companyName}</strong>.
         </Text>
         <Text>
           Accept the invitation here:{" "}

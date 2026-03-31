@@ -82,7 +82,7 @@ export const GetStartedEmail = ({
         <Text>
           Best,
           <br />
-          The Carbon Team
+          The Fieldkit Team
         </Text>
       </Body>
     </Html>
