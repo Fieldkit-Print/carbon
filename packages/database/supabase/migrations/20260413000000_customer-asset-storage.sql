@@ -55,7 +55,8 @@ CREATE POLICY "Employees with inventory_delete can delete customer asset events"
     has_company_permission('inventory_delete', "companyId")
   );
 
--- Recreate parts view to include customerId
+-- Recreate parts view to include customerId (must DROP because adding a column changes positions)
+DROP VIEW IF EXISTS "parts";
 CREATE OR REPLACE VIEW "parts" WITH (SECURITY_INVOKER=true) AS
 WITH latest_items AS (
   SELECT DISTINCT ON (i."readableId", i."companyId")
