@@ -543,12 +543,18 @@ const JobHeader = () => {
             <Button variant="ghost" onClick={skipProofModal.onClose}>
               Cancel
             </Button>
-            <proofFetcher.Form method="post" action={path.to.jobProof(jobId)}>
-              <input type="hidden" name="type" value="skip" />
-              <Button type="submit" variant="destructive">
-                Yes, Skip Proof
-              </Button>
-            </proofFetcher.Form>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                proofFetcher.submit(
+                  { type: "skip" },
+                  { method: "post", action: path.to.jobProof(jobId) }
+                );
+                skipProofModal.onClose();
+              }}
+            >
+              Yes, Skip Proof
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
