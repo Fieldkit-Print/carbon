@@ -41,7 +41,7 @@ const Header = ({
   logoDataUri
 }: HeaderProps) => {
   // Use pre-resolved data URI if available, otherwise fall back to URL
-  const logoSrc = logoDataUri ?? company.logoLightIcon;
+  const logoSrc = logoDataUri ?? company.logoLight ?? company.logoLightIcon;
 
   return (
     <>

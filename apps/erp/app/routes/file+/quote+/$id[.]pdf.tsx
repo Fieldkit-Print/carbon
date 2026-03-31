@@ -121,7 +121,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       }, {}) ?? {};
   }
 
-  const logoDataUri = await resolveLogoForPdf(company.data?.logoLightIcon);
+  const logoDataUri = await resolveLogoForPdf(
+    company.data?.logoLight ?? company.data?.logoLightIcon
+  );
 
   let exchangeRate = 1;
   if (quote.data?.currencyCode) {

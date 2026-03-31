@@ -148,7 +148,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     })
   );
 
-  const logoDataUri = await resolveLogoForPdf(company.data?.logoLightIcon);
+  const logoDataUri = await resolveLogoForPdf(
+    company.data?.logoLight ?? company.data?.logoLightIcon
+  );
 
   // Register fonts (same as Template component)
   Font.register({
