@@ -59,7 +59,15 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const itemId = createPart.data?.id;
-  if (!itemId) throw new Error("Part ID not found");
+  if (!itemId) {
+    const err = { message: "Part ID not found" };
+    return modal
+      ? data({ data: null, error: err }, { status: 500 })
+      : redirect(
+          path.to.parts,
+          await flash(request, error(err, "Failed to create part"))
+        );
+  }
 
   return modal
     ? data(createPart, { status: 201 })

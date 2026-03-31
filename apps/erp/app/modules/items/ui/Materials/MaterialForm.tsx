@@ -13,7 +13,7 @@ import {
 } from "@carbon/react";
 import { getMaterialDescription, getMaterialId } from "@carbon/utils";
 import type { PostgrestResponse } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import type { z } from "zod";
 import { TrackingTypeIcon } from "~/components";
@@ -93,16 +93,19 @@ const MaterialForm = ({
     setDescription(getMaterialDescription(properties));
   }, [properties]);
 
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (type !== "modal") return;
 
     if (fetcher.state === "loading" && fetcher.data?.data) {
-      onClose?.();
+      onCloseRef.current?.();
       toast.success(`Created material`);
     } else if (fetcher.state === "idle" && fetcher.data?.error) {
       toast.error(`Failed to create material: ${fetcher.data.error.message}`);
     }
-  }, [fetcher.data, fetcher.state, onClose, type]);
+  }, [fetcher.data, fetcher.state, type]);
 
   const { id, onIdChange, loading } = useNextItemId("Material");
 
@@ -301,7 +304,11 @@ const MaterialForm = ({
                   minValue={0}
                 />
 
-                <ItemPostingGroup name="postingGroupId" label="Item Group" isClearable />
+                <ItemPostingGroup
+                  name="postingGroupId"
+                  label="Item Group"
+                  isClearable
+                />
                 <Array name="sizes" label="Sizes" />
 
                 <CustomFormFields table="material" tags={initialValues.tags} />

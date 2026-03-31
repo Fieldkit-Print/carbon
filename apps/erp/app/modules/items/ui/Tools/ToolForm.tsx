@@ -22,7 +22,7 @@ import {
 } from "@carbon/utils";
 import type { PostgrestResponse } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useDropzone } from "react-dropzone";
 import { LuCloudUpload } from "react-icons/lu";
@@ -148,16 +148,19 @@ const ToolForm = ({ initialValues, type = "card", onClose }: ToolFormProps) => {
     }
   });
 
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (type !== "modal") return;
 
     if (fetcher.state === "loading" && fetcher.data?.data) {
-      onClose?.();
+      onCloseRef.current?.();
       toast.success(`Created tool`);
     } else if (fetcher.state === "idle" && fetcher.data?.error) {
       toast.error(`Failed to create tool: ${fetcher.data.error.message}`);
     }
-  }, [fetcher.data, fetcher.state, onClose, type]);
+  }, [fetcher.data, fetcher.state, type]);
 
   const { id, onIdChange, loading } = useNextItemId("Tool");
   const permissions = usePermissions();

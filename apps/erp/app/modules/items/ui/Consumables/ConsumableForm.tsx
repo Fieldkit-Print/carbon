@@ -12,7 +12,7 @@ import {
   toast
 } from "@carbon/react";
 import type { PostgrestResponse } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import type { z } from "zod";
 import {
@@ -54,16 +54,19 @@ const ConsumableForm = ({
 
   const fetcher = useFetcher<PostgrestResponse<{ id: string }>>();
 
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (type !== "modal") return;
 
     if (fetcher.state === "loading" && fetcher.data?.data) {
-      onClose?.();
+      onCloseRef.current?.();
       toast.success(`Created consumable`);
     } else if (fetcher.state === "idle" && fetcher.data?.error) {
       toast.error(`Failed to create consumable: ${fetcher.data.error.message}`);
     }
-  }, [fetcher.data, fetcher.state, onClose, type]);
+  }, [fetcher.data, fetcher.state, type]);
 
   const { id, onIdChange, loading } = useNextItemId("Consumable");
   const permissions = usePermissions();
@@ -159,7 +162,11 @@ const ConsumableForm = ({
                   label="Unit of Measure"
                 />
                 {!isEditing && (
-                  <ItemPostingGroup name="postingGroupId" label="Item Group" isClearable />
+                  <ItemPostingGroup
+                    name="postingGroupId"
+                    label="Item Group"
+                    isClearable
+                  />
                 )}
                 {!isEditing && (
                   <Number

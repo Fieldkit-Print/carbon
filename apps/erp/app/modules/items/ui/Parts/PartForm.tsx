@@ -22,7 +22,7 @@ import {
 } from "@carbon/utils";
 import type { PostgrestResponse } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useDropzone } from "react-dropzone";
 import { LuCloudUpload } from "react-icons/lu";
@@ -156,18 +156,32 @@ const PartForm = ({
     }
   });
 
+  // Use refs so the effect doesn't re-fire when parent re-renders with new
+  // callback references while the fetcher is still in "loading" state.
+  const onCreatedRef = useRef(onCreated);
+  const onCloseRef = useRef(onClose);
+  onCreatedRef.current = onCreated;
+  onCloseRef.current = onClose;
+
+  const didCompleteRef = useRef(false);
+
   useEffect(() => {
     if (type !== "modal") return;
 
-    if (fetcher.state === "loading" && fetcher.data?.data) {
+    if (
+      fetcher.state === "loading" &&
+      fetcher.data?.data &&
+      !didCompleteRef.current
+    ) {
+      didCompleteRef.current = true;
       const createdId = (fetcher.data.data as { id: string })?.id;
-      if (createdId) onCreated?.(createdId);
-      onClose?.();
+      if (createdId) onCreatedRef.current?.(createdId);
+      onCloseRef.current?.();
       toast.success(`Created part`);
     } else if (fetcher.state === "idle" && fetcher.data?.error) {
       toast.error(`Failed to create part: ${fetcher.data.error.message}`);
     }
-  }, [fetcher.data, fetcher.state, onClose, onCreated, type]);
+  }, [fetcher.data, fetcher.state, type]);
 
   const { id, onIdChange, loading } = useNextItemId("Part");
   const permissions = usePermissions();
