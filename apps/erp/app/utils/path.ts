@@ -828,6 +828,7 @@ export const path = {
     integrationDeactivate: (id: string) =>
       generatePath(`${x}/settings/integrations/deactivate/${id}`),
     integrations: `${x}/settings/integrations`,
+    customerAssets: `${x}/inventory/customer-assets`,
     inventory: `${x}/inventory/quantities`,
     inventoryItem: (id: string) =>
       generatePath(`${x}/inventory/quantities/${id}/details`),
@@ -1182,6 +1183,7 @@ export const path = {
     part: (id: string) => generatePath(`${x}/part/${id}`),
     partCosting: (id: string) => generatePath(`${x}/part/${id}/costing`),
     partDetails: (id: string) => generatePath(`${x}/part/${id}/details`),
+    partEvents: (id: string) => generatePath(`${x}/part/${id}/events`),
     partMake: (id: string, makeMethodId: string) =>
       generatePath(`${x}/part/${id}/make/${makeMethodId}`),
     partInventory: (id: string) => generatePath(`${x}/part/${id}/inventory`),

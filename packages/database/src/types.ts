@@ -48487,6 +48487,7 @@ export type Database = {
           companyId: string | null
           createdAt: string | null
           createdBy: string | null
+          customerId: string | null
           customFields: Json | null
           defaultMethodType: Database["public"]["Enums"]["methodType"] | null
           description: string | null
@@ -57706,6 +57707,7 @@ export type Database = {
           companyId: string
           createdAt: string
           createdBy: string
+          customerId: string
           customFields: Json
           defaultMethodType: Database["public"]["Enums"]["methodType"]
           description: string

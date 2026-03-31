@@ -55,6 +55,30 @@ export async function action({ request }: ActionFunctionArgs) {
   if (receiptDataHasChanged) {
     const serviceRole = getCarbonServiceRole();
     switch (d.sourceDocument) {
+      case "Sales Order":
+        const salesOrderReceipt = await serviceRole.functions.invoke<{
+          id: string;
+        }>("create", {
+          body: {
+            type: "receiptFromSalesOrder",
+            companyId,
+            locationId: d.locationId,
+            salesOrderId: d.sourceDocumentId,
+            receiptId: id,
+            userId: userId
+          }
+        });
+        if (!salesOrderReceipt.data || salesOrderReceipt.error) {
+          throw redirect(
+            path.to.receipt(id),
+            await flash(
+              request,
+              error(salesOrderReceipt.error, "Failed to create return receipt")
+            )
+          );
+        }
+        break;
+
       case "Purchase Order":
         const purchaseOrderReceipt = await serviceRole.functions.invoke<{
           id: string;

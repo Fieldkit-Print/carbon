@@ -89,6 +89,28 @@ export default function useReceiptForm({
           });
         break;
 
+      case "Sales Order":
+        carbon
+          ?.from("salesOrder")
+          .select("id, salesOrderId")
+          .eq("companyId", user.company.id)
+          .or(
+            "status.eq.To Ship and Invoice, status.eq.To Invoice, status.eq.Completed"
+          )
+          .then((response) => {
+            if (response.error) {
+              setError(response.error.message);
+            } else {
+              setSourceDocuments(
+                response.data.map((d) => ({
+                  name: d.salesOrderId,
+                  id: d.id
+                }))
+              );
+            }
+          });
+        break;
+
       default:
         setSourceDocuments([]);
     }

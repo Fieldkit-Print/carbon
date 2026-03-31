@@ -1189,6 +1189,285 @@ serve(async (req: Request) => {
 
         break;
       }
+      case "Sales Order": {
+        if (!receipt.data.sourceDocumentId)
+          throw new Error("Receipt has no sourceDocumentId");
+
+        const salesOrder = await client
+          .from("salesOrder")
+          .select("*")
+          .eq("id", receipt.data.sourceDocumentId)
+          .single();
+
+        if (salesOrder.error || !salesOrder.data)
+          throw new Error("Sales order not found");
+
+        const salesOrderLines = await client
+          .from("salesOrderLine")
+          .select("*")
+          .eq("salesOrderId", salesOrder.data.id)
+          .neq("salesOrderLineType", "Comment");
+
+        if (salesOrderLines.error)
+          throw new Error("Failed to fetch sales order lines");
+
+        // Map receipt lines by their source SO line ID
+        const receiptLinesBySalesOrderLineId = receiptLines.data.reduce<
+          Record<string, typeof receiptLines.data>
+        >((acc, receiptLine) => {
+          if (receiptLine.lineId) {
+            if (!acc[receiptLine.lineId]) acc[receiptLine.lineId] = [];
+            acc[receiptLine.lineId].push(receiptLine);
+          }
+          return acc;
+        }, {});
+
+        // Build item ledger entries (positive — adding inventory back)
+        const itemLedgerInserts: Database["public"]["Tables"]["itemLedger"]["Insert"][] =
+          [];
+
+        for (const receiptLine of receiptLines.data) {
+          if (!receiptLine.itemId || !receiptLine.receivedQuantity) continue;
+
+          const receivedQuantity = receiptLine.receivedQuantity;
+          if (isNaN(receivedQuantity) || receivedQuantity <= 0) continue;
+
+          const item = items.data?.find((i) => i.id === receiptLine.itemId);
+
+          if (item?.itemTrackingType === "Serial") {
+            // One entry per serial
+            const trackingEntities =
+              receiptLineTracking.data?.filter(
+                (t) =>
+                  (t.attributes as TrackedEntityAttributes)?.["Receipt Line"] ===
+                  receiptLine.id
+              ) ?? [];
+
+            for (const tracking of trackingEntities) {
+              itemLedgerInserts.push({
+                postingDate: today,
+                itemId: receiptLine.itemId!,
+                quantity: 1,
+                locationId: receiptLine.locationId ?? receipt.data.locationId,
+                shelfId: receiptLine.shelfId,
+                entryType: "Positive Adjmt.",
+                documentType: "Sales Return Receipt",
+                documentId: receipt.data?.id ?? undefined,
+                trackedEntityId: tracking.id,
+                externalDocumentId: undefined,
+                createdBy: userId,
+                companyId,
+              });
+            }
+
+            // If no tracking entities, still create the ledger entry
+            if (trackingEntities.length === 0) {
+              itemLedgerInserts.push({
+                postingDate: today,
+                itemId: receiptLine.itemId!,
+                quantity: receivedQuantity,
+                locationId: receiptLine.locationId ?? receipt.data.locationId,
+                shelfId: receiptLine.shelfId,
+                entryType: "Positive Adjmt.",
+                documentType: "Sales Return Receipt",
+                documentId: receipt.data?.id ?? undefined,
+                externalDocumentId: undefined,
+                createdBy: userId,
+                companyId,
+              });
+            }
+          } else if (item?.itemTrackingType === "Batch") {
+            const trackingEntity = receiptLineTracking.data?.find(
+              (t) =>
+                (t.attributes as TrackedEntityAttributes)?.["Receipt Line"] ===
+                receiptLine.id
+            );
+
+            itemLedgerInserts.push({
+              postingDate: today,
+              itemId: receiptLine.itemId!,
+              quantity: receivedQuantity,
+              locationId: receiptLine.locationId ?? receipt.data.locationId,
+              shelfId: receiptLine.shelfId,
+              entryType: "Positive Adjmt.",
+              documentType: "Sales Return Receipt",
+              documentId: receipt.data?.id ?? undefined,
+              trackedEntityId: trackingEntity?.id,
+              externalDocumentId: undefined,
+              createdBy: userId,
+              companyId,
+            });
+          } else {
+            // Standard inventory item
+            itemLedgerInserts.push({
+              postingDate: today,
+              itemId: receiptLine.itemId!,
+              quantity: receivedQuantity,
+              locationId: receiptLine.locationId ?? receipt.data.locationId,
+              shelfId: receiptLine.shelfId,
+              entryType: "Positive Adjmt.",
+              documentType: "Sales Return Receipt",
+              documentId: receipt.data?.id ?? undefined,
+              externalDocumentId: undefined,
+              createdBy: userId,
+              companyId,
+            });
+          }
+        }
+
+        // Calculate SO line return quantity updates
+        const salesOrderLineUpdates = salesOrderLines.data.reduce<
+          Record<
+            string,
+            Database["public"]["Tables"]["salesOrderLine"]["Update"]
+          >
+        >((acc, salesOrderLine) => {
+          const rLines = receiptLinesBySalesOrderLineId[salesOrderLine.id];
+          if (rLines && rLines.length > 0) {
+            const returnedQuantity = rLines.reduce(
+              (sum, rl) => sum + (rl.receivedQuantity ?? 0),
+              0
+            );
+            const newQuantityReturned =
+              (salesOrderLine.quantityReturned ?? 0) + returnedQuantity;
+            const returnedComplete =
+              newQuantityReturned >= (salesOrderLine.quantitySent ?? 0);
+
+            const update: Database["public"]["Tables"]["salesOrderLine"]["Update"] =
+              {
+                quantityReturned: newQuantityReturned,
+                returnedComplete,
+              };
+
+            if (returnedComplete && !salesOrderLine.returnedDate) {
+              update.returnedDate = today;
+            }
+
+            acc[salesOrderLine.id] = update;
+          }
+          return acc;
+        }, {});
+
+        // Restore tracked entities to Available
+        const trackedEntityUpdates =
+          receiptLineTracking.data?.reduce<
+            Record<
+              string,
+              Database["public"]["Tables"]["trackedEntity"]["Update"]
+            >
+          >((acc, trackedEntity) => {
+            const receiptLine = receiptLines.data?.find(
+              (rl) =>
+                rl.id ===
+                (trackedEntity.attributes as TrackedEntityAttributes)?.[
+                  "Receipt Line"
+                ]?.toString()
+            );
+
+            const safeReceivedQuantity =
+              // @ts-ignore
+              isNaN(receiptLine?.receivedQuantity) ||
+              receiptLine?.receivedQuantity == null
+                ? 0
+                : receiptLine.receivedQuantity;
+            const quantity = receiptLine?.requiresSerialTracking
+              ? 1
+              : safeReceivedQuantity || trackedEntity.quantity;
+
+            acc[trackedEntity.id] = {
+              status: "Available",
+              quantity: quantity,
+            };
+            return acc;
+          }, {}) ?? {};
+
+        await db.transaction().execute(async (trx) => {
+          // Update SO lines with return quantities
+          for await (const [salesOrderLineId, update] of Object.entries(
+            salesOrderLineUpdates
+          )) {
+            await trx
+              .updateTable("salesOrderLine")
+              .set(update)
+              .where("id", "=", salesOrderLineId)
+              .execute();
+          }
+
+          // Recalculate SO status — a return doesn't change sent/invoice status
+          // but we should check if the order needs status adjustment
+          // For now, we leave the SO status as-is since returns don't unsend
+
+          // Update tracked entities back to Available
+          if (Object.keys(trackedEntityUpdates).length > 0) {
+            const trackedActivity = await trx
+              .insertInto("trackedActivity")
+              .values({
+                type: "Return",
+                sourceDocument: "Receipt",
+                sourceDocumentId: receiptId,
+                sourceDocumentReadableId: receipt.data.receiptId,
+                attributes: {
+                  "Sales Order": receipt.data.sourceDocumentId,
+                  Receipt: receiptId,
+                  Employee: userId,
+                },
+                companyId,
+                createdBy: userId,
+                createdAt: today,
+              })
+              .returning(["id"])
+              .execute();
+
+            const trackedActivityId = trackedActivity[0]?.id;
+
+            for await (const [trackedEntityId, update] of Object.entries(
+              trackedEntityUpdates
+            )) {
+              await trx
+                .updateTable("trackedEntity")
+                .set(update)
+                .where("id", "=", trackedEntityId)
+                .execute();
+
+              if (trackedActivityId) {
+                await trx
+                  .insertInto("trackedActivityOutput")
+                  .values({
+                    trackedActivityId,
+                    trackedEntityId,
+                    quantity: update.quantity ?? 0,
+                    companyId,
+                    createdBy: userId,
+                    createdAt: today,
+                  })
+                  .execute();
+              }
+            }
+          }
+
+          // Insert item ledger entries
+          if (itemLedgerInserts.length > 0) {
+            await trx
+              .insertInto("itemLedger")
+              .values(itemLedgerInserts)
+              .returning(["id"])
+              .execute();
+          }
+
+          // Update receipt status to Posted
+          await trx
+            .updateTable("receipt")
+            .set({
+              status: "Posted",
+              postingDate: today,
+              postedBy: userId,
+            })
+            .where("id", "=", receiptId)
+            .execute();
+        });
+
+        break;
+      }
       default: {
         break;
       }

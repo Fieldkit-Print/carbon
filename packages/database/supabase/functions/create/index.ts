@@ -39,6 +39,14 @@ const payloadValidator = z.discriminatedUnion("type", [
     userId: z.string(),
   }),
   z.object({
+    type: z.literal("receiptFromSalesOrder"),
+    locationId: z.string().optional(),
+    salesOrderId: z.string(),
+    receiptId: z.string().optional(),
+    companyId: z.string(),
+    userId: z.string(),
+  }),
+  z.object({
     type: z.literal("receiptFromInboundTransfer"),
     warehouseTransferId: z.string(),
     receiptId: z.string().optional(),
@@ -941,6 +949,206 @@ serve(async (req: Request) => {
                   ...line,
                   receiptId: receiptId,
                   locationId,
+                }))
+              )
+              .execute();
+          }
+        });
+
+        return new Response(
+          JSON.stringify({
+            id: receiptId,
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 201,
+          }
+        );
+      } catch (err) {
+        console.error(err);
+        return new Response(JSON.stringify(err), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
+    }
+    case "receiptFromSalesOrder": {
+      const {
+        salesOrderId,
+        receiptId: existingReceiptId,
+        locationId: userLocationId,
+      } = payload;
+
+      console.log({
+        function: "create",
+        type,
+        companyId,
+        salesOrderId,
+        existingReceiptId,
+        userLocationId,
+        userId,
+      });
+
+      try {
+        const client = await getSupabaseServiceRole(
+          req.headers.get("Authorization"),
+          req.headers.get("carbon-key") ?? "",
+          companyId
+        );
+
+        const [salesOrder, salesOrderLines, receipt] = await Promise.all([
+          client
+            .from("salesOrder")
+            .select("*")
+            .eq("id", salesOrderId)
+            .single(),
+          client
+            .from("salesOrderLine")
+            .select("*")
+            .eq("salesOrderId", salesOrderId)
+            .in("salesOrderLineType", [
+              "Part",
+              "Material",
+              "Tool",
+              "Fixture",
+              "Consumable",
+            ]),
+          client
+            .from("receipt")
+            .select("*")
+            .eq("id", existingReceiptId)
+            .maybeSingle(),
+        ]);
+
+        if (!salesOrder.data) throw new Error("Sales order not found");
+        if (salesOrderLines.error)
+          throw new Error(salesOrderLines.error.message);
+
+        // Use the user's location or the first line's location
+        let locationId = userLocationId;
+        if (!locationId && salesOrderLines.data.length > 0) {
+          locationId = salesOrderLines.data[0].locationId;
+        }
+
+        const items = await client
+          .from("item")
+          .select("id, itemTrackingType")
+          .in(
+            "id",
+            salesOrderLines.data
+              .filter((d) => d.itemId)
+              .map((d) => d.itemId!)
+          );
+        const serializedItems = new Set(
+          items.data
+            ?.filter((d) => d.itemTrackingType === "Serial")
+            .map((d) => d.id)
+        );
+        const batchItems = new Set(
+          items.data
+            ?.filter((d) => d.itemTrackingType === "Batch")
+            .map((d) => d.id)
+        );
+
+        const hasReceipt = !!receipt.data?.id;
+
+        // Build receipt lines from SO lines that have been shipped but not fully returned
+        const receiptLineItems = salesOrderLines.data.reduce<
+          ReceiptLineItem[]
+        >((acc, d) => {
+          if (
+            !d.itemId ||
+            !d.saleQuantity ||
+            d.salesOrderLineType === "Comment"
+          ) {
+            return acc;
+          }
+
+          const quantitySent = d.quantitySent ?? 0;
+          const quantityReturned = d.quantityReturned ?? 0;
+          const returnableQuantity = quantitySent - quantityReturned;
+
+          if (returnableQuantity <= 0) return acc;
+
+          acc.push({
+            lineId: d.id,
+            companyId: companyId,
+            itemId: d.itemId,
+            orderQuantity: quantitySent,
+            outstandingQuantity: returnableQuantity,
+            receivedQuantity: returnableQuantity,
+            conversionFactor: 1,
+            requiresSerialTracking: serializedItems.has(d.itemId),
+            requiresBatchTracking: batchItems.has(d.itemId),
+            unitPrice: d.unitPrice ?? 0,
+            unitOfMeasure: d.unitOfMeasureCode ?? "EA",
+            locationId: d.locationId,
+            shelfId: d.shelfId,
+            createdBy: userId ?? "",
+          });
+
+          return acc;
+        }, []);
+
+        if (receiptLineItems.length === 0) {
+          throw new Error(
+            "No returnable items found — all shipped items have already been returned"
+          );
+        }
+
+        let receiptId = hasReceipt ? receipt.data?.id! : "";
+        let receiptIdReadable = hasReceipt ? receipt.data?.receiptId! : "";
+
+        await db.transaction().execute(async (trx) => {
+          if (hasReceipt) {
+            await trx
+              .updateTable("receipt")
+              .set({
+                sourceDocument: "Sales Order",
+                sourceDocumentId: salesOrder.data.id,
+                sourceDocumentReadableId: salesOrder.data.salesOrderId,
+                locationId: locationId,
+                updatedBy: userId,
+              })
+              .where("id", "=", receiptId)
+              .returning(["id", "receiptId"])
+              .execute();
+            await trx
+              .deleteFrom("receiptLine")
+              .where("receiptId", "=", receiptId)
+              .execute();
+          } else {
+            receiptIdReadable = await getNextSequence(
+              trx,
+              "receipt",
+              companyId
+            );
+            const newReceipt = await trx
+              .insertInto("receipt")
+              .values({
+                receiptId: receiptIdReadable,
+                sourceDocument: "Sales Order",
+                sourceDocumentId: salesOrder.data.id,
+                sourceDocumentReadableId: salesOrder.data.salesOrderId,
+                companyId: companyId,
+                locationId: locationId,
+                createdBy: userId,
+              })
+              .returning(["id", "receiptId"])
+              .execute();
+
+            receiptId = newReceipt?.[0]?.id!;
+            receiptIdReadable = newReceipt?.[0]?.receiptId!;
+          }
+
+          if (receiptLineItems.length > 0) {
+            await trx
+              .insertInto("receiptLine")
+              .values(
+                receiptLineItems.map((line) => ({
+                  ...line,
+                  receiptId: receiptId,
+                  locationId: line.locationId ?? locationId,
                 }))
               )
               .execute();

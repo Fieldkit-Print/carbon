@@ -2,6 +2,7 @@ import {
   LuBox,
   LuChartLine,
   LuFileText,
+  LuHistory,
   LuReceipt,
   LuShoppingCart,
   LuTags
@@ -74,6 +75,13 @@ export function usePartNavigation() {
       role: ["employee", "customer"],
       icon: LuReceipt,
       shortcut: "Command+Shift+x"
+    },
+    {
+      name: "Events",
+      to: path.to.partEvents(itemId),
+      isDisabled: !routeData.partSummary.customerId,
+      role: ["employee"],
+      icon: LuHistory
     }
   ].filter(
     (item) =>

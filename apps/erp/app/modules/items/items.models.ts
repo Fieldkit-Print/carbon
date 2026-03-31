@@ -119,7 +119,10 @@ export const configurationParameterValidator = z
     dataType: z.enum([...configurationParameterDataTypes, "date"]),
     listOptions: z.string().min(1).array().optional(),
     configurationParameterGroupId: z.string().optional(),
-    materialFormFilterId: zfd.text(z.string().optional())
+    materialFormFilterId: zfd.text(z.string().optional()),
+    description: zfd.text(z.string().optional()),
+    defaultValue: zfd.text(z.string().optional()),
+    required: zfd.checkbox()
   })
   .refine(
     (data) => {
@@ -491,7 +494,8 @@ export const partValidator = itemValidator.merge(
     id: z.string().min(1, { message: "Part ID is required" }).max(255),
     revision: z.string().min(1, { message: "Revision is required" }),
     modelUploadId: zfd.text(z.string().optional()),
-    lotSize: zfd.numeric(z.number().min(0).optional())
+    lotSize: zfd.numeric(z.number().min(0).optional()),
+    customerId: zfd.text(z.string().optional())
   })
 );
 
