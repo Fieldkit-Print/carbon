@@ -187,6 +187,28 @@ export default $config({
       },
     });
 
+    // pdfToolbox service (internal, no public load balancer)
+    const pdftoolbox = cluster.addService("PdfToolboxService", {
+      image: `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/carbon/pdftoolbox:${process.env.PDFTOOLBOX_IMAGE_TAG ?? process.env.IMAGE_TAG ?? "latest"}`,
+      port: 8080,
+      scaling: {
+        min: 1,
+        max: 4,
+        cpuUtilization: 70,
+        memoryUtilization: 80,
+      },
+      cpu: "1 vCPU",
+      memory: "2 GB",
+      environment: {
+        PDFTOOLBOX_LICENSE_SERVER: process.env.PDFTOOLBOX_LICENSE_SERVER ?? "licenseserver.callassoftware.com",
+        PDFTOOLBOX_LICENSE_MESSAGE: process.env.PDFTOOLBOX_LICENSE_MESSAGE ?? "",
+        PORT: "8080",
+      },
+      serviceRegistry: {
+        port: 8080,
+      },
+    });
+
     const rateLimitRule = {
       name: "RateLimitRule",
       statement: {

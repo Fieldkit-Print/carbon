@@ -3,10 +3,7 @@ import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { isPdfFile } from "@carbon/utils";
 
 import { task } from "@trigger.dev/sdk";
-import { execFile } from "child_process";
-import { promises as fs } from "fs";
-import os from "os";
-import path from "path";
+import { executePdfToolbox } from "./pdf-toolbox/executor";
 
 const isLocal = VERCEL_URL === undefined || VERCEL_URL.includes("localhost");
 
@@ -14,43 +11,6 @@ const getModelUrl = (modelId: string) => {
   const domain = isLocal ? "http://localhost:3000" : VERCEL_URL;
   return `${domain}/file/model/${modelId}`;
 };
-
-async function generatePdfThumbnail(
-  client: ReturnType<typeof getCarbonServiceRole>,
-  modelPath: string,
-): Promise<Buffer> {
-  const { data: fileData, error: downloadError } = await client.storage
-    .from("private")
-    .download(modelPath);
-
-  if (downloadError || !fileData) {
-    throw new Error(`Failed to download PDF: ${downloadError?.message}`);
-  }
-
-  const pdfBuffer = Buffer.from(await fileData.arrayBuffer());
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "pdf-thumb-"));
-  const inputPath = path.join(tmpDir, "input.pdf");
-  const outputPrefix = path.join(tmpDir, "output");
-
-  try {
-    await fs.writeFile(inputPath, pdfBuffer);
-
-    await new Promise<void>((resolve, reject) => {
-      execFile(
-        "pdftoppm",
-        ["-png", "-f", "1", "-l", "1", "-singlefile", "-r", "300", inputPath, outputPrefix],
-        (error) => {
-          if (error) reject(new Error(`pdftoppm failed: ${error.message}`));
-          else resolve();
-        },
-      );
-    });
-
-    return await fs.readFile(`${outputPrefix}.png`);
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
-  }
-}
 
 export const modelThumbnailTask = task({
   id: "model-thumbnail",
@@ -77,38 +37,59 @@ export const modelThumbnailTask = task({
       throw new Error("Failed to look up modelUpload record");
     }
 
-    const fileName = `${modelId}.png`;
-    let thumbnailBlob: Blob;
-
     if (isPdfFile(modelUpload.modelPath)) {
-      // PDF: render first page server-side
-      console.log("Generating PDF thumbnail", { modelPath: modelUpload.modelPath });
-      const pngData = await generatePdfThumbnail(client, modelUpload.modelPath);
-      thumbnailBlob = new Blob([pngData], { type: "image/png" });
-    } else {
-      // 3D model: use existing Puppeteer-based screenshot via edge function
-      const url = getModelUrl(modelId);
-      const imageUrl = `${SUPABASE_URL}/functions/v1/thumbnail`;
-
-      const response = await fetch(imageUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ url }),
+      // PDF: use pdfToolbox for thumbnail generation
+      console.log("Generating PDF thumbnail via pdfToolbox", {
+        modelPath: modelUpload.modelPath,
       });
 
-      if (response.status !== 200) {
-        console.log("Failed to generate thumbnail", { response });
-        throw new Error("Failed to generate thumbnail");
-      }
-
-      thumbnailBlob = new Blob([await response.arrayBuffer()], {
-        type: "image/png",
+      await executePdfToolbox({
+        companyId,
+        inputPath: modelUpload.modelPath,
+        outputDir: `${companyId}/thumbnails/${modelId}`,
+        cliArgs: [
+          "--thumbnails",
+          "--firstpageonly",
+          "--resolution=300",
+          "--imgformat=png",
+        ],
+        outputExtension: "png",
+        outputFileName: `${modelId}.png`,
       });
+
+      await client
+        .from("modelUpload")
+        .update({
+          thumbnailPath: `${companyId}/thumbnails/${modelId}/${modelId}.png`,
+        })
+        .eq("id", modelId);
+
+      return;
     }
 
+    // 3D model: use existing Puppeteer-based screenshot via edge function
+    const url = getModelUrl(modelId);
+    const imageUrl = `${SUPABASE_URL}/functions/v1/thumbnail`;
+
+    const response = await fetch(imageUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ url }),
+    });
+
+    if (response.status !== 200) {
+      console.log("Failed to generate thumbnail", { response });
+      throw new Error("Failed to generate thumbnail");
+    }
+
+    const thumbnailBlob = new Blob([await response.arrayBuffer()], {
+      type: "image/png",
+    });
+
+    const fileName = `${modelId}.png`;
     const thumbnailFile = new File([thumbnailBlob], fileName, {
       type: "image/png",
     });
@@ -133,7 +114,9 @@ export const modelThumbnailTask = task({
       .eq("id", modelId);
 
     if (result.error) {
-      console.error("Failed to update thumbnail path", { error: result.error });
+      console.error("Failed to update thumbnail path", {
+        error: result.error,
+      });
     }
   },
 });
