@@ -14,6 +14,7 @@ export const supportedModelTypes = [
   "3dm",
   "3ds",
   "3mf",
+  "ai",
   "amf",
   "bim",
   "brep",
@@ -32,6 +33,9 @@ export const supportedModelTypes = [
   "stp"
 ];
 
+const pdfBasedExtensions = ["pdf", "ai"];
+
 export function isPdfFile(filename: string): boolean {
-  return filename.split(".").pop()?.toLowerCase() === "pdf";
+  const ext = filename.split(".").pop()?.toLowerCase();
+  return ext !== undefined && pdfBasedExtensions.includes(ext);
 }
