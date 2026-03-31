@@ -3143,7 +3143,7 @@ export async function createProofApproval(
       version: nextVersion,
       externalLinkId: externalLinkId ?? undefined
     })
-    .select("id")
+    .select("id, version")
     .single();
 }
 

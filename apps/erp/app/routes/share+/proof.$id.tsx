@@ -90,7 +90,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
     if (modelUpload?.modelPath) {
       const { data: signedUrl } = await serviceRole.storage
-        .from("parts")
+        .from("private")
         .createSignedUrl(modelUpload.modelPath, 3600);
       proofFileUrl = signedUrl?.signedUrl ?? null;
       fileName = modelUpload.name ?? null;
@@ -335,7 +335,9 @@ function ProofReview({
             </ModalDescription>
           </ModalHeader>
           <ModalBody>
-            <label className="text-sm font-medium">Rejection Notes</label>
+            <label className="text-sm font-medium">
+              Rejection Notes <span className="text-destructive">*</span>
+            </label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -358,7 +360,7 @@ function ProofReview({
               <Button
                 type="submit"
                 variant="destructive"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !notes.trim()}
               >
                 Yes, Reject
               </Button>
