@@ -135,6 +135,7 @@ const Item = ({
   const selectTypeModal = useDisclosure();
   const newItemsModal = useDisclosure();
   const [created, setCreated] = useState<string>("");
+  const [pendingCreatedId, setPendingCreatedId] = useState<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const { getInputProps, error } = useField(name);
@@ -152,6 +153,19 @@ const Item = ({
       props?.onChange?.(null);
     }
   };
+
+  // When a new item is created inline, wait for it to appear in the store
+  // before calling onChange so the parent gets valid option data
+  useEffect(() => {
+    if (pendingCreatedId) {
+      const option = options.find((o) => o.value === pendingCreatedId);
+      if (option) {
+        onChange(pendingCreatedId);
+        setPendingCreatedId(null);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingCreatedId, options]);
 
   const canSwitchItemType = typeof onTypeChange === "function";
   const submitRef = useRef<HTMLButtonElement>(null);
@@ -345,7 +359,7 @@ const Item = ({
           }}
           onCreated={(createdId) => {
             setValue(createdId);
-            onChange(createdId);
+            setPendingCreatedId(createdId);
           }}
           initialValues={{
             id: "",

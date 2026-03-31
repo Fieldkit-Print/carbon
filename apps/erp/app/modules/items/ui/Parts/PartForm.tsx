@@ -161,8 +161,8 @@ const PartForm = ({
 
     if (fetcher.state === "loading" && fetcher.data?.data) {
       const createdId = (fetcher.data.data as { id: string })?.id;
-      onClose?.();
       if (createdId) onCreated?.(createdId);
+      onClose?.();
       toast.success(`Created part`);
     } else if (fetcher.state === "idle" && fetcher.data?.error) {
       toast.error(`Failed to create part: ${fetcher.data.error.message}`);
