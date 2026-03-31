@@ -38,30 +38,25 @@ export const modelThumbnailTask = task({
     }
 
     if (isPdfFile(modelUpload.modelPath)) {
-      // PDF: use pdfToolbox for thumbnail generation
+      // PDF/AI: render first page to PNG via pdfToolbox
       console.log("Generating PDF thumbnail via pdfToolbox", {
         modelPath: modelUpload.modelPath,
       });
+
+      const thumbnailPath = `${companyId}/thumbnails/${modelId}/${modelId}.jpg`;
 
       await executePdfToolbox({
         companyId,
         inputPath: modelUpload.modelPath,
         outputDir: `${companyId}/thumbnails/${modelId}`,
-        cliArgs: [
-          "--thumbnails",
-          "--firstpageonly",
-          "--resolution=300",
-          "--imgformat=png",
-        ],
-        outputExtension: "png",
-        outputFileName: `${modelId}.png`,
+        processPlan: "create-thumbnail.kfpx",
+        outputExtension: "jpg",
+        outputFileName: `${modelId}.jpg`,
       });
 
       await client
         .from("modelUpload")
-        .update({
-          thumbnailPath: `${companyId}/thumbnails/${modelId}/${modelId}.png`,
-        })
+        .update({ thumbnailPath })
         .eq("id", modelId);
 
       return;

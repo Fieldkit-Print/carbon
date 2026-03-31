@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pdfpreflight version="22.0">
+	<package>
+		<id3>b64b55851aa7c7cbc4e555e19c3dc4d1</id3>
+		<pdfxoutintentlist>
+		</pdfxoutintentlist>
+		<iccprofilelist>
+		</iccprofilelist>
+		<ccpolicies>
+		</ccpolicies>
+		<occdsetups>
+		</occdsetups>
+		<curves>
+		</curves>
+		<fspolicies>
+		</fspolicies>
+		<resources>
+		</resources>
+		<variables>
+		</variables>
+		<conditions>
+		</conditions>
+		<rules>
+		</rules>
+		<rulesets>
+		</rulesets>
+		<fixups>
+		</fixups>
+		<fixupsets>
+		</fixupsets>
+		<actions>
+			<action>
+				<id1>A4c6f88d8a0cd7252ca2b694c47e6ccea</id1>
+				<id2>A26b7a6b5b8081db8ae06dae3ad3600a8</id2>
+				<id3>d04f5039b29bde6ea828847d4216e08a</id3>
+				<id4>0eb779225d3c309afb640b0067c0d033</id4>
+				<id5>A26b7a6b5b8081db8ae06dae3ad3600a8</id5>
+				<name>A_16_ImageexportJPEG150ppiCMYK</name>
+				<comment>A_16_ImageexportJPEG150ppiCMYK</comment>
+				<flags edit="1" visible="1" dict="1"></flags>
+				<creation>D:20180323044007-06&apos;00&apos;</creation>
+				<modification>D:20250226011025-06&apos;00&apos;</modification>
+				<actionid provider="boa">saveasimg</actionid>
+				<params>
+					<param key="CLIPPING_FILE"></param>
+					<param key="COLORSPACE">0</param>
+					<param key="COMPRESSION">1</param>
+					<param key="FIRST_PAGE">0</param>
+					<param key="IMGFORMAT">0</param>
+					<param key="JPEGFORMAT">0</param>
+					<param key="LAST_PAGE">-1</param>
+					<param key="OUT_FILE"></param>
+					<param key="OUT_FOLDER"></param>
+					<param key="OVERPRINT_PREVIEW">1</param>
+					<param key="OVERWRITE">0</param>
+					<param key="PAGEBOX">1</param>
+					<param key="PAGE_DIGITS">1</param>
+					<param key="RECT_BOTTOM">0</param>
+					<param key="RECT_LEFT">0</param>
+					<param key="RECT_RIGHT">-1</param>
+					<param key="RECT_TOP">-1</param>
+					<param key="RESOLUTION">150</param>
+					<param key="SIMULATION_PROFILE"></param>
+					<param key="SIM_PAPER_COLOR">0</param>
+					<param key="SMOOTH_LINEART">1</param>
+					<param key="SMOOTH_LINEIMAGES">1</param>
+					<param key="SMOOTH_NTLH">0</param>
+					<param key="SMOOTH_TEXT">1</param>
+					<param key="USE_BPC">0</param>
+					<param key="USE_RECT">0</param>
+				</params>
+			</action>
+		</actions>
+		<quickfixes>
+		</quickfixes>
+		<profiles>
+		</profiles>
+		<metaprofs>
+			<metaprof>
+				<id1>M41986cf3d04805f7d8d844ec25caa27e</id1>
+				<id2>M0a6b9e864a10e8617537206bff2f42b9</id2>
+				<id3>1cab34a25d57dc2d11b25d5d771943d0</id3>
+				<id4>9fbd56bae43f8c1b9f1ddf619075de6e</id4>
+				<id5>Mc7651e45d0fa41f70e31b489d6f2a3ff</id5>
+				<name>Create Thumbnail</name>
+				<comment></comment>
+				<flags edit="1" visible="1"></flags>
+				<metalist>
+					<metadata>
+						<metakey>author</metakey>
+						<metavalue></metavalue>
+					</metadata>
+					<metadata>
+						<metakey>email</metakey>
+						<metavalue></metavalue>
+					</metadata>
+				</metalist>
+				<creation>D:20260331141450-06&apos;00&apos;</creation>
+				<modification>D:20260331141631-06&apos;00&apos;</modification>
+				<layout>{&quot;displayConfiguration&quot;:{&quot;originalViewportPosition&quot;:{&quot;x&quot;:18.75,&quot;y&quot;:-93.75},&quot;scale&quot;:1.25},&quot;layout&quot;:{&quot;stepsLayout&quot;:{&quot;0&quot;:{&quot;position&quot;:{&quot;x&quot;:720,&quot;y&quot;:240},&quot;size&quot;:{&quot;height&quot;:62,&quot;width&quot;:200}},&quot;end&quot;:{&quot;position&quot;:{&quot;x&quot;:780,&quot;y&quot;:459.5},&quot;size&quot;:{&quot;height&quot;:41,&quot;width&quot;:120}},&quot;start&quot;:{&quot;position&quot;:{&quot;x&quot;:720,&quot;y&quot;:99.5},&quot;size&quot;:{&quot;height&quot;:41,&quot;width&quot;:120}}},&quot;transitionsLayout&quot;:{&quot;0&quot;:[{&quot;end&quot;:{&quot;position&quot;:&quot;top&quot;},&quot;start&quot;:{&quot;position&quot;:&quot;bottom&quot;},&quot;types&quot;:[&quot;on_success&quot;,&quot;on_failure&quot;,&quot;if_disabled&quot;]}],&quot;start&quot;:[{&quot;end&quot;:{&quot;position&quot;:&quot;top&quot;},&quot;start&quot;:{&quot;position&quot;:&quot;bottom&quot;},&quot;types&quot;:[&quot;out&quot;]}]}}}&#10;</layout>
+				<sequence>
+					<step type="3">
+						<enabled disablednext="-1">1</enabled>
+						<customid></customid>
+						<action>A4c6f88d8a0cd7252ca2b694c47e6ccea</action>
+						<suffix></suffix>
+						<prefix></prefix>
+						<folder></folder>
+						<omitname>0</omitname>
+						<overwrite>0</overwrite>
+						<istempfile>0</istempfile>
+						<ppoptions>
+							<ppoption ret="0" next="-1">
+							</ppoption>
+							<ppoption ret="1" next="-1">
+							</ppoption>
+						</ppoptions>
+					</step>
+					<firststep>0</firststep>
+					<revertchanges>0</revertchanges>
+				</sequence>
+			</metaprof>
+		</metaprofs>
+		<profgroups>
+		</profgroups>
+	</package>
+</pdfpreflight>

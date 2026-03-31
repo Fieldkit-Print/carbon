@@ -90,22 +90,27 @@ fastify.post("/process", async (request, reply) => {
     await fs.writeFile(inputFile, fileBuffer);
 
     // Build CLI arguments
+    // Syntax: pdfToolbox [options] <profile> <input files>
     const args = [];
 
-    // Add license server flags
+    // Options first
+    args.push(...cliArgs);
+    args.push(`-o=${outputFile}`);
+
+    // Add license server flags as options (before profile)
     if (LICENSE_MESSAGE) {
       args.push(`--licenseserver=${LICENSE_SERVER}`);
       args.push(`--lsmessage=${LICENSE_MESSAGE}`);
     }
 
+    // Profile (process plan) - required positional arg
     if (processPlan) {
       const planPath = path.join(PROCESS_PLANS_DIR, processPlan);
       args.push(planPath);
     }
 
-    args.push(...cliArgs);
+    // Input file - required positional arg
     args.push(inputFile);
-    args.push(`-o=${outputFile}`);
 
     fastify.log.info({ args: args.filter((a) => !a.includes("lsmessage")) }, "Executing pdfToolbox");
 
@@ -153,7 +158,7 @@ fastify.post("/process", async (request, reply) => {
         const resultBuffer = await fs.readFile(inputFile);
         reply
           .header("X-Exit-Code", String(exitCode))
-          .header("X-Log", log.slice(0, 1000))
+          .header("X-Log", encodeURIComponent(log.slice(0, 1000)))
           .type("application/octet-stream")
           .send(resultBuffer);
         return;
@@ -167,7 +172,7 @@ fastify.post("/process", async (request, reply) => {
 
     reply
       .header("X-Exit-Code", String(exitCode))
-      .header("X-Log", log.slice(0, 1000))
+      .header("X-Log", encodeURIComponent(log.slice(0, 1000)))
       .type("application/octet-stream")
       .send(resultBuffer);
   } finally {

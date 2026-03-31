@@ -282,10 +282,16 @@ function SalesRFQLineItem({
           )}
         >
           <HStack spacing={2} className="flex-grow min-w-0 pr-10">
-            <ItemThumbnail
-              thumbnailPath={line.thumbnailPath}
-              type={line.itemType as MethodItemType}
-            />
+            {line.modelUploadId && !line.thumbnailPath ? (
+              <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                <Spinner className="h-4 w-4" />
+              </div>
+            ) : (
+              <ItemThumbnail
+                thumbnailPath={line.thumbnailPath}
+                type={line.itemType as MethodItemType}
+              />
+            )}
 
             <VStack spacing={0} className="min-w-0">
               <span className="font-semibold line-clamp-1">

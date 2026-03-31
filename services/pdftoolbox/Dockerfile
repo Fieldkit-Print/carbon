@@ -15,8 +15,9 @@ WORKDIR /app
 COPY package.json server.js ./
 RUN npm install --omit=dev
 
-# Process plans, profiles, fonts (mounted or copied at build time)
+# Process plans, profiles, fonts
 RUN mkdir -p /app/process-plans /app/profiles /app/fonts
+COPY process-plans/ /app/process-plans/
 
 EXPOSE 8080
 
