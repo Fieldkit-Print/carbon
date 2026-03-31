@@ -30,6 +30,7 @@ import { useFetcher } from "react-router";
 import type { z } from "zod";
 import { TrackingTypeIcon } from "~/components";
 import {
+  Customer,
   CustomFormFields,
   DefaultMethodType,
   Hidden,
@@ -55,6 +56,7 @@ type PartFormProps = {
   initialValues: z.infer<typeof partValidator> & { tags?: string[] };
   type?: "card" | "modal";
   onClose?: () => void;
+  onCreated?: (id: string) => void;
 };
 
 const SIZE_LIMIT = getFileSizeLimit("CAD_MODEL_UPLOAD");
@@ -63,7 +65,12 @@ function startsWithLetter(value: string) {
   return /^[A-Za-z]/.test(value);
 }
 
-const PartForm = ({ initialValues, type = "card", onClose }: PartFormProps) => {
+const PartForm = ({
+  initialValues,
+  type = "card",
+  onClose,
+  onCreated
+}: PartFormProps) => {
   const { company } = useUser();
   const baseCurrency = company?.baseCurrencyCode ?? "USD";
 
@@ -153,16 +160,25 @@ const PartForm = ({ initialValues, type = "card", onClose }: PartFormProps) => {
     if (type !== "modal") return;
 
     if (fetcher.state === "loading" && fetcher.data?.data) {
+      const createdId = (fetcher.data.data as { id: string })?.id;
       onClose?.();
+      if (createdId) onCreated?.(createdId);
       toast.success(`Created part`);
     } else if (fetcher.state === "idle" && fetcher.data?.error) {
       toast.error(`Failed to create part: ${fetcher.data.error.message}`);
     }
-  }, [fetcher.data, fetcher.state, onClose, type]);
+  }, [fetcher.data, fetcher.state, onClose, onCreated, type]);
 
   const { id, onIdChange, loading } = useNextItemId("Part");
   const permissions = usePermissions();
   const isEditing = !!initialValues.id;
+
+  useEffect(() => {
+    if (type === "modal" && !isEditing) {
+      onIdChange("...");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const itemTrackingTypeOptions = itemTrackingTypes.map((itemTrackingType) => ({
     label: (
@@ -307,6 +323,14 @@ const PartForm = ({ initialValues, type = "card", onClose }: PartFormProps) => {
                 )}
                 {!isEditing && replenishmentSystem !== "Buy" && (
                   <Number name="lotSize" label="Batch Size" minValue={0} />
+                )}
+
+                {isEditing && (
+                  <Customer
+                    name="customerId"
+                    label="Customer Owner"
+                    isClearable
+                  />
                 )}
 
                 <CustomFormFields table="part" tags={initialValues.tags} />

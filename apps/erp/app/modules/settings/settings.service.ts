@@ -856,6 +856,17 @@ export async function updateQuoteLineCategoryMarkups(
     .eq("id", companyId);
 }
 
+export async function updateDefaultCustomerItemGroupSetting(
+  client: SupabaseClient<Database>,
+  companyId: string,
+  defaultCustomerItemGroupId: string | null
+) {
+  return client
+    .from("companySettings")
+    .update(sanitize({ defaultCustomerItemGroupId }))
+    .eq("id", companyId);
+}
+
 export async function updateSequence(
   client: SupabaseClient<Database>,
   table: string,

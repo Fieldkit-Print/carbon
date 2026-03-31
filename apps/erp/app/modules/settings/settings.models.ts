@@ -279,6 +279,10 @@ export const supplierApprovalValidator = z.object({
   supplierApproval: zfd.checkbox()
 });
 
+export const defaultCustomerItemGroupValidator = z.object({
+  defaultCustomerItemGroupId: z.string().optional()
+});
+
 export const accountsPayableBillingAddressValidator = z.object(billingAddress);
 export const accountsReceivableBillingAddressValidator =
   z.object(billingAddress);

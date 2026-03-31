@@ -18,10 +18,13 @@ import {
 import { useEffect } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { redirect, useFetcher, useLoaderData } from "react-router";
+import { ItemPostingGroup } from "~/components/Form";
 import {
+  defaultCustomerItemGroupValidator,
   getCompanySettings,
   materialIdsValidator,
   materialUnitsValidator,
+  updateDefaultCustomerItemGroupSetting,
   updateMaterialGeneratedIdsSetting,
   updateMetricSettings
 } from "~/modules/settings";
@@ -104,6 +107,31 @@ export async function action({ request }: ActionFunctionArgs) {
         };
 
       return { success: true, message: "Material units setting updated" };
+
+    case "customerItemGroup":
+      const groupValidation = await validator(
+        defaultCustomerItemGroupValidator
+      ).validate(formData);
+
+      if (groupValidation.error) {
+        return { success: false, message: "Invalid form data" };
+      }
+
+      const groupResult = await updateDefaultCustomerItemGroupSetting(
+        client,
+        companyId,
+        groupValidation.data.defaultCustomerItemGroupId ?? null
+      );
+      if (groupResult.error)
+        return {
+          success: false,
+          message: groupResult.error.message
+        };
+
+      return {
+        success: true,
+        message: "Default customer item group updated"
+      };
   }
 
   return { success: false, message: "Invalid form data" };
@@ -205,6 +233,48 @@ export default function ItemsSettingsRoute() {
                 isLoading={
                   fetcher.state !== "idle" &&
                   fetcher.formData?.get("intent") === "materialUnits"
+                }
+              >
+                Save
+              </Submit>
+            </CardFooter>
+          </ValidatedForm>
+        </Card>
+        <Card>
+          <ValidatedForm
+            method="post"
+            validator={defaultCustomerItemGroupValidator}
+            defaultValues={{
+              defaultCustomerItemGroupId:
+                companySettings.defaultCustomerItemGroupId ?? undefined
+            }}
+            fetcher={fetcher}
+          >
+            <input type="hidden" name="intent" value="customerItemGroup" />
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Default Customer Item Group
+              </CardTitle>
+              <CardDescription>
+                The default item group assigned to new parts created inline from
+                a quote.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-8 max-w-[400px]">
+                <ItemPostingGroup
+                  name="defaultCustomerItemGroupId"
+                  label="Item Group"
+                  isClearable
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Submit
+                isDisabled={fetcher.state !== "idle"}
+                isLoading={
+                  fetcher.state !== "idle" &&
+                  fetcher.formData?.get("intent") === "customerItemGroup"
                 }
               >
                 Save

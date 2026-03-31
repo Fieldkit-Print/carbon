@@ -48,6 +48,7 @@ import {
   usePercentFormatter,
   usePermissions,
   useRouteData,
+  useSettings,
   useUser
 } from "~/hooks";
 import type {
@@ -82,6 +83,7 @@ const QuoteLineForm = ({
   const permissions = usePermissions();
   const { company } = useUser();
   const { carbon } = useCarbon();
+  const settings = useSettings();
 
   const { quoteId } = useParams();
 
@@ -368,6 +370,9 @@ const QuoteLineForm = ({
                         type="Part"
                         value={itemData.itemId}
                         includeInactive
+                        defaultPostingGroupId={
+                          settings.defaultCustomerItemGroupId ?? undefined
+                        }
                         onChange={(value) => {
                           onItemChange(value?.value as string);
                         }}

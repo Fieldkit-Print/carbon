@@ -49,6 +49,7 @@ type ItemSelectProps = Omit<ComboboxProps, "options" | "type" | "inline"> & {
   typeFieldName?: string;
   validItemTypes?: MethodItemType[];
   whitelist?: string[];
+  defaultPostingGroupId?: string;
   onConfigure?: () => void;
   onTypeChange?: (type: MethodItemType | "Item") => void;
 };
@@ -341,7 +342,10 @@ const Item = ({
           onClose={() => {
             setCreated("");
             newItemsModal.onClose();
-            triggerRef.current?.click();
+          }}
+          onCreated={(createdId) => {
+            setValue(createdId);
+            onChange(createdId);
           }}
           initialValues={{
             id: "",
@@ -355,6 +359,7 @@ const Item = ({
               props?.replenishmentSystem === "Buy" ? "Pick" : "Make",
             unitCost: 0,
             lotSize: 0,
+            postingGroupId: props?.defaultPostingGroupId,
             tags: []
           }}
         />

@@ -2924,6 +2924,7 @@ export type Database = {
           accountsReceivableAddress: boolean | null
           accountsReceivableEmail: string | null
           defaultCustomerCc: string[] | null
+          defaultCustomerItemGroupId: string | null
           defaultSupplierCc: string[] | null
           digitalQuoteEnabled: boolean
           digitalQuoteIncludesPurchaseOrders: boolean
@@ -2960,6 +2961,7 @@ export type Database = {
           accountsReceivableAddress?: boolean | null
           accountsReceivableEmail?: string | null
           defaultCustomerCc?: string[] | null
+          defaultCustomerItemGroupId?: string | null
           defaultSupplierCc?: string[] | null
           digitalQuoteEnabled?: boolean
           digitalQuoteIncludesPurchaseOrders?: boolean
@@ -2996,6 +2998,7 @@ export type Database = {
           accountsReceivableAddress?: boolean | null
           accountsReceivableEmail?: string | null
           defaultCustomerCc?: string[] | null
+          defaultCustomerItemGroupId?: string | null
           defaultSupplierCc?: string[] | null
           digitalQuoteEnabled?: boolean
           digitalQuoteIncludesPurchaseOrders?: boolean
@@ -4704,6 +4707,70 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "userDefaults"
             referencedColumns: ["userId"]
+          },
+        ]
+      }
+      customerAssetEvent: {
+        Row: {
+          id: string
+          itemId: string
+          eventType: string
+          eventDate: string
+          sourceDocument: string | null
+          sourceDocumentId: string | null
+          destination: string | null
+          notes: string | null
+          companyId: string
+          createdBy: string
+          createdAt: string
+        }
+        Insert: {
+          id?: string
+          itemId: string
+          eventType: string
+          eventDate?: string
+          sourceDocument?: string | null
+          sourceDocumentId?: string | null
+          destination?: string | null
+          notes?: string | null
+          companyId: string
+          createdBy: string
+          createdAt?: string
+        }
+        Update: {
+          id?: string
+          itemId?: string
+          eventType?: string
+          eventDate?: string
+          sourceDocument?: string | null
+          sourceDocumentId?: string | null
+          destination?: string | null
+          notes?: string | null
+          companyId?: string
+          createdBy?: string
+          createdAt?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customerAssetEvent_itemId_fkey"
+            columns: ["itemId"]
+            isOneToOne: false
+            referencedRelation: "item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -9303,6 +9370,7 @@ export type Database = {
           companyId: string | null
           createdAt: string
           createdBy: string
+          customerId: string | null
           defaultMethodType: Database["public"]["Enums"]["methodType"] | null
           description: string | null
           embedding: unknown
@@ -9328,6 +9396,7 @@ export type Database = {
           companyId?: string | null
           createdAt?: string
           createdBy: string
+          customerId?: string | null
           defaultMethodType?: Database["public"]["Enums"]["methodType"] | null
           description?: string | null
           embedding?: unknown
@@ -9353,6 +9422,7 @@ export type Database = {
           companyId?: string | null
           createdAt?: string
           createdBy?: string
+          customerId?: string | null
           defaultMethodType?: Database["public"]["Enums"]["methodType"] | null
           description?: string | null
           embedding?: unknown
@@ -32158,10 +32228,13 @@ export type Database = {
           nonTaxableAddOnCost: number
           promisedDate: string | null
           quantityInvoiced: number | null
+          quantityReturned: number
           quantitySent: number | null
           quantityToInvoice: number | null
           quantityToSend: number | null
           requiresInspection: boolean
+          returnedComplete: boolean
+          returnedDate: string | null
           saleQuantity: number | null
           salesOrderId: string
           salesOrderLineType: Database["public"]["Enums"]["salesOrderLineType"]
@@ -32202,10 +32275,13 @@ export type Database = {
           nonTaxableAddOnCost?: number
           promisedDate?: string | null
           quantityInvoiced?: number | null
+          quantityReturned?: number
           quantitySent?: number | null
           quantityToInvoice?: number | null
           quantityToSend?: number | null
           requiresInspection?: boolean
+          returnedComplete?: boolean
+          returnedDate?: string | null
           saleQuantity?: number | null
           salesOrderId: string
           salesOrderLineType: Database["public"]["Enums"]["salesOrderLineType"]
@@ -32246,10 +32322,13 @@ export type Database = {
           nonTaxableAddOnCost?: number
           promisedDate?: string | null
           quantityInvoiced?: number | null
+          quantityReturned?: number
           quantitySent?: number | null
           quantityToInvoice?: number | null
           quantityToSend?: number | null
           requiresInspection?: boolean
+          returnedComplete?: boolean
+          returnedDate?: string | null
           saleQuantity?: number | null
           salesOrderId?: string
           salesOrderLineType?: Database["public"]["Enums"]["salesOrderLineType"]
@@ -53228,10 +53307,13 @@ export type Database = {
           orderDate: string | null
           promisedDate: string | null
           quantityInvoiced: number | null
+          quantityReturned: number | null
           quantitySent: number | null
           quantityToInvoice: number | null
           quantityToSend: number | null
           requiresInspection: boolean | null
+          returnedComplete: boolean | null
+          returnedDate: string | null
           saleQuantity: number | null
           salesOrderId: string | null
           salesOrderLineType:
