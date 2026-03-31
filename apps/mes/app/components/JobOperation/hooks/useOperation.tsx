@@ -74,6 +74,13 @@ export function useOperation({
 
   const [activeTab, setActiveTab] = useState("details");
   const [eventType, setEventType] = useState(() => {
+    // If there's an active event, default to its type
+    const activeEvent = events.find(
+      (e) => e.endTime === null && e.employeeId === user.id
+    );
+    if (activeEvent?.type) {
+      return activeEvent.type;
+    }
     if (operation.setupDuration > 0) {
       return "Setup";
     }
@@ -218,11 +225,11 @@ export function useOperation({
 
   const activeEvents = useMemo(() => {
     return {
-      setupProductionEvent: events.find(
+      setupProductionEvent: eventState.find(
         (e) =>
           e.type === "Setup" && e.endTime === null && e.employeeId === user.id
       ),
-      laborProductionEvent: events.find(
+      laborProductionEvent: eventState.find(
         (e) =>
           e.type === "Labor" && e.endTime === null && e.employeeId === user.id
       ),
@@ -230,7 +237,7 @@ export function useOperation({
         (e) => e.type === "Machine" && e.endTime === null
       )
     };
-  }, [eventState, events, user.id]);
+  }, [eventState, user.id]);
 
   const active = useMemo(() => {
     return {
