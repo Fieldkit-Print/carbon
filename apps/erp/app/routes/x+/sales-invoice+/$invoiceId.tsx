@@ -21,6 +21,7 @@ import {
   getOpportunityDocuments
 } from "~/modules/sales/sales.service";
 import { getCompanySettings } from "~/modules/settings";
+import { upsertExternalLink } from "~/modules/shared";
 import type { Handle } from "~/utils/handle";
 import { path } from "~/utils/path";
 
@@ -68,6 +69,31 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const defaultCc = customer?.data?.defaultCc?.length
     ? customer.data.defaultCc
     : (companySettings.data?.defaultCustomerCc ?? []);
+
+  // Ensure posted invoices have an external link for the digital invoice page
+  if (salesInvoice.data.postingDate && !salesInvoice.data.externalLinkId) {
+    try {
+      const externalLink = await upsertExternalLink(serviceRole, {
+        documentType: "SalesInvoice",
+        documentId: invoiceId,
+        customerId: salesInvoice.data.customerId,
+        expiresAt: salesInvoice.data.dateDue
+          ? new Date(salesInvoice.data.dateDue).toISOString()
+          : undefined,
+        companyId
+      });
+
+      if (externalLink.data) {
+        await serviceRole
+          .from("salesInvoice")
+          .update({ externalLinkId: externalLink.data.id })
+          .eq("id", invoiceId);
+        (salesInvoice.data as any).externalLinkId = externalLink.data.id;
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
 
   return {
     salesInvoice: salesInvoice.data,
