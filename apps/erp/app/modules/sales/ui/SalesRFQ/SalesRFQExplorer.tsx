@@ -43,9 +43,17 @@ export default function SalesRFQExplorer() {
   }>(path.to.salesRfq(rfqId));
   const permissions = usePermissions();
 
+  const modelUploadIds = salesRfqData?.lines
+    .map((d) => d.modelUploadId)
+    .filter(Boolean);
+
+  // Revalidate when any line in this RFQ changes (e.g., modelUploadId set after drag)
+  useRealtime("salesRfqLine", `salesRfqId=eq.${rfqId}`);
+
+  // Revalidate when a model upload changes (e.g., thumbnailPath set by thumbnail task)
   useRealtime(
     "modelUpload",
-    `modelPath=in.(${salesRfqData?.lines.map((d) => d.modelPath).join(",")})`
+    modelUploadIds?.length ? `id=in.(${modelUploadIds.join(",")})` : undefined
   );
 
   const newSalesRFQLineDisclosure = useDisclosure();

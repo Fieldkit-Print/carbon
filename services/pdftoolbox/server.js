@@ -147,28 +147,36 @@ fastify.post("/process", async (request, reply) => {
       return { error: `pdfToolbox failed with exit code ${exitCode}`, exitCode, log: log.slice(0, 2000) };
     }
 
-    // Check if output file exists
+    // Find the output file — pdfToolbox may not use our exact -o path
+    let resultFile = null;
+
+    // First check the exact output path we specified
     try {
       await fs.access(outputFile);
+      resultFile = outputFile;
     } catch {
-      // Some operations modify in-place or produce output differently
-      // Try reading the input file as the output
-      try {
-        await fs.access(inputFile);
-        const resultBuffer = await fs.readFile(inputFile);
-        reply
-          .header("X-Exit-Code", String(exitCode))
-          .header("X-Log", encodeURIComponent(log.slice(0, 1000)))
-          .type("application/octet-stream")
-          .send(resultBuffer);
-        return;
-      } catch {
-        reply.code(500);
-        return { error: "No output file produced", exitCode, log: log.slice(0, 2000) };
-      }
+      // Scan tmpDir for any new files that aren't the input
+      const allFiles = await fs.readdir(tmpDir, { recursive: true });
+      fastify.log.info({ allFiles }, "Files in tmpDir after pdfToolbox");
+
+      // Find files matching the output extension, or any non-input file
+      const candidates = allFiles
+        .map(f => typeof f === 'string' ? f : f.toString())
+        .filter(f => f !== "input.pdf")
+        .map(f => path.join(tmpDir, f));
+
+      // Prefer files with the right extension
+      const extMatch = candidates.find(f => f.endsWith(`.${outputExtension}`));
+      resultFile = extMatch || candidates[0] || null;
     }
 
-    const resultBuffer = await fs.readFile(outputFile);
+    if (!resultFile) {
+      reply.code(500);
+      return { error: "No output file produced", exitCode, log: log.slice(0, 2000) };
+    }
+
+    fastify.log.info({ resultFile }, "Returning output file");
+    const resultBuffer = await fs.readFile(resultFile);
 
     reply
       .header("X-Exit-Code", String(exitCode))

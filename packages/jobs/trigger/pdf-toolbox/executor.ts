@@ -101,9 +101,20 @@ export async function executePdfToolbox(
   const storagePath = `${input.outputDir}/${outputFileName}`;
   const resultBlob = new Blob([resultBuffer]);
 
+  const contentTypeMap: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    tiff: "image/tiff",
+    pdf: "application/pdf",
+  };
+
   const { error: uploadError } = await client.storage
     .from("private")
-    .upload(storagePath, resultBlob, { upsert: true });
+    .upload(storagePath, resultBlob, {
+      upsert: true,
+      contentType: contentTypeMap[outputExt] ?? "application/octet-stream",
+    });
 
   if (uploadError) {
     throw new Error(`Failed to upload result: ${uploadError.message}`);
