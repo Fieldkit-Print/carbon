@@ -2818,6 +2818,7 @@ export async function upsertQuoteLineMethod(
     companyId: string;
     userId: string;
     configuration?: Record<string, unknown>;
+    merge?: boolean;
     parts?: {
       billOfMaterial: boolean;
       billOfProcess: boolean;
@@ -2835,6 +2836,7 @@ export async function upsertQuoteLineMethod(
     companyId: string;
     userId: string;
     configuration?: Record<string, unknown>;
+    merge?: boolean;
     parts?: {
       billOfMaterial: boolean;
       billOfProcess: boolean;
@@ -2854,6 +2856,10 @@ export async function upsertQuoteLineMethod(
   // Only add configuration if it exists
   if (lineMethod.configuration !== undefined) {
     body.configuration = lineMethod.configuration;
+  }
+
+  if (lineMethod.merge) {
+    body.merge = true;
   }
 
   // Only add parts if it exists

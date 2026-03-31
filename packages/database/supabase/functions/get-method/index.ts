@@ -71,6 +71,7 @@ const payloadValidator = z.object({
   companyId: z.string(),
   userId: z.string(),
   configuration: z.record(z.unknown()).optional(),
+  merge: z.boolean().optional(),
   parts: partsValidator,
 });
 
@@ -81,7 +82,7 @@ serve(async (req: Request) => {
   const payload = await req.json();
 
   try {
-    const { type, sourceId, targetId, companyId, userId, configuration, parts } =
+    const { type, sourceId, targetId, companyId, userId, configuration, merge, parts } =
       payloadValidator.parse(payload);
 
     console.log({
@@ -93,6 +94,7 @@ serve(async (req: Request) => {
       userId,
       parts,
       configuration,
+      merge,
     });
 
     const client = await getSupabaseServiceRole(
@@ -1613,44 +1615,53 @@ serve(async (req: Request) => {
         );
 
         await db.transaction().execute(async (trx: Transaction<KyselyDatabase>) => {
-          // Delete existing quoteMakeMethod, quoteMakeMethodOperation, quoteMakeMethodMaterial
-          await Promise.all([
-            parts.billOfMaterial
-              ? trx
-                  .deleteFrom("quoteMakeMethod")
-                  .where((eb) =>
-                    eb.and([
-                      eb("quoteLineId", "=", quoteLineId),
-                      eb("parentMaterialId", "is not", null),
-                    ])
-                  )
-                  .execute()
-              : Promise.resolve(),
-            parts.billOfMaterial
-              ? trx
-                  .deleteFrom("quoteMaterial")
-                  .where("quoteLineId", "=", quoteLineId)
-                  .execute()
-              : Promise.resolve(),
-            // Prevent cascade deletion of materials when only replacing operations
-            !parts.billOfMaterial && parts.billOfProcess
-              ? trx.updateTable("quoteMaterial")
-                  .set({ quoteOperationId: null })
-                  .where("quoteLineId", "=", quoteLineId)
-                  .execute()
-              : Promise.resolve(),
-            parts.billOfProcess
-              ? trx
-                  .deleteFrom("quoteOperation")
-                  .where("quoteLineId", "=", quoteLineId)
-                  .execute()
-              : Promise.resolve(),
-            trx
+          if (!merge) {
+            // Delete existing quoteMakeMethod, quoteMakeMethodOperation, quoteMakeMethodMaterial
+            await Promise.all([
+              parts.billOfMaterial
+                ? trx
+                    .deleteFrom("quoteMakeMethod")
+                    .where((eb) =>
+                      eb.and([
+                        eb("quoteLineId", "=", quoteLineId),
+                        eb("parentMaterialId", "is not", null),
+                      ])
+                    )
+                    .execute()
+                : Promise.resolve(),
+              parts.billOfMaterial
+                ? trx
+                    .deleteFrom("quoteMaterial")
+                    .where("quoteLineId", "=", quoteLineId)
+                    .execute()
+                : Promise.resolve(),
+              // Prevent cascade deletion of materials when only replacing operations
+              !parts.billOfMaterial && parts.billOfProcess
+                ? trx.updateTable("quoteMaterial")
+                    .set({ quoteOperationId: null })
+                    .where("quoteLineId", "=", quoteLineId)
+                    .execute()
+                : Promise.resolve(),
+              parts.billOfProcess
+                ? trx
+                    .deleteFrom("quoteOperation")
+                    .where("quoteLineId", "=", quoteLineId)
+                    .execute()
+                : Promise.resolve(),
+              trx
+                .updateTable("quoteMakeMethod")
+                .set({ version: makeMethod.data.version ?? 1 })
+                .where("id", "=", quoteMakeMethod.data.id!)
+                .execute(),
+            ]);
+          } else {
+            // Merge mode: just update the version without deleting existing data
+            await trx
               .updateTable("quoteMakeMethod")
               .set({ version: makeMethod.data.version ?? 1 })
               .where("id", "=", quoteMakeMethod.data.id!)
-              .execute(),
-          ]);
+              .execute();
+          }
 
           async function getConfiguredValue<
             T extends number | string | boolean | null

@@ -130,8 +130,10 @@ const QuoteMakeMethodTools = () => {
 
   const { carbon } = useCarbon();
 
-  const configureSelectModal = useDisclosure();
-  const configuratorModal = useDisclosure();
+  const templateSelectModal = useDisclosure();
+  const templateConfiguratorModal = useDisclosure();
+  const decorationSelectModal = useDisclosure();
+  const decorationConfiguratorModal = useDisclosure();
 
   // State for configurable items
   const configurableItemIds = useConfigurableItems();
@@ -143,21 +145,32 @@ const QuoteMakeMethodTools = () => {
     parameters: ConfigurationParameter[];
   }>({ groups: [], parameters: [] });
 
-  const handleConfigureItemSelect = async (itemId: string | null) => {
+  const handleTemplateItemSelect = async (itemId: string | null) => {
     if (!itemId || !carbon) return;
 
     setSelectedConfigureItemId(itemId);
 
-    // Fetch configuration parameters for the selected item
     const params = await getConfigurationParameters(carbon, itemId, companyId);
     setConfigurationParameters(params);
 
-    configureSelectModal.onClose();
-    configuratorModal.onOpen();
+    templateSelectModal.onClose();
+    templateConfiguratorModal.onOpen();
   };
 
-  const saveConfiguration = async (configuration: Record<string, any>) => {
-    configuratorModal.onClose();
+  const handleDecorationItemSelect = async (itemId: string | null) => {
+    if (!itemId || !carbon) return;
+
+    setSelectedConfigureItemId(itemId);
+
+    const params = await getConfigurationParameters(carbon, itemId, companyId);
+    setConfigurationParameters(params);
+
+    decorationSelectModal.onClose();
+    decorationConfiguratorModal.onOpen();
+  };
+
+  const saveTemplate = async (configuration: Record<string, any>) => {
+    templateConfiguratorModal.onClose();
     const sourceId = selectedConfigureItemId;
     setSelectedConfigureItemId(null);
     setConfigurationParameters({ groups: [], parameters: [] });
@@ -173,6 +186,32 @@ const QuoteMakeMethodTools = () => {
         tools: "on",
         steps: "on",
         workInstructions: "on"
+      },
+      {
+        method: "post",
+        action: path.to.quoteMethodGet
+      }
+    );
+  };
+
+  const saveDecoration = async (configuration: Record<string, any>) => {
+    decorationConfiguratorModal.onClose();
+    const sourceId = selectedConfigureItemId;
+    setSelectedConfigureItemId(null);
+    setConfigurationParameters({ groups: [], parameters: [] });
+    fetcher.submit(
+      {
+        type: "item",
+        targetId: `${quoteId}:${lineId}`,
+        sourceId,
+        configuration: JSON.stringify(configuration),
+        billOfMaterial: "on",
+        billOfProcess: "on",
+        parameters: "on",
+        tools: "on",
+        steps: "on",
+        workInstructions: "on",
+        merge: "on"
       },
       {
         method: "post",
@@ -256,16 +295,30 @@ const QuoteMakeMethodTools = () => {
                   Save Method
                 </MenubarItem>
                 {configurableItemIds.length > 0 && isQuoteLineMethod && (
-                  <MenubarItem
-                    leftIcon={<LuSettings />}
-                    isDisabled={
-                      !permissions.can("update", "sales") || isConfigureLoading
-                    }
-                    isLoading={isConfigureLoading}
-                    onClick={configureSelectModal.onOpen}
-                  >
-                    Configure
-                  </MenubarItem>
+                  <>
+                    <MenubarItem
+                      leftIcon={<LuSettings />}
+                      isDisabled={
+                        !permissions.can("update", "sales") ||
+                        isConfigureLoading
+                      }
+                      isLoading={isConfigureLoading}
+                      onClick={templateSelectModal.onOpen}
+                    >
+                      Apply Template
+                    </MenubarItem>
+                    <MenubarItem
+                      leftIcon={<LuSquareStack />}
+                      isDisabled={
+                        !permissions.can("update", "sales") ||
+                        isConfigureLoading
+                      }
+                      isLoading={isConfigureLoading}
+                      onClick={decorationSelectModal.onOpen}
+                    >
+                      Add Decoration
+                    </MenubarItem>
+                  </>
                 )}
                 {itemLink && (
                   <MenubarItem leftIcon={<LuGitFork />} asChild>
@@ -525,20 +578,22 @@ const QuoteMakeMethodTools = () => {
           </ModalContent>
         </Modal>
       )}
-      {configureSelectModal.isOpen && (
+      {templateSelectModal.isOpen && (
         <Modal
           open
           onOpenChange={(open) => {
             if (!open) {
-              configureSelectModal.onClose();
+              templateSelectModal.onClose();
             }
           }}
         >
           <ModalContent>
             <ValidatedForm validator={getMethodValidator} onSubmit={() => {}}>
               <ModalHeader>
-                <ModalTitle>Configure Item</ModalTitle>
-                <ModalDescription>Select an item to configure</ModalDescription>
+                <ModalTitle>Apply Template</ModalTitle>
+                <ModalDescription>
+                  Select a template item to apply
+                </ModalDescription>
               </ModalHeader>
               <ModalBody>
                 <Item
@@ -550,14 +605,14 @@ const QuoteMakeMethodTools = () => {
                   replenishmentSystem="Make"
                   onChange={(value) => {
                     if (value) {
-                      handleConfigureItemSelect(value.value);
+                      handleTemplateItemSelect(value.value);
                     }
                   }}
                 />
               </ModalBody>
               <ModalFooter>
                 <Button
-                  onClick={configureSelectModal.onClose}
+                  onClick={templateSelectModal.onClose}
                   variant="secondary"
                 >
                   Cancel
@@ -567,7 +622,7 @@ const QuoteMakeMethodTools = () => {
           </ModalContent>
         </Modal>
       )}
-      {configuratorModal.isOpen && (
+      {templateConfiguratorModal.isOpen && (
         <ConfiguratorModal
           open
           destructive
@@ -575,12 +630,72 @@ const QuoteMakeMethodTools = () => {
           groups={configurationParameters.groups}
           parameters={configurationParameters.parameters}
           onClose={() => {
-            configuratorModal.onClose();
+            templateConfiguratorModal.onClose();
             setSelectedConfigureItemId(null);
             setConfigurationParameters({ groups: [], parameters: [] });
           }}
           onSubmit={(config: Record<string, any>) => {
-            saveConfiguration(config);
+            saveTemplate(config);
+          }}
+        />
+      )}
+      {decorationSelectModal.isOpen && (
+        <Modal
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              decorationSelectModal.onClose();
+            }
+          }}
+        >
+          <ModalContent>
+            <ValidatedForm validator={getMethodValidator} onSubmit={() => {}}>
+              <ModalHeader>
+                <ModalTitle>Add Decoration</ModalTitle>
+                <ModalDescription>
+                  Select a decoration item to add
+                </ModalDescription>
+              </ModalHeader>
+              <ModalBody>
+                <Item
+                  name="sourceId"
+                  label="Item"
+                  type={(line?.itemType ?? "Part") as "Part"}
+                  includeInactive={includeInactive === true}
+                  whitelist={configurableItemIds}
+                  replenishmentSystem="Make"
+                  onChange={(value) => {
+                    if (value) {
+                      handleDecorationItemSelect(value.value);
+                    }
+                  }}
+                />
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  onClick={decorationSelectModal.onClose}
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+              </ModalFooter>
+            </ValidatedForm>
+          </ModalContent>
+        </Modal>
+      )}
+      {decorationConfiguratorModal.isOpen && (
+        <ConfiguratorModal
+          open
+          initialValues={{}}
+          groups={configurationParameters.groups}
+          parameters={configurationParameters.parameters}
+          onClose={() => {
+            decorationConfiguratorModal.onClose();
+            setSelectedConfigureItemId(null);
+            setConfigurationParameters({ groups: [], parameters: [] });
+          }}
+          onSubmit={(config: Record<string, any>) => {
+            saveDecoration(config);
           }}
         />
       )}

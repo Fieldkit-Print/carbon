@@ -22,6 +22,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const configuration = configurationStr
     ? JSON.parse(configurationStr)
     : undefined;
+  const merge = formData.get("merge") === "on";
 
   const serviceRole = getCarbonServiceRole();
   if (type === "item") {
@@ -52,6 +53,10 @@ export async function action({ request }: ActionFunctionArgs) {
     // Only add configuration if it exists
     if (configuration !== undefined) {
       lineMethodPayload.configuration = configuration;
+    }
+
+    if (merge) {
+      lineMethodPayload.merge = true;
     }
 
     const lineMethod = await upsertQuoteLineMethod(
