@@ -433,7 +433,7 @@ function PaymentCard({
 
   if (isVoided) {
     return (
-      <Card className="w-full max-w-xl mx-auto">
+      <Card className="w-full max-w-5xl mx-auto">
         <CardContent className="p-6 text-center">
           <Heading size="h4">Invoice Voided</Heading>
           <p className="text-muted-foreground mt-2">
@@ -446,7 +446,7 @@ function PaymentCard({
 
   if (isPaid || paymentResult === "success") {
     return (
-      <Card className="w-full max-w-xl mx-auto">
+      <Card className="w-full max-w-5xl mx-auto">
         <CardContent className="p-6 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <LuCheck className="h-8 w-8 text-green-600" />
@@ -462,7 +462,7 @@ function PaymentCard({
 
   if (paymentResult === "cancelled") {
     return (
-      <Card className="w-full max-w-xl mx-auto">
+      <Card className="w-full max-w-5xl mx-auto">
         <CardContent className="p-6">
           <VStack spacing={4}>
             <div className="text-center">
@@ -486,7 +486,7 @@ function PaymentCard({
   }
 
   return (
-    <Card className="w-full max-w-xl mx-auto">
+    <Card className="w-full max-w-5xl mx-auto">
       <CardContent className="p-6">
         <VStack spacing={4}>
           <div className="text-center w-full">
