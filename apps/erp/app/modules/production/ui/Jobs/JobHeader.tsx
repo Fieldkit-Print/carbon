@@ -125,7 +125,7 @@ const JobHeader = () => {
   const proofReady = hasApprovedProof || proofSkipped;
 
   const statusFetcher = useFetcher<{}>();
-  const proofFetcher = useFetcher<{}>();
+  const sendProofFetcher = useFetcher<{}>();
   const status = routeData?.job?.status;
 
   const getOptionFromPath = (jobId: string) => {
@@ -361,16 +361,17 @@ const JobHeader = () => {
 
           {["Draft", "Planned"].includes(status ?? "") && !proofReady && (
             <>
-              <proofFetcher.Form method="post" action={path.to.jobProof(jobId)}>
+              <sendProofFetcher.Form
+                method="post"
+                action={path.to.jobProof(jobId)}
+              >
                 <input type="hidden" name="type" value="send" />
                 <Button
                   type="submit"
-                  isLoading={
-                    proofFetcher.state !== "idle" &&
-                    proofFetcher.formData?.get("type") === "send"
-                  }
+                  isLoading={sendProofFetcher.state !== "idle"}
                   isDisabled={
-                    proofFetcher.state !== "idle" ||
+                    sendProofFetcher.state !== "idle" ||
+                    statusFetcher.state !== "idle" ||
                     !permissions.can("update", "production")
                   }
                   leftIcon={<LuSend />}
@@ -378,11 +379,12 @@ const JobHeader = () => {
                 >
                   Send Proof
                 </Button>
-              </proofFetcher.Form>
+              </sendProofFetcher.Form>
               <Button
                 onClick={skipProofModal.onOpen}
                 isDisabled={
-                  proofFetcher.state !== "idle" ||
+                  sendProofFetcher.state !== "idle" ||
+                  statusFetcher.state !== "idle" ||
                   !permissions.can("update", "production")
                 }
                 leftIcon={<LuSkipForward />}
@@ -543,18 +545,16 @@ const JobHeader = () => {
             <Button variant="ghost" onClick={skipProofModal.onClose}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                proofFetcher.submit(
-                  { type: "skip" },
-                  { method: "post", action: path.to.jobProof(jobId) }
-                );
-                skipProofModal.onClose();
-              }}
-            >
-              Yes, Skip Proof
-            </Button>
+            <statusFetcher.Form method="post" action={path.to.jobStatus(jobId)}>
+              <input type="hidden" name="_action" value="skipProof" />
+              <Button
+                type="submit"
+                variant="destructive"
+                isLoading={statusFetcher.state !== "idle"}
+              >
+                Yes, Skip Proof
+              </Button>
+            </statusFetcher.Form>
           </ModalFooter>
         </ModalContent>
       </Modal>

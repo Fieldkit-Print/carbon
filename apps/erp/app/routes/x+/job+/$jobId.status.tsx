@@ -27,6 +27,17 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const shouldSchedule = url.searchParams.get("schedule") === "1";
 
   const formData = await request.formData();
+  const action = formData.get("_action") as string | null;
+
+  // Handle skip proof (no status change, just sets flag)
+  if (action === "skipProof") {
+    await client.from("job").update({ proofSkipped: true }).eq("id", id);
+    throw redirect(
+      requestReferrer(request) ?? path.to.job(id),
+      await flash(request, success("Proof approval skipped"))
+    );
+  }
+
   let status = formData.get("status") as (typeof jobStatus)[number];
   const skipProofApproval = formData.get("skipProofApproval") === "true";
   const selectedPurchaseOrdersBySupplierId = formData.get(
