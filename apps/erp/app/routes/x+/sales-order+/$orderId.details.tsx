@@ -47,6 +47,16 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     getSalesOrderShipment(client, orderId)
   ]);
 
+  // Load carrier accounts for the customer
+  const customerId = order.data?.customerId;
+  const carrierAccounts = customerId
+    ? await client
+        .from("customerCarrierAccount")
+        .select("id, carrier, accountNumber, description")
+        .eq("customerId", customerId)
+        .order("createdAt")
+    : { data: [] };
+
   if (order.error) {
     throw redirect(
       path.to.salesOrders,
@@ -75,7 +85,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     internalNotes: (order.data?.internalNotes ?? {}) as JSONContent,
     externalNotes: (order.data?.externalNotes ?? {}) as JSONContent,
     payment: payment.data || null,
-    shipment: shipment.data || null
+    shipment: shipment.data || null,
+    carrierAccounts: (carrierAccounts.data ?? []).map((a) => ({
+      value: a.id,
+      label: `${a.carrier} - ${a.accountNumber}${a.description ? ` (${a.description})` : ""}`
+    }))
   };
 }
 
@@ -141,7 +155,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 }
 
 export default function SalesOrderDetailsRoute() {
-  const { internalNotes, externalNotes, payment, shipment } =
+  const { internalNotes, externalNotes, payment, shipment, carrierAccounts } =
     useLoaderData<typeof loader>();
   const { orderId } = useParams();
   if (!orderId) throw new Error("Could not find orderId");
@@ -177,6 +191,7 @@ export default function SalesOrderDetailsRoute() {
     customerId: shipment?.customerId ?? "",
     customerLocationId: shipment?.customerLocationId ?? "",
     shippingCost: shipment?.shippingCost ?? 0,
+    customerCarrierAccountId: (shipment as any)?.customerCarrierAccountId ?? "",
     ...getCustomFields(shipment?.customFields)
   };
 
@@ -231,6 +246,7 @@ export default function SalesOrderDetailsRoute() {
         key={`shipment-${orderId}`}
         ref={shipmentFormRef}
         initialValues={shipmentInitialValues}
+        carrierAccounts={carrierAccounts}
       />
 
       <SalesOrderPaymentForm

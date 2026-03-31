@@ -108,7 +108,53 @@ async function handleWebhookEvent(
   const { result } = parsed.data;
 
   if (parsed.data.description === "tracker.updated") {
-    // Find shipment by EasyPost tracker ID or tracking number
+    // First try to find a matching parcel by tracking number or EasyPost shipment ID
+    const { data: parcel } = await client
+      .from("parcel")
+      .select("id, shipmentId")
+      .eq("companyId", companyId)
+      .or(
+        `trackingNumber.eq.${result.tracking_code},easypostShipmentId.eq.${result.id}`
+      )
+      .maybeSingle();
+
+    if (parcel) {
+      // Update parcel-level tracking
+      await client
+        .from("parcel")
+        .update({
+          trackingStatus: result.status,
+          estimatedDeliveryDate: result.est_delivery_date,
+          trackingUpdatedAt: new Date().toISOString()
+        })
+        .eq("id", parcel.id);
+
+      // Aggregate status to shipment: check if all parcels are delivered
+      const { data: allParcels } = await client
+        .from("parcel")
+        .select("trackingStatus")
+        .eq("shipmentId", parcel.shipmentId);
+
+      if (allParcels) {
+        const allDelivered = allParcels.every(
+          (p) => p.trackingStatus === "delivered"
+        );
+        const aggregateStatus = allDelivered ? "delivered" : result.status;
+
+        await client
+          .from("shipment")
+          .update({
+            trackingStatus: aggregateStatus,
+            estimatedDeliveryDate: result.est_delivery_date,
+            trackingUpdatedAt: new Date().toISOString()
+          })
+          .eq("id", parcel.shipmentId);
+      }
+
+      return data({ success: true });
+    }
+
+    // Fall back to shipment-level lookup for backward compatibility
     const { data: shipment } = await client
       .from("shipment")
       .select("id")

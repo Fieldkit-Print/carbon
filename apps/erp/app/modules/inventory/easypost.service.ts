@@ -182,20 +182,63 @@ export async function getRates(
     ...(p.predefinedPackage ? { predefined_package: p.predefinedPackage } : {})
   }));
 
-  // Create EasyPost shipment to get rates
-  const easypostShipment = await easypost.Shipment.create({
+  if (parcels.length === 1) {
+    // Single parcel: use Shipment API
+    const easypostShipment = await easypost.Shipment.create({
+      from_address: fromAddress,
+      to_address: toAddress,
+      parcel: easypostParcels[0]
+    });
+
+    // Store EasyPost shipment ID on the parcel and shipment
+    await client
+      .from("parcel")
+      .update({ easypostShipmentId: easypostShipment.id })
+      .eq("id", parcels[0].id);
+
+    await client
+      .from("shipment")
+      .update({
+        easypostShipmentId: easypostShipment.id,
+        easypostOrderId: null
+      })
+      .eq("id", shipmentId);
+
+    return easypostShipment.rates;
+  }
+
+  // Multiple parcels: use Order API
+  const easypostOrder = await easypost.Order.create({
     from_address: fromAddress,
     to_address: toAddress,
-    parcel: easypostParcels[0] // EasyPost uses single parcel per shipment
+    shipments: easypostParcels.map((p) => ({
+      parcel: p
+    }))
   });
 
-  // Store EasyPost shipment ID for later purchase
+  // Store EasyPost order ID on shipment
   await client
     .from("shipment")
-    .update({ easypostShipmentId: easypostShipment.id })
+    .update({
+      easypostOrderId: easypostOrder.id,
+      easypostShipmentId: null
+    })
     .eq("id", shipmentId);
 
-  return easypostShipment.rates;
+  // Store per-parcel EasyPost shipment IDs
+  if (easypostOrder.shipments) {
+    for (let i = 0; i < parcels.length; i++) {
+      const epShipment = easypostOrder.shipments[i];
+      if (epShipment) {
+        await client
+          .from("parcel")
+          .update({ easypostShipmentId: epShipment.id })
+          .eq("id", parcels[i].id);
+      }
+    }
+  }
+
+  return easypostOrder.rates;
 }
 
 export async function buyRate(
@@ -208,19 +251,93 @@ export async function buyRate(
 
   const { data: shipment } = await client
     .from("shipment")
-    .select("easypostShipmentId")
+    .select("easypostShipmentId, easypostOrderId")
     .eq("id", shipmentId)
     .single();
 
-  if (!shipment?.easypostShipmentId) {
-    throw new Error("No EasyPost shipment found. Get rates first.");
+  if (!shipment?.easypostShipmentId && !shipment?.easypostOrderId) {
+    throw new Error("No EasyPost shipment or order found. Get rates first.");
   }
 
+  if (shipment.easypostOrderId) {
+    // Multi-parcel: buy via Order API
+    const purchased = await easypost.Order.buy(
+      shipment.easypostOrderId,
+      rateId
+    );
+
+    // Update each parcel with its label/tracking info
+    const { data: parcels } = await getShipmentParcels(client, shipmentId);
+    const trackingNumbers: string[] = [];
+
+    if (purchased.shipments && parcels) {
+      for (let i = 0; i < parcels.length; i++) {
+        const epShipment = purchased.shipments[i];
+        if (epShipment) {
+          trackingNumbers.push(epShipment.tracking_code);
+          await client
+            .from("parcel")
+            .update({
+              trackingNumber: epShipment.tracking_code,
+              labelUrl: epShipment.postage_label?.label_url,
+              labelFormat: epShipment.postage_label?.label_file_type,
+              selectedRate: JSON.parse(
+                JSON.stringify(epShipment.selected_rate ?? null)
+              ),
+              trackingStatus: epShipment.tracker?.status
+            })
+            .eq("id", parcels[i].id);
+        }
+      }
+    }
+
+    // Update shipment with first tracking number for backward compat
+    await client
+      .from("shipment")
+      .update({
+        trackingNumber: trackingNumbers[0] ?? null,
+        labelUrl: purchased.shipments?.[0]?.postage_label?.label_url ?? null,
+        labelFormat:
+          purchased.shipments?.[0]?.postage_label?.label_file_type ?? null,
+        selectedRate: JSON.parse(
+          JSON.stringify(purchased.shipments?.[0]?.selected_rate ?? null)
+        ),
+        easypostTrackerId: purchased.shipments?.[0]?.tracker?.id ?? null,
+        trackingStatus: purchased.shipments?.[0]?.tracker?.status ?? null
+      })
+      .eq("id", shipmentId);
+
+    return {
+      trackingNumbers,
+      labelCount: trackingNumbers.length,
+      carrier: purchased.shipments?.[0]?.selected_rate?.carrier,
+      service: purchased.shipments?.[0]?.selected_rate?.service
+    };
+  }
+
+  // Single parcel: buy via Shipment API
   const easypostShipment = await easypost.Shipment.retrieve(
-    shipment.easypostShipmentId
+    shipment.easypostShipmentId!
   );
 
   const purchased = await easypost.Shipment.buy(easypostShipment.id, rateId);
+
+  // Update parcel with label info
+  const { data: parcels } = await getShipmentParcels(client, shipmentId);
+  if (parcels?.[0]) {
+    await client
+      .from("parcel")
+      .update({
+        trackingNumber: purchased.tracking_code,
+        labelUrl: purchased.postage_label?.label_url,
+        labelFormat: purchased.postage_label?.label_file_type,
+        selectedRate: JSON.parse(
+          JSON.stringify(purchased.selected_rate ?? null)
+        ),
+        trackingStatus: purchased.tracker?.status
+      })
+      .eq("id", parcels[0].id);
+  }
 
   // Update shipment with label and tracking info
   await client
@@ -236,9 +353,8 @@ export async function buyRate(
     .eq("id", shipmentId);
 
   return {
-    trackingNumber: purchased.tracking_code,
-    labelUrl: purchased.postage_label?.label_url,
-    labelFormat: purchased.postage_label?.label_file_type,
+    trackingNumbers: [purchased.tracking_code],
+    labelCount: 1,
     carrier: purchased.selected_rate?.carrier,
     service: purchased.selected_rate?.service
   };
@@ -299,30 +415,82 @@ export async function voidLabel(
 
   const { data: shipment } = await client
     .from("shipment")
-    .select("easypostShipmentId")
+    .select("easypostShipmentId, easypostOrderId")
     .eq("id", shipmentId)
     .single();
 
-  if (!shipment?.easypostShipmentId) {
-    throw new Error("No EasyPost shipment found to void");
+  if (!shipment?.easypostShipmentId && !shipment?.easypostOrderId) {
+    throw new Error("No EasyPost shipment or order found to void");
   }
 
-  await easypost.Shipment.retrieve(shipment.easypostShipmentId);
-  const refund = await easypost.Refund.create({
-    carrier: undefined,
-    tracking_codes: []
-  });
+  if (shipment.easypostOrderId) {
+    // Multi-parcel: void each parcel's shipment
+    const { data: parcels } = await getShipmentParcels(client, shipmentId);
+    if (parcels) {
+      for (const parcel of parcels) {
+        if (parcel.easypostShipmentId) {
+          try {
+            const epShipment = await easypost.Shipment.retrieve(
+              parcel.easypostShipmentId
+            );
+            await easypost.Shipment.refund(epShipment.id);
+          } catch {
+            // Continue voiding other parcels even if one fails
+          }
 
-  // Clear label info from shipment
+          await client
+            .from("parcel")
+            .update({
+              labelUrl: null,
+              labelFormat: null,
+              selectedRate: null,
+              trackingNumber: null,
+              trackingStatus: null,
+              easypostShipmentId: null
+            })
+            .eq("id", parcel.id);
+        }
+      }
+    }
+  } else if (shipment.easypostShipmentId) {
+    // Single parcel: void the shipment
+    try {
+      const epShipment = await easypost.Shipment.retrieve(
+        shipment.easypostShipmentId
+      );
+      await easypost.Shipment.refund(epShipment.id);
+    } catch {
+      // Continue with clearing data even if refund fails
+    }
+
+    // Clear parcel label data
+    const { data: parcels } = await getShipmentParcels(client, shipmentId);
+    if (parcels?.[0]) {
+      await client
+        .from("parcel")
+        .update({
+          labelUrl: null,
+          labelFormat: null,
+          selectedRate: null,
+          trackingNumber: null,
+          trackingStatus: null,
+          easypostShipmentId: null
+        })
+        .eq("id", parcels[0].id);
+    }
+  }
+
+  // Clear shipment-level label info
   await client
     .from("shipment")
     .update({
       labelUrl: null,
       labelFormat: null,
       selectedRate: null,
-      easypostShipmentId: null
+      easypostShipmentId: null,
+      easypostOrderId: null,
+      trackingNumber: null,
+      trackingStatus: null
     })
     .eq("id", shipmentId);
-
-  return refund;
 }

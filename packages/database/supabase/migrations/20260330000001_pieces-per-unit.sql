@@ -3,7 +3,7 @@
 -- (e.g., 6 postcards per sheet). Default 1 preserves existing behavior.
 
 ALTER TABLE "quoteMaterial"
-  ADD COLUMN "piecesPerUnit" INTEGER NOT NULL DEFAULT 1;
+  ADD COLUMN IF NOT EXISTS "piecesPerUnit" INTEGER NOT NULL DEFAULT 1;
 
 -- Recreate the view so it picks up the new column
 DROP VIEW IF EXISTS "quoteMaterialWithMakeMethodId";

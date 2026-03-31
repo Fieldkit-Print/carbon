@@ -175,6 +175,12 @@ export default function ShipmentDetailsRoute() {
     shipment: Shipment;
     shipmentLines: ShipmentLine[];
     notes: Note[];
+    customerCarrierAccount: {
+      id: string;
+      carrier: string;
+      accountNumber: string;
+      description: string | null;
+    } | null;
   }>(path.to.shipment(shipmentId));
 
   if (!routeData?.shipment)
@@ -193,6 +199,7 @@ export default function ShipmentDetailsRoute() {
     sourceDocumentReadableId:
       routeData.shipment.sourceDocumentReadableId ?? undefined,
     locationId: routeData.shipment.locationId ?? undefined,
+    customerCarrierAccount: routeData.customerCarrierAccount ?? undefined,
     ...getCustomFields(routeData.shipment.customFields)
   };
 

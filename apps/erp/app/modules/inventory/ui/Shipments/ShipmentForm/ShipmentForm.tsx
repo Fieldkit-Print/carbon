@@ -155,6 +155,14 @@ const ShipmentForm = ({ initialValues, status }: ShipmentFormProps) => {
                   name="shippingMethodId"
                   label="Shipping Method"
                 />
+                {initialValues.customerCarrierAccount && (
+                  <Input
+                    name="customerCarrierAccountDisplay"
+                    label="Customer Carrier Account"
+                    value={`${initialValues.customerCarrierAccount.carrier} - ${initialValues.customerCarrierAccount.accountNumber}`}
+                    isReadOnly
+                  />
+                )}
                 <CustomFormFields table="shipment" />
               </div>
             </VStack>

@@ -29,13 +29,25 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const { shipmentId } = params;
   if (!shipmentId) throw new Error("Could not find shipmentId");
 
-  const [shipment, shipmentLines, shipmentLineTracking, parcels] =
-    await Promise.all([
-      getShipment(client, shipmentId),
-      getShipmentLines(client, shipmentId),
-      getShipmentTracking(client, shipmentId, companyId),
-      getShipmentParcels(client, shipmentId)
-    ]);
+  const [
+    shipment,
+    shipmentLines,
+    shipmentLineTracking,
+    parcels,
+    carrierAccount
+  ] = await Promise.all([
+    getShipment(client, shipmentId),
+    getShipmentLines(client, shipmentId),
+    getShipmentTracking(client, shipmentId, companyId),
+    getShipmentParcels(client, shipmentId),
+    client
+      .from("shipment")
+      .select(
+        "customerCarrierAccountId, customerCarrierAccount:customerCarrierAccountId(id, carrier, accountNumber, description)"
+      )
+      .eq("id", shipmentId)
+      .single()
+  ]);
 
   if (shipment.error) {
     throw redirect(
@@ -53,6 +65,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     shipmentLines: shipmentLines.data ?? [],
     shipmentLineTracking: shipmentLineTracking.data ?? [],
     parcels: parcels.data ?? [],
+    customerCarrierAccount:
+      (carrierAccount.data as any)?.customerCarrierAccount ?? null,
     relatedItems: getShipmentRelatedItems(
       client,
       shipmentId,

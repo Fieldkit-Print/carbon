@@ -1,5 +1,6 @@
 -- Recreate salesInvoices view to pick up externalLinkId column added in 20260403
-CREATE OR REPLACE VIEW "salesInvoices" WITH(SECURITY_INVOKER=true) AS
+DROP VIEW IF EXISTS "salesInvoices";
+CREATE VIEW "salesInvoices" WITH(SECURITY_INVOKER=true) AS
   SELECT
     si.*,
     sil."thumbnailPath",

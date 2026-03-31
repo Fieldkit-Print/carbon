@@ -3,6 +3,7 @@ import {
   LuContact,
   LuCreditCard,
   LuMapPin,
+  LuPackage,
   LuShieldAlert,
   LuTruck,
   LuWallet
@@ -68,6 +69,12 @@ export function useCustomerSidebar({ contacts, locations }: Props) {
       role: ["employee"],
       icon: <LuTruck />,
       shortcut: "Command+Shift+s"
+    },
+    {
+      name: "Carrier Accounts",
+      to: path.to.customerCarrierAccounts(customerId),
+      role: ["employee"],
+      icon: <LuPackage />
     },
     {
       name: "Risks",

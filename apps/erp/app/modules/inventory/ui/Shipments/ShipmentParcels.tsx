@@ -1,4 +1,5 @@
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -12,7 +13,7 @@ import {
   VStack
 } from "@carbon/react";
 import { useCallback, useState } from "react";
-import { LuPackage, LuPlus, LuTrash } from "react-icons/lu";
+import { LuDownload, LuPackage, LuPlus, LuTrash } from "react-icons/lu";
 import { useFetcher, useParams } from "react-router";
 import { useRouteData } from "~/hooks";
 import type { Shipment } from "~/modules/inventory";
@@ -26,6 +27,10 @@ type Parcel = {
   height: number;
   weight: number;
   predefinedPackage: string | null;
+  trackingNumber: string | null;
+  labelUrl: string | null;
+  labelFormat: string | null;
+  trackingStatus: string | null;
 };
 
 const ShipmentParcels = () => {
@@ -154,6 +159,23 @@ function AddParcelButton({ shipmentId }: { shipmentId: string }) {
   );
 }
 
+function trackingStatusVariant(
+  status: string | null
+): "default" | "secondary" | "destructive" | "outline" {
+  switch (status) {
+    case "delivered":
+      return "default";
+    case "in_transit":
+    case "out_for_delivery":
+      return "secondary";
+    case "failure":
+    case "error":
+      return "destructive";
+    default:
+      return "outline";
+  }
+}
+
 function ParcelRow({
   parcel,
   disabled
@@ -183,16 +205,37 @@ function ParcelRow({
             {parcel.predefinedPackage}
           </span>
         )}
+        {parcel.trackingNumber && (
+          <span className="text-xs font-mono text-muted-foreground">
+            {parcel.trackingNumber}
+          </span>
+        )}
+        {parcel.trackingStatus && (
+          <Badge variant={trackingStatusVariant(parcel.trackingStatus)}>
+            {parcel.trackingStatus.replace(/_/g, " ")}
+          </Badge>
+        )}
       </div>
-      {!disabled && (
-        <IconButton
-          aria-label="Delete package"
-          variant="ghost"
-          size="sm"
-          onClick={handleDelete}
-          icon={<LuTrash className="w-4 h-4" />}
-        />
-      )}
+      <HStack className="gap-1">
+        {parcel.labelUrl && (
+          <IconButton
+            aria-label="Download label"
+            variant="ghost"
+            size="sm"
+            onClick={() => window.open(parcel.labelUrl!, "_blank")}
+            icon={<LuDownload className="w-4 h-4" />}
+          />
+        )}
+        {!disabled && (
+          <IconButton
+            aria-label="Delete package"
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            icon={<LuTrash className="w-4 h-4" />}
+          />
+        )}
+      </HStack>
     </div>
   );
 }

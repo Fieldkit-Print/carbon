@@ -616,6 +616,7 @@ export const salesOrderShipmentValidator = z
     supplierId: zfd.text(z.string().optional()),
     supplierLocationId: zfd.text(z.string().optional()),
     shippingCost: zfd.numeric(z.number().optional()),
+    customerCarrierAccountId: zfd.text(z.string().optional()),
     notes: zfd.text(z.string().optional())
   })
   .refine(

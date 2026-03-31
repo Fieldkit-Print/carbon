@@ -12,6 +12,7 @@ import type { z } from "zod";
 import {
   // biome-ignore lint/suspicious/noShadowRestrictedNames: suppressed due to migration
   Boolean,
+  Combobox,
   Customer,
   CustomerLocation,
   CustomFormFields,
@@ -33,8 +34,14 @@ import {
 } from "../../sales.models";
 import type { SalesOrder } from "../../types";
 
+type CarrierAccountOption = {
+  value: string;
+  label: string;
+};
+
 type SalesOrderShipmentFormProps = {
   initialValues: z.infer<typeof salesOrderShipmentValidator>;
+  carrierAccounts?: CarrierAccountOption[];
   defaultCollapsed?: boolean;
 };
 
@@ -45,7 +52,7 @@ export type SalesOrderShipmentFormRef = {
 const SalesOrderShipmentForm = forwardRef<
   SalesOrderShipmentFormRef,
   SalesOrderShipmentFormProps
->(({ initialValues, defaultCollapsed = false }, ref) => {
+>(({ initialValues, carrierAccounts, defaultCollapsed = false }, ref) => {
   const permissions = usePermissions();
   const fetcher = useFetcher<typeof action>();
   const [dropShip, setDropShip] = useState<boolean>(
@@ -127,6 +134,14 @@ const SalesOrderShipmentForm = forwardRef<
             <DatePicker name="shipmentDate" label="Shipment Date" />
 
             <Input name="trackingNumber" label="Tracking Number" />
+            {carrierAccounts && carrierAccounts.length > 0 && (
+              <Combobox
+                name="customerCarrierAccountId"
+                label="Customer Carrier Account"
+                options={carrierAccounts}
+                isClearable
+              />
+            )}
             <Boolean
               name="dropShipment"
               label="Drop Shipment"
