@@ -16,6 +16,7 @@ export interface BomOperation {
   laborRate: number;
   machineRate: number | null;
   overheadRate: number;
+  piecesPerUnit?: number;
 }
 
 export function normalizeTime(
@@ -63,8 +64,10 @@ export function normalizeTime(
 }
 
 function calculateOperationUnitCost(op: BomOperation): number {
+  const ppu = op.piecesPerUnit ?? 1;
+
   if (op.operationType === "Outside") {
-    return Math.max(op.operationMinimumCost, op.operationUnitCost);
+    return Math.max(op.operationMinimumCost, op.operationUnitCost / ppu);
   }
 
   let cost = 0;
@@ -74,7 +77,7 @@ function calculateOperationUnitCost(op: BomOperation): number {
       op.setupTime,
       op.setupUnit
     );
-    const totalHours = fixedHours + hoursPerUnit;
+    const totalHours = fixedHours + hoursPerUnit / ppu;
     cost += totalHours * (op.laborRate ?? 0);
     cost += totalHours * (op.overheadRate ?? 0);
   }
@@ -87,7 +90,7 @@ function calculateOperationUnitCost(op: BomOperation): number {
       op.laborTime,
       op.laborUnit
     );
-    laborTotalHours = fixedHours + hoursPerUnit;
+    laborTotalHours = fixedHours + hoursPerUnit / ppu;
     cost += laborTotalHours * (op.laborRate ?? 0);
   }
 
@@ -96,7 +99,7 @@ function calculateOperationUnitCost(op: BomOperation): number {
       op.machineTime,
       op.machineUnit
     );
-    machineTotalHours = fixedHours + hoursPerUnit;
+    machineTotalHours = fixedHours + hoursPerUnit / ppu;
     cost += machineTotalHours * (op.machineRate ?? 0);
   }
 

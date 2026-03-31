@@ -135,7 +135,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       operationMinimumCost: op.operationMinimumCost,
       laborRate: op.laborRate ?? 0,
       machineRate: op.machineRate ?? 0,
-      overheadRate: op.overheadRate ?? 0
+      overheadRate: op.overheadRate ?? 0,
+      piecesPerUnit: op.piecesPerUnit ?? 1
     }));
   }
 
