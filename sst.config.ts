@@ -187,9 +187,19 @@ export default $config({
       },
     });
 
-    // pdfToolbox service (internal, no public load balancer)
+    // pdfToolbox service (public with bearer token auth)
     const pdftoolbox = cluster.addService("PdfToolboxService", {
       image: `${process.env.AWS_ACCOUNT_ID}.dkr.ecr.${process.env.AWS_REGION}.amazonaws.com/carbon/pdftoolbox:${process.env.PDFTOOLBOX_IMAGE_TAG ?? process.env.IMAGE_TAG ?? "latest"}`,
+      loadBalancer: {
+        health: {
+          "8080/http": {
+            path: "/health",
+          },
+        },
+        ports: [
+          { listen: "80/http", forward: "8080/http" },
+        ],
+      },
       port: 8080,
       scaling: {
         min: 1,
@@ -202,10 +212,20 @@ export default $config({
       environment: {
         PDFTOOLBOX_LICENSE_SERVER: process.env.PDFTOOLBOX_LICENSE_SERVER ?? "licenseserver.callassoftware.com",
         PDFTOOLBOX_LICENSE_MESSAGE: process.env.PDFTOOLBOX_LICENSE_MESSAGE ?? "",
+        PDFTOOLBOX_AUTH_TOKEN: process.env.PDFTOOLBOX_AUTH_TOKEN ?? "",
         PORT: "8080",
       },
-      serviceRegistry: {
-        port: 8080,
+      transform: {
+        loadBalancer: {
+          idleTimeout: 600,
+        },
+        target: (args) => {
+          args.healthCheck = {
+            enabled: true,
+            path: "/health",
+            protocol: "HTTP",
+          };
+        },
       },
     });
 

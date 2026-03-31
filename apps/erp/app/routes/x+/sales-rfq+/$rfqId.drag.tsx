@@ -84,30 +84,15 @@ export async function action({ request, params }: ActionFunctionArgs) {
     const fileExtension = fileName?.split(".").pop();
     newPath = `${companyId}/models/${modelId}.${fileExtension}`;
 
-    const [recordUpdate, recordCreate] = await Promise.all([
-      client
-        .from("salesRfqLine")
-        .update({ modelUploadId: modelId })
-        .eq("id", targetLineId),
-      client.from("modelUpload").insert({
-        id: modelId,
-        modelPath: newPath,
-        name: fileName!,
-        size: size ?? 0,
-        companyId,
-        createdBy: userId
-      })
-    ]);
-
-    if (recordUpdate.error) {
-      throw redirect(
-        path.to.salesRfqDetails(rfqId),
-        await flash(
-          request,
-          error(recordUpdate.error, "Failed to update RFQ line with model")
-        )
-      );
-    }
+    // Insert model record first (FK constraint: salesRfqLine references modelUpload)
+    const recordCreate = await client.from("modelUpload").insert({
+      id: modelId,
+      modelPath: newPath,
+      name: fileName!,
+      size: size ?? 0,
+      companyId,
+      createdBy: userId
+    });
 
     if (recordCreate.error) {
       throw redirect(
@@ -115,6 +100,21 @@ export async function action({ request, params }: ActionFunctionArgs) {
         await flash(
           request,
           error(recordCreate.error, "Failed to insert model record")
+        )
+      );
+    }
+
+    const recordUpdate = await client
+      .from("salesRfqLine")
+      .update({ modelUploadId: modelId })
+      .eq("id", targetLineId);
+
+    if (recordUpdate.error) {
+      throw redirect(
+        path.to.salesRfqDetails(rfqId),
+        await flash(
+          request,
+          error(recordUpdate.error, "Failed to update RFQ line with model")
         )
       );
     }

@@ -14,6 +14,8 @@ const LICENSE_SERVER =
   process.env.PDFTOOLBOX_LICENSE_SERVER || "licenseserver.callassoftware.com";
 const LICENSE_MESSAGE = process.env.PDFTOOLBOX_LICENSE_MESSAGE || "";
 
+const AUTH_TOKEN = process.env.PDFTOOLBOX_AUTH_TOKEN || "";
+
 const fastify = Fastify({
   logger: true,
   bodyLimit: 100 * 1024 * 1024, // 100MB
@@ -23,6 +25,18 @@ await fastify.register(multipart, {
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB
   },
+});
+
+// Auth check for all routes except health
+fastify.addHook("onRequest", async (request, reply) => {
+  if (request.url === "/health") return;
+  if (!AUTH_TOKEN) return; // no token configured = no auth required
+
+  const header = request.headers.authorization;
+  if (header !== `Bearer ${AUTH_TOKEN}`) {
+    reply.code(401);
+    throw new Error("Unauthorized");
+  }
 });
 
 // Health check

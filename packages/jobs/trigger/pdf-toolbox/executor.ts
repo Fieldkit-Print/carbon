@@ -3,6 +3,7 @@ import { logger } from "@trigger.dev/sdk";
 
 const PDFTOOLBOX_SERVICE_URL =
   process.env.PDFTOOLBOX_SERVICE_URL || "http://localhost:8080";
+const PDFTOOLBOX_AUTH_TOKEN = process.env.PDFTOOLBOX_AUTH_TOKEN || "";
 
 export interface PdfToolboxInput {
   companyId: string;
@@ -72,9 +73,15 @@ export async function executePdfToolbox(
   });
 
   // Call pdfToolbox HTTP service
+  const headers: Record<string, string> = {};
+  if (PDFTOOLBOX_AUTH_TOKEN) {
+    headers.Authorization = `Bearer ${PDFTOOLBOX_AUTH_TOKEN}`;
+  }
+
   const response = await fetch(`${PDFTOOLBOX_SERVICE_URL}/process`, {
     method: "POST",
     body: form,
+    headers,
   });
 
   const exitCode = parseInt(response.headers.get("X-Exit-Code") ?? "0", 10);
