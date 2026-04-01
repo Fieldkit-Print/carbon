@@ -68,6 +68,11 @@ export function hashApiKey(rawKey: string): string {
   return createHash("sha256").update(rawKey).digest("hex");
 }
 
+/** Hash an employee PIN with a company-scoped salt */
+export function hashPin(rawPin: string, companyId: string): string {
+  return createHash("sha256").update(`${rawPin}:${companyId}`).digest("hex");
+}
+
 type ApiKeyRecord = {
   id: string;
   companyId: string;

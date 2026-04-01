@@ -29,11 +29,11 @@ interface JobTravelerProps extends PDF {
 }
 
 function getStartPath(operationId: string) {
-  return `${getMESUrl()}/x/start/${operationId}`;
+  return `${getMESUrl()}/share/scan/start/${operationId}`;
 }
 
 function getEndPath(operationId: string) {
-  return `${getMESUrl()}/x/end/${operationId}`;
+  return `${getMESUrl()}/share/scan/end/${operationId}`;
 }
 
 // Initialize tailwind-styled-components

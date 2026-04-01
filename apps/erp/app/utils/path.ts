@@ -197,8 +197,8 @@ export const path = {
       mes: MES_URL,
       mesJobOperation: (id: string) => `${MES_URL}/x/operation/${id}`,
       mesJobOperationStart: (id: string, type: "Setup" | "Labor" | "Machine") =>
-        `${MES_URL}/x/start/${id}?type=${type}`,
-      mesJobOperationComplete: (id: string) => `${MES_URL}/x/end/${id}`
+        `${MES_URL}/share/scan/start/${id}?type=${type}`,
+      mesJobOperationComplete: (id: string) => `${MES_URL}/share/scan/end/${id}`
     },
     file: {
       cadModel: (id: string) => generatePath(`${file}/model/${id}`),

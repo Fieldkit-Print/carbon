@@ -6,7 +6,6 @@ import { FunctionRegion } from "@supabase/supabase-js";
 import type { LoaderFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import {
-  finishJobOperation,
   getTrackedEntitiesByMakeMethodId,
   insertProductionQuantity
 } from "~/services/operations.service";
@@ -89,12 +88,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     ? Math.max(0, (jobOperation.data.operationQuantity ?? 0) - currentQuantity)
     : 1;
 
-  const willBeFinished =
-    quantityToComplete + currentQuantity >=
-    (jobOperation.data.targetQuantity ??
-      jobOperation.data.operationQuantity ??
-      0);
-
   const isTrackedEntity =
     jobMakeMethod.data.requiresSerialTracking ||
     jobMakeMethod.data.requiresBatchTracking;
@@ -135,31 +128,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
             `${path.to.operation(
               operationId
             )}?trackedEntityId=${newTrackedEntityId}`
-          );
-        }
-
-        if (willBeFinished) {
-          const finishOperation = await finishJobOperation(serviceRole, {
-            jobOperationId: jobOperation.data.id,
-            userId
-          });
-
-          if (finishOperation.error) {
-            return redirect(
-              path.to.operation(operationId),
-              await flash(
-                request,
-                error(finishOperation.error, "Failed to finish operation")
-              )
-            );
-          }
-
-          return redirect(
-            path.to.operations,
-            await flash(request, {
-              ...success("Operation finished successfully"),
-              flash: "success"
-            })
           );
         }
       } else if (jobMakeMethod.data.requiresBatchTracking) {
@@ -230,31 +198,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         );
       }
     }
-  }
-
-  if (willBeFinished) {
-    const finishOperation = await finishJobOperation(serviceRole, {
-      jobOperationId: jobOperation.data.id,
-      userId
-    });
-
-    if (finishOperation.error) {
-      return redirect(
-        path.to.operation(operationId),
-        await flash(request, {
-          ...error(finishOperation.error, "Failed to finish operation"),
-          flash: "error"
-        })
-      );
-    }
-
-    return redirect(
-      path.to.operations,
-      await flash(request, {
-        ...success("Operation finished successfully"),
-        flash: "success"
-      })
-    );
   }
 
   return redirect(

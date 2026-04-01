@@ -6,6 +6,7 @@ import {
   generateBomIds,
   type TrackedActivityAttributes
 } from "@carbon/utils";
+import { getLocalTimeZone, now } from "@internationalized/date";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
 import type { z } from "zod";
@@ -747,6 +748,80 @@ export async function insertScrapQuantity(
       })
     )
     .select("*");
+}
+
+export async function toggleProductionEvent(
+  client: SupabaseClient<Database>,
+  args: {
+    jobOperationId: string;
+    type: "Setup" | "Labor" | "Machine";
+    employeeId: string;
+    companyId: string;
+    workCenterId: string | null;
+  },
+  trackedEntityId?: string
+): Promise<{ action: "started" | "paused"; error: string | null }> {
+  const currentTime = now(getLocalTimeZone()).toAbsoluteString();
+
+  // Get all active events for this operation by this employee
+  const { data: activeEvents } = await client
+    .from("productionEvent")
+    .select("id, type")
+    .eq("jobOperationId", args.jobOperationId)
+    .eq("employeeId", args.employeeId)
+    .is("endTime", null);
+
+  // Check if there's an active event of the same type
+  const sameTypeEvent = activeEvents?.find((e) => e.type === args.type);
+
+  if (sameTypeEvent) {
+    // Pause: end the active event of the same type
+    const result = await client
+      .from("productionEvent")
+      .update({ endTime: currentTime, updatedBy: args.employeeId })
+      .eq("id", sameTypeEvent.id);
+
+    return { action: "paused", error: result.error?.message ?? null };
+  }
+
+  // End any active events by this employee for this operation
+  const otherEvents = activeEvents?.filter((e) => e.type !== args.type) ?? [];
+  if (otherEvents.length > 0) {
+    await client
+      .from("productionEvent")
+      .update({ endTime: currentTime, updatedBy: args.employeeId })
+      .in(
+        "id",
+        otherEvents.map((e) => e.id)
+      );
+  }
+
+  // If starting Machine, also end all Setup/Labor events by ANY employee
+  if (args.type === "Machine") {
+    await client
+      .from("productionEvent")
+      .update({ endTime: currentTime, updatedBy: args.employeeId })
+      .eq("jobOperationId", args.jobOperationId)
+      .in("type", ["Setup", "Labor"])
+      .is("endTime", null);
+  }
+
+  // Start new event
+  const startResult = await startProductionEvent(
+    client,
+    {
+      type: args.type,
+      jobOperationId: args.jobOperationId,
+      workCenterId: args.workCenterId!,
+      startTime: currentTime,
+      employeeId: args.employeeId,
+      companyId: args.companyId,
+      createdBy: args.employeeId
+    },
+    trackedEntityId
+  );
+
+  return { action: "started", error: startResult.error?.message ?? null };
 }
 
 export async function endProductionEvent(
