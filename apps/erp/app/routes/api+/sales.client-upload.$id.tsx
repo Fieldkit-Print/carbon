@@ -6,24 +6,19 @@ import { getEntityForUploadLink } from "~/modules/sales";
 import { getExternalLink } from "~/modules/shared";
 import { stripSpecialCharacters } from "~/utils/string";
 
-export async function action({ request, params }: ActionFunctionArgs) {
-  const { id } = params;
-  if (!id) {
-    return data({ error: "Missing link ID" }, { status: 400 });
-  }
-
+async function validateLink(id: string) {
   const serviceRole = getCarbonServiceRole();
 
   const externalLink = await getExternalLink(serviceRole, id);
   if (externalLink.error || !externalLink.data) {
-    return data({ error: "Link not found" }, { status: 404 });
+    return { error: "Link not found", status: 404 } as const;
   }
 
   if (
     externalLink.data.expiresAt &&
     new Date(externalLink.data.expiresAt) < new Date()
   ) {
-    return data({ error: "Link has expired" }, { status: 410 });
+    return { error: "Link has expired", status: 410 } as const;
   }
 
   const entity = await getEntityForUploadLink(
@@ -31,39 +26,72 @@ export async function action({ request, params }: ActionFunctionArgs) {
     externalLink.data.documentId
   );
   if (!entity) {
-    return data({ error: "Entity not found" }, { status: 404 });
+    return { error: "Entity not found", status: 404 } as const;
+  }
+
+  return { serviceRole, entity } as const;
+}
+
+export async function action({ request, params }: ActionFunctionArgs) {
+  const { id } = params;
+  if (!id) {
+    return data({ error: "Missing link ID" }, { status: 400 });
   }
 
   const formData = await request.formData();
-  const files = formData.getAll("files") as File[];
+  const intent = formData.get("intent") as string;
 
-  if (!files.length) {
-    return data({ error: "No files provided" }, { status: 400 });
-  }
+  if (intent === "sign") {
+    const fileName = formData.get("fileName") as string;
+    if (!fileName) {
+      return data({ error: "Missing fileName" }, { status: 400 });
+    }
 
-  const uploaded: string[] = [];
-  const errors: string[] = [];
+    const result = await validateLink(id);
+    if ("error" in result) {
+      return data({ error: result.error }, { status: result.status });
+    }
 
-  for (const file of files) {
-    const sanitizedName = stripSpecialCharacters(file.name);
+    const { serviceRole, entity } = result;
+    const sanitizedName = stripSpecialCharacters(fileName);
     const storagePath = `${entity.companyId}/opportunity/${entity.opportunityId}/${sanitizedName}`;
 
-    const fileUpload = await serviceRole.storage
+    const { data: signedUrl, error } = await serviceRole.storage
       .from("private")
-      .upload(storagePath, file, {
-        cacheControl: `${12 * 60 * 60}`,
-        upsert: true
-      });
+      .createSignedUploadUrl(storagePath, { upsert: true });
 
-    if (fileUpload.error) {
-      errors.push(file.name);
-      continue;
+    if (error || !signedUrl) {
+      return data({ error: "Failed to create upload URL" }, { status: 500 });
     }
+
+    return data({
+      signedUrl: signedUrl.signedUrl,
+      token: signedUrl.token,
+      path: signedUrl.path,
+      storagePath
+    });
+  }
+
+  if (intent === "record") {
+    const fileName = formData.get("fileName") as string;
+    const fileSize = Number(formData.get("fileSize"));
+    const storagePath = formData.get("storagePath") as string;
+
+    if (!fileName || !storagePath) {
+      return data({ error: "Missing file info" }, { status: 400 });
+    }
+
+    const result = await validateLink(id);
+    if ("error" in result) {
+      return data({ error: result.error }, { status: result.status });
+    }
+
+    const { serviceRole, entity } = result;
 
     await upsertDocument(serviceRole, {
       path: storagePath,
-      name: file.name,
-      size: Math.round(file.size / 1024),
+      name: fileName,
+      size: Math.round(fileSize / 1024),
       sourceDocument: entity.sourceDocument,
       sourceDocumentId: entity.sourceDocumentId,
       readGroups: [entity.createdBy],
@@ -72,8 +100,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
       companyId: entity.companyId
     });
 
-    uploaded.push(file.name);
+    return data({ recorded: true });
   }
 
-  return data({ uploaded, errors });
+  return data({ error: "Invalid intent" }, { status: 400 });
 }

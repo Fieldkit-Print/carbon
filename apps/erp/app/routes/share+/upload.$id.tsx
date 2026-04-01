@@ -146,45 +146,93 @@ function UploadPageContent({
   const revalidator = useRevalidator();
   const [uploading, setUploading] = useState(false);
 
+  const MAX_FILE_SIZE_MB = 50;
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       if (!acceptedFiles.length) return;
+
+      const tooLarge = acceptedFiles.filter(
+        (f) => f.size > MAX_FILE_SIZE_BYTES
+      );
+      const validFiles = acceptedFiles.filter(
+        (f) => f.size <= MAX_FILE_SIZE_BYTES
+      );
+
+      if (tooLarge.length) {
+        toast.error(
+          `${tooLarge.map((f) => f.name).join(", ")} exceeded the ${MAX_FILE_SIZE_MB}MB file size limit`
+        );
+      }
+
+      if (!validFiles.length) return;
       setUploading(true);
 
-      const formData = new FormData();
-      for (const file of acceptedFiles) {
-        formData.append("files", file);
-      }
+      const uploaded: string[] = [];
+      const errors: string[] = [];
 
-      try {
-        const response = await fetch(
-          `/api/sales/client-upload/${externalLinkId}`,
-          {
+      for (const file of validFiles) {
+        try {
+          // 1. Get signed upload URL
+          const signForm = new FormData();
+          signForm.set("intent", "sign");
+          signForm.set("fileName", file.name);
+
+          const signRes = await fetch(
+            `/api/sales/client-upload/${externalLinkId}`,
+            { method: "POST", body: signForm }
+          );
+          const signData = await signRes.json();
+
+          if (signData.error || !signData.signedUrl) {
+            errors.push(file.name);
+            continue;
+          }
+
+          // 2. Upload directly to storage
+          const uploadRes = await fetch(signData.signedUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": file.type || "application/octet-stream"
+            },
+            body: file
+          });
+
+          if (!uploadRes.ok) {
+            errors.push(file.name);
+            continue;
+          }
+
+          // 3. Record the document
+          const recordForm = new FormData();
+          recordForm.set("intent", "record");
+          recordForm.set("fileName", file.name);
+          recordForm.set("fileSize", String(file.size));
+          recordForm.set("storagePath", signData.storagePath);
+
+          await fetch(`/api/sales/client-upload/${externalLinkId}`, {
             method: "POST",
-            body: formData
-          }
-        );
+            body: recordForm
+          });
 
-        const result = await response.json();
-
-        if (result.error) {
-          toast.error(result.error);
-        } else {
-          if (result.uploaded?.length) {
-            toast.success(
-              `Uploaded ${result.uploaded.length} file${result.uploaded.length > 1 ? "s" : ""}`
-            );
-          }
-          if (result.errors?.length) {
-            toast.error(`Failed to upload: ${result.errors.join(", ")}`);
-          }
-          revalidator.revalidate();
+          uploaded.push(file.name);
+        } catch {
+          errors.push(file.name);
         }
-      } catch {
-        toast.error("Upload failed. Please try again.");
-      } finally {
-        setUploading(false);
       }
+
+      if (uploaded.length) {
+        toast.success(
+          `Uploaded ${uploaded.length} file${uploaded.length > 1 ? "s" : ""}`
+        );
+      }
+      if (errors.length) {
+        toast.error(`Failed to upload: ${errors.join(", ")}`);
+      }
+
+      revalidator.revalidate();
+      setUploading(false);
     },
     [externalLinkId, revalidator]
   );
@@ -192,7 +240,8 @@ function UploadPageContent({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     multiple: true,
-    disabled: uploading
+    disabled: uploading,
+    maxSize: MAX_FILE_SIZE_BYTES
   });
 
   const entityLabel =
@@ -252,6 +301,11 @@ function UploadPageContent({
                       ? "Drop files here"
                       : "Drag & drop files here, or click to browse"}
                 </p>
+                {!uploading && (
+                  <p className="text-xs text-muted-foreground">
+                    Max file size: {MAX_FILE_SIZE_MB}MB
+                  </p>
+                )}
               </VStack>
             </div>
 
