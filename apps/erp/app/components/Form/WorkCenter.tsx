@@ -91,7 +91,7 @@ export const useWorkCenters = (args: {
   processId?: string;
   locationId?: string;
 }) => {
-  const { processId, locationId } = args;
+  const { processId } = args;
   const workCenterFetcher =
     useFetcher<Awaited<ReturnType<typeof getWorkCentersList>>>();
 
@@ -104,19 +104,8 @@ export const useWorkCenters = (args: {
       workCenterFetcher.data?.data
         ? workCenterFetcher.data?.data
             .filter((f) => {
-              if (processId && locationId) {
-                return (
-                  (f.processes ?? []).includes(processId) &&
-                  f.locationId === locationId
-                );
-              }
-
               if (processId) {
                 return (f.processes ?? []).includes(processId);
-              }
-
-              if (locationId) {
-                return f.locationId === locationId;
               }
 
               return true;
@@ -126,7 +115,7 @@ export const useWorkCenters = (args: {
               label: c.name!
             }))
         : [],
-    [workCenterFetcher.data, processId, locationId]
+    [workCenterFetcher.data, processId]
   );
 
   return { options, workCenterFetcher };
