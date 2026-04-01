@@ -315,6 +315,70 @@ export async function sendMagicLink(email: string) {
   });
 }
 
+export async function signInWithPin(
+  pin: string,
+  companyId: string
+): Promise<AuthSession | null> {
+  const client = getCarbonServiceRole();
+  const pinHash = hashPin(pin, companyId);
+
+  // Look up employee by PIN
+  const employee = await client
+    .from("employee")
+    .select("id")
+    .eq("pinHash", pinHash)
+    .eq("companyId", companyId)
+    .eq("active", true)
+    .maybeSingle();
+
+  if (employee.error || !employee.data) return null;
+
+  // Get the user's email
+  const user = await client
+    .from("user")
+    .select("email")
+    .eq("id", employee.data.id)
+    .single();
+
+  if (user.error || !user.data?.email) return null;
+
+  // Generate a magic link token server-side (no email sent)
+  const { data: linkData, error: linkError } =
+    await client.auth.admin.generateLink({
+      type: "magiclink",
+      email: user.data.email
+    });
+
+  if (linkError || !linkData?.properties?.hashed_token) return null;
+
+  // Exchange the token for a session
+  const { data: otpData, error: otpError } = await client.auth.verifyOtp({
+    token_hash: linkData.properties.hashed_token,
+    type: "magiclink"
+  });
+
+  if (otpError || !otpData.session) return null;
+
+  return makeAuthSession(otpData.session, companyId);
+}
+
+export async function signInWithPinAutoCompany(
+  pin: string
+): Promise<AuthSession | null> {
+  const client = getCarbonServiceRole();
+
+  // Get all companies to try PIN against each (PINs are company-scoped)
+  const companies = await client.from("company").select("id").limit(100);
+  if (!companies.data?.length) return null;
+
+  for (const company of companies.data) {
+    const result = await signInWithPin(pin, company.id);
+    if (result) return result;
+  }
+
+  return null;
+}
+
 export async function signInWithEmail(email: string, password: string) {
   const client = getCarbonServiceRole();
   const { data, error } = await client.auth.signInWithPassword({

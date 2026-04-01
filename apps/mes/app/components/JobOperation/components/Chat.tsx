@@ -17,7 +17,7 @@ import { LuArrowUp } from "react-icons/lu";
 import { useUser } from "~/hooks";
 import type { OperationWithDetails } from "~/services/types";
 import { usePeople } from "~/stores";
-import { path } from "~/utils/path";
+import { getStoragePath, path } from "~/utils/path";
 
 type Message = {
   id: string;
@@ -165,7 +165,11 @@ export function OperationChat({
                   )}
                 >
                   <Avatar
-                    src={createdBy?.avatarUrl ?? undefined}
+                    src={
+                      createdBy?.avatarUrl
+                        ? getStoragePath("avatars", createdBy.avatarUrl)
+                        : undefined
+                    }
                     name={createdBy?.name}
                   />
 

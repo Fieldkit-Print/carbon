@@ -55,7 +55,7 @@ import { Form, Link, useFetcher, useLocation } from "react-router";
 import { useUser } from "~/hooks";
 import type { action } from "~/root";
 import type { Location } from "~/services/types";
-import { ERP_URL, path } from "~/utils/path";
+import { ERP_URL, getStoragePath, path } from "~/utils/path";
 import { AdjustInventory } from "./AdjustInventory";
 import { EndShift } from "./EndShift";
 import Suggestion from "./Suggestion";
@@ -301,7 +301,11 @@ export function UserNav({
             >
               <Avatar
                 className="h-8 w-8 rounded-lg"
-                src={user.avatarUrl ?? undefined}
+                src={
+                  user.avatarUrl
+                    ? getStoragePath("avatars", user.avatarUrl)
+                    : undefined
+                }
                 name={name}
               />
               <div className="grid flex-1 text-left text-sm leading-tight">

@@ -42,6 +42,7 @@ import {
   LuChevronDown,
   LuChevronRight,
   LuCircleCheck,
+  LuCloudUpload,
   LuFile,
   LuPaperclip,
   LuTrash
@@ -191,18 +192,34 @@ export function StepsListItem({
             </fetcher.Form>
           ) : compact ? (
             <IconButton
-              aria-label="Record step"
+              aria-label={
+                type === "ProofUpload" || type === "File"
+                  ? "Upload file"
+                  : "Record step"
+              }
               variant="secondary"
-              icon={<LuCircleCheck />}
+              icon={
+                type === "ProofUpload" || type === "File" ? (
+                  <LuCloudUpload />
+                ) : (
+                  <LuCircleCheck />
+                )
+              }
               onClick={() => onRecord(step)}
             />
           ) : (
             <Button
               variant="secondary"
-              rightIcon={<LuCircleCheck />}
+              rightIcon={
+                type === "ProofUpload" || type === "File" ? (
+                  <LuCloudUpload />
+                ) : (
+                  <LuCircleCheck />
+                )
+              }
               onClick={() => onRecord(step)}
             >
-              Record
+              {type === "ProofUpload" || type === "File" ? "Upload" : "Record"}
             </Button>
           )}
           {hasDescription && (

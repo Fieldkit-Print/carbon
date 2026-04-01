@@ -8,8 +8,17 @@ import {
   magicLinkValidator,
   RATE_LIMIT
 } from "@carbon/auth";
-import { sendMagicLink, verifyAuthSession } from "@carbon/auth/auth.server";
-import { flash, getAuthSession } from "@carbon/auth/session.server";
+import {
+  sendMagicLink,
+  signInWithPinAutoCompany,
+  verifyAuthSession
+} from "@carbon/auth/auth.server";
+import { setCompanyId } from "@carbon/auth/company.server";
+import {
+  flash,
+  getAuthSession,
+  setAuthSession
+} from "@carbon/auth/session.server";
 import { getUserByEmail } from "@carbon/auth/users.server";
 import { Hidden, Input, Submit, ValidatedForm, validator } from "@carbon/form";
 import { Ratelimit, redis } from "@carbon/kv";
@@ -19,13 +28,17 @@ import {
   AlertTitle,
   Button,
   Heading,
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
   Separator,
   toast,
   VStack
 } from "@carbon/react";
 import { ItarLoginDisclaimer } from "@carbon/remix";
 import { Edition } from "@carbon/utils";
-import { LuCircleAlert } from "react-icons/lu";
+import { useState } from "react";
+import { LuCircleAlert, LuKeyboard } from "react-icons/lu";
 import type {
   ActionFunctionArgs,
   LoaderFunctionArgs,
@@ -76,9 +89,32 @@ export async function action({ request }: ActionFunctionArgs) {
     );
   }
 
-  const validation = await validator(magicLinkValidator).validate(
-    await request.formData()
-  );
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent === "pin") {
+    const pin = formData.get("pin") as string;
+    if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+      return data({ success: false, message: "Please enter a 4-digit PIN" });
+    }
+
+    const authSession = await signInWithPinAutoCompany(pin);
+    if (!authSession) {
+      return data({ success: false, message: "Incorrect PIN" });
+    }
+
+    const sessionCookie = await setAuthSession(request, { authSession });
+    const companyIdCookie = setCompanyId(authSession.companyId);
+
+    return redirect(path.to.authenticatedRoot, {
+      headers: [
+        ["Set-Cookie", sessionCookie],
+        ["Set-Cookie", companyIdCookie]
+      ]
+    });
+  }
+
+  const validation = await validator(magicLinkValidator).validate(formData);
 
   if (validation.error) {
     return error(validation.error, "Invalid email address");
@@ -113,6 +149,7 @@ export default function LoginRoute() {
 
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? undefined;
+  const [loginMode, setLoginMode] = useState<"email" | "pin">("email");
 
   const fetcher = useFetcher<
     { success: true } | { success: false; message: string }
@@ -159,7 +196,14 @@ export default function LoginRoute() {
         />
       </div>
       <div className="rounded-lg md:bg-card md:border md:border-border md:shadow-lg p-8 w-[380px]">
-        {fetcher.data?.success === true ? (
+        {loginMode === "pin" ? (
+          <PinLogin
+            fetcher={fetcher}
+            onSwitchToEmail={() => {
+              setLoginMode("email");
+            }}
+          />
+        ) : fetcher.data?.success === true ? (
           <>
             <VStack spacing={4} className="items-center justify-center">
               <Heading size="h3">Check your email</Heading>
@@ -230,6 +274,21 @@ export default function LoginRoute() {
               >
                 Sign in with Email
               </Submit>
+
+              <div className="py-3 w-full">
+                <Separator />
+              </div>
+
+              <Button
+                type="button"
+                size="lg"
+                className="w-full"
+                onClick={() => setLoginMode("pin")}
+                variant="ghost"
+                leftIcon={<LuKeyboard className="w-4 h-4" />}
+              >
+                Sign in with PIN
+              </Button>
             </VStack>
           </ValidatedForm>
         )}
@@ -260,6 +319,78 @@ export default function LoginRoute() {
         )}
       </div>
     </>
+  );
+}
+
+function PinLogin({
+  fetcher,
+  onSwitchToEmail
+}: {
+  fetcher: ReturnType<
+    typeof useFetcher<{ success: true } | { success: false; message: string }>
+  >;
+  onSwitchToEmail: () => void;
+}) {
+  const [pin, setPin] = useState("");
+  const isSubmitting = fetcher.state !== "idle";
+  const isError = fetcher.data?.success === false;
+
+  return (
+    <VStack spacing={4} className="items-center">
+      <Heading size="h3">Enter your PIN</Heading>
+      <p className="text-muted-foreground text-sm text-center">
+        Use your 4-digit production PIN to sign in.
+      </p>
+
+      <fetcher.Form method="post">
+        <input type="hidden" name="intent" value="pin" />
+        <input type="hidden" name="pin" value={pin} />
+        <VStack spacing={4} className="items-center">
+          <InputOTP
+            maxLength={4}
+            value={pin}
+            onChange={setPin}
+            onComplete={() => {
+              const form = document.querySelector("form") as HTMLFormElement;
+              if (form) form.requestSubmit();
+            }}
+            inputMode="numeric"
+            disabled={isSubmitting}
+          >
+            <InputOTPGroup>
+              <InputOTPSlot index={0} />
+              <InputOTPSlot index={1} />
+              <InputOTPSlot index={2} />
+              <InputOTPSlot index={3} />
+            </InputOTPGroup>
+          </InputOTP>
+
+          {isError && (
+            <Alert variant="destructive">
+              <LuCircleAlert className="w-4 h-4" />
+              <AlertTitle>Authentication Error</AlertTitle>
+              <AlertDescription>
+                {(fetcher.data as { message: string }).message}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            type="submit"
+            variant="secondary"
+            size="lg"
+            className="w-full"
+            disabled={pin.length !== 4 || isSubmitting}
+          >
+            {isSubmitting ? "Signing in..." : "Sign in"}
+          </Button>
+        </VStack>
+      </fetcher.Form>
+
+      <Button type="button" variant="ghost" size="sm" onClick={onSwitchToEmail}>
+        Sign in with email instead
+      </Button>
+    </VStack>
   );
 }
 
