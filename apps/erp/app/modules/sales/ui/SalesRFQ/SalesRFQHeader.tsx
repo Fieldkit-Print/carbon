@@ -15,9 +15,6 @@ import {
   Heading,
   HStack,
   IconButton,
-  Input,
-  InputGroup,
-  InputRightElement,
   Modal,
   ModalBody,
   ModalContent,
@@ -28,6 +25,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  toast,
   useDisclosure,
   useMount,
   VStack
@@ -37,6 +35,7 @@ import {
   LuCircleCheck,
   LuCircleX,
   LuEllipsisVertical,
+  LuLink,
   LuLoaderCircle,
   LuPanelLeft,
   LuPanelRight,
@@ -65,7 +64,6 @@ const SalesRFQHeader = () => {
   const requiresCustomerAlert = useDisclosure();
   const noQuoteReasonModal = useDisclosure();
   const deleteRFQModal = useDisclosure();
-  const uploadLinkModal = useDisclosure();
   const { toggleExplorer, toggleProperties } = usePanels();
 
   const permissions = usePermissions();
@@ -84,7 +82,9 @@ const SalesRFQHeader = () => {
 
   useEffect(() => {
     if (uploadLinkFetcher.data?.externalLinkId) {
-      uploadLinkModal.onOpen();
+      const url = `${window.location.origin}${path.to.externalUpload(uploadLinkFetcher.data.externalLinkId)}`;
+      navigator.clipboard.writeText(url);
+      toast.success("Upload link copied to clipboard");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadLinkFetcher.data]);
@@ -132,6 +132,24 @@ const SalesRFQHeader = () => {
               >
                 <DropdownMenuIcon icon={<LuUpload />} />
                 Request Files
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!permissions.can("create", "sales")}
+                onClick={() => {
+                  uploadLinkFetcher.submit(
+                    {
+                      entityId: rfqId,
+                      customerId: routeData?.rfqSummary?.customerId ?? ""
+                    },
+                    {
+                      method: "post",
+                      action: path.to.uploadLink
+                    }
+                  );
+                }}
+              >
+                <DropdownMenuIcon icon={<LuLink />} />
+                Copy Upload Link
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -333,12 +351,6 @@ const SalesRFQHeader = () => {
           }}
         />
       )}
-      {uploadLinkModal.isOpen && uploadLinkFetcher.data?.externalLinkId && (
-        <UploadLinkModal
-          externalLinkId={uploadLinkFetcher.data.externalLinkId}
-          onClose={uploadLinkModal.onClose}
-        />
-      )}
     </div>
   );
 };
@@ -537,52 +549,6 @@ function ConvertToQuoteModal({
               Convert
             </Button>
           </fetcher.Form>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-}
-
-function UploadLinkModal({
-  externalLinkId,
-  onClose
-}: {
-  externalLinkId: string;
-  onClose: () => void;
-}) {
-  if (typeof window === "undefined") return null;
-
-  const uploadUrl = `${window.location.origin}${path.to.externalUpload(
-    externalLinkId
-  )}`;
-  return (
-    <Modal
-      open
-      onOpenChange={(open) => {
-        if (!open) {
-          onClose();
-        }
-      }}
-    >
-      <ModalContent>
-        <ModalHeader>
-          <ModalTitle>Request Files</ModalTitle>
-          <ModalDescription>
-            Share this link with your customer so they can upload files
-          </ModalDescription>
-        </ModalHeader>
-        <ModalBody>
-          <InputGroup>
-            <Input value={uploadUrl} />
-            <InputRightElement>
-              <Copy text={uploadUrl} />
-            </InputRightElement>
-          </InputGroup>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="secondary" onClick={onClose}>
-            Close
-          </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
