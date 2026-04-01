@@ -7,10 +7,7 @@ import { FunctionRegion } from "@supabase/supabase-js";
 import type { ActionFunctionArgs } from "react-router";
 import { data, redirect } from "react-router";
 import { nonScrapQuantityValidator } from "~/services/models";
-import {
-  finishJobOperation,
-  insertProductionQuantity
-} from "~/services/operations.service";
+import { insertProductionQuantity } from "~/services/operations.service";
 import { path } from "~/utils/path";
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -28,40 +25,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const serviceRole = await getCarbonServiceRole();
 
-  // Get current job operation and production quantities to check if operation will be finished
-  const [jobOperation, productionQuantities] = await Promise.all([
-    serviceRole
-      .from("jobOperation")
-      .select("*")
-      .eq("id", validation.data.jobOperationId)
-      .maybeSingle(),
-    serviceRole
-      .from("productionQuantity")
-      .select("*")
-      .eq("type", "Production")
-      .eq("jobOperationId", validation.data.jobOperationId)
-  ]);
-
-  if (jobOperation.error || !jobOperation.data) {
-    return data(
-      {},
-      await flash(request, {
-        ...error(jobOperation.error, "Failed to fetch job operation"),
-        flash: "error"
-      })
-    );
-  }
-
-  const currentQuantity =
-    productionQuantities.data?.reduce((acc, curr) => acc + curr.quantity, 0) ??
-    0;
-
-  const willBeFinished =
-    validation.data.quantity + currentQuantity >=
-    (jobOperation.data.targetQuantity ??
-      jobOperation.data.operationQuantity ??
-      0);
-
   if (validation.data.trackingType === "Serial") {
     const response = await serviceRole.functions.invoke("issue", {
       body: {
@@ -74,31 +37,6 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     const trackedEntityId = response.data?.newTrackedEntityId;
-
-    if (willBeFinished) {
-      const finishOperation = await finishJobOperation(serviceRole, {
-        jobOperationId: jobOperation.data.id,
-        userId
-      });
-
-      if (finishOperation.error) {
-        return data(
-          {},
-          await flash(request, {
-            ...error(finishOperation.error, "Failed to finish operation"),
-            flash: "error"
-          })
-        );
-      }
-
-      return redirect(
-        path.to.operations,
-        await flash(request, {
-          ...success("Operation finished successfully"),
-          flash: "success"
-        })
-      );
-    }
 
     if (trackedEntityId) {
       return redirect(
@@ -127,31 +65,6 @@ export async function action({ request }: ActionFunctionArgs) {
         await flash(request, {
           ...error(response.error, "Failed to complete job operation"),
           flash: "error"
-        })
-      );
-    }
-
-    if (willBeFinished) {
-      const finishOperation = await finishJobOperation(serviceRole, {
-        jobOperationId: jobOperation.data.id,
-        userId
-      });
-
-      if (finishOperation.error) {
-        return data(
-          {},
-          await flash(request, {
-            ...error(finishOperation.error, "Failed to finish operation"),
-            flash: "error"
-          })
-        );
-      }
-
-      return redirect(
-        path.to.operations,
-        await flash(request, {
-          ...success("Operation finished successfully"),
-          flash: "success"
         })
       );
     }
@@ -196,31 +109,6 @@ export async function action({ request }: ActionFunctionArgs) {
         await flash(request, {
           ...error(issue.error, "Failed to issue materials"),
           flash: "error"
-        })
-      );
-    }
-
-    if (willBeFinished) {
-      const finishOperation = await finishJobOperation(serviceRole, {
-        jobOperationId: jobOperation.data.id,
-        userId
-      });
-
-      if (finishOperation.error) {
-        return data(
-          {},
-          await flash(request, {
-            ...error(finishOperation.error, "Failed to finish operation"),
-            flash: "error"
-          })
-        );
-      }
-
-      return redirect(
-        path.to.operations,
-        await flash(request, {
-          ...success("Operation finished successfully"),
-          flash: "success"
         })
       );
     }
