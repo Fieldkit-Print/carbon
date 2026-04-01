@@ -1,17 +1,24 @@
 import { assertIsPost, error, success } from "@carbon/auth";
-import { requirePermissions } from "@carbon/auth/auth.server";
+import { hashPin, requirePermissions } from "@carbon/auth/auth.server";
+import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { flash } from "@carbon/auth/session.server";
 import { validationError, validator } from "@carbon/form";
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  HStack,
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
   VStack
 } from "@carbon/react";
+import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { data, redirect, useLoaderData } from "react-router";
+import { data, redirect, useFetcher, useLoaderData } from "react-router";
 import {
   accountProfileValidator,
   getAccount,
@@ -28,9 +35,18 @@ export const handle: Handle = {
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { client, userId } = await requirePermissions(request, {});
+  const { client, userId, companyId } = await requirePermissions(request, {});
 
-  const [user] = await Promise.all([getAccount(client, userId)]);
+  const serviceRole = getCarbonServiceRole();
+  const [user, employee] = await Promise.all([
+    getAccount(client, userId),
+    serviceRole
+      .from("employee")
+      .select("pinHash")
+      .eq("id", userId)
+      .eq("companyId", companyId)
+      .maybeSingle()
+  ]);
 
   if (user.error || !user.data) {
     throw redirect(
@@ -39,7 +55,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     );
   }
 
-  return { user: user.data };
+  return { user: user.data, hasPin: !!employee.data?.pinHash };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -76,6 +92,76 @@ export async function action({ request }: ActionFunctionArgs) {
     return data({}, await flash(request, success("Updated profile")));
   }
 
+  if (formData.get("intent") === "pin") {
+    const { userId, companyId } = await requirePermissions(request, {});
+    const serviceRole = getCarbonServiceRole();
+    const pin = formData.get("pin") as string;
+
+    if (pin === "") {
+      // Remove PIN
+      const result = await serviceRole
+        .from("employee")
+        .update({ pinHash: null })
+        .eq("id", userId)
+        .eq("companyId", companyId);
+
+      if (result.error) {
+        return data(
+          {},
+          await flash(request, error(result.error, "Failed to remove PIN"))
+        );
+      }
+
+      return data({}, await flash(request, success("PIN removed")));
+    }
+
+    if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+      return data(
+        {},
+        await flash(request, error(null, "PIN must be exactly 4 digits"))
+      );
+    }
+
+    const pinHash = hashPin(pin, companyId);
+
+    // Check if this PIN is already used by another employee in the same company
+    const existing = await serviceRole
+      .from("employee")
+      .select("id")
+      .eq("pinHash", pinHash)
+      .eq("companyId", companyId)
+      .neq("id", userId)
+      .maybeSingle();
+
+    if (existing.data) {
+      return data(
+        {},
+        await flash(
+          request,
+          error(
+            null,
+            "This PIN is already in use. Please choose a different one."
+          )
+        )
+      );
+    }
+
+    const result = await serviceRole
+      .from("employee")
+      .update({ pinHash })
+      .eq("id", userId)
+      .eq("companyId", companyId);
+
+    if (result.error) {
+      return data(
+        {},
+        await flash(request, error(result.error, "Failed to update PIN"))
+      );
+    }
+
+    return data({}, await flash(request, success("PIN updated")));
+  }
+
   if (formData.get("intent") === "photo") {
     const photoPath = formData.get("path");
     if (photoPath === null || typeof photoPath === "string") {
@@ -109,7 +195,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function AccountProfile() {
-  const { user } = useLoaderData<typeof loader>();
+  const { user, hasPin } = useLoaderData<typeof loader>();
 
   return (
     <VStack spacing={2}>
@@ -128,6 +214,106 @@ export default function AccountProfile() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Production PIN</CardTitle>
+          <CardDescription>
+            Set a 4-digit PIN to use when scanning QR codes on the shop floor.
+            This lets you clock in and out of operations without logging into
+            the MES app.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PinForm hasPin={hasPin} />
+        </CardContent>
+      </Card>
     </VStack>
+  );
+}
+
+function PinForm({ hasPin }: { hasPin: boolean }) {
+  const fetcher = useFetcher();
+  const [pin, setPin] = useState("");
+  const [mode, setMode] = useState<"view" | "edit">("view");
+  const isSubmitting = fetcher.state !== "idle";
+
+  if (mode === "view") {
+    return (
+      <HStack spacing={4} className="items-center">
+        <p className="text-sm text-muted-foreground">
+          {hasPin ? "PIN is set" : "No PIN set"}
+        </p>
+        <Button variant="secondary" size="sm" onClick={() => setMode("edit")}>
+          {hasPin ? "Change PIN" : "Set PIN"}
+        </Button>
+        {hasPin && (
+          <fetcher.Form method="post">
+            <input type="hidden" name="intent" value="pin" />
+            <input type="hidden" name="pin" value="" />
+            <Button
+              type="submit"
+              variant="ghost"
+              size="sm"
+              disabled={isSubmitting}
+            >
+              Remove PIN
+            </Button>
+          </fetcher.Form>
+        )}
+      </HStack>
+    );
+  }
+
+  return (
+    <fetcher.Form
+      method="post"
+      onSubmit={() => {
+        setMode("view");
+        setPin("");
+      }}
+    >
+      <input type="hidden" name="intent" value="pin" />
+      <input type="hidden" name="pin" value={pin} />
+      <VStack spacing={4}>
+        <div>
+          <p className="text-sm font-medium mb-2">Enter a 4-digit PIN</p>
+          <InputOTP
+            maxLength={4}
+            value={pin}
+            onChange={setPin}
+            inputMode="numeric"
+          >
+            <InputOTPGroup>
+              <InputOTPSlot index={0} />
+              <InputOTPSlot index={1} />
+              <InputOTPSlot index={2} />
+              <InputOTPSlot index={3} />
+            </InputOTPGroup>
+          </InputOTP>
+        </div>
+        <HStack spacing={2}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            disabled={pin.length !== 4 || isSubmitting}
+          >
+            {isSubmitting ? "Saving..." : "Save PIN"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setMode("view");
+              setPin("");
+            }}
+          >
+            Cancel
+          </Button>
+        </HStack>
+      </VStack>
+    </fetcher.Form>
   );
 }
