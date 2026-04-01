@@ -3556,3 +3556,61 @@ export async function upsertSalesRFQLine(
     .select("id")
     .single();
 }
+
+export async function getEntityForUploadLink(
+  client: SupabaseClient<Database>,
+  documentId: string
+) {
+  // Try quote first
+  const quote = await client
+    .from("quotes")
+    .select("id, quoteId, opportunityId, companyId, createdBy")
+    .eq("id", documentId)
+    .maybeSingle();
+  if (quote.data) {
+    return {
+      opportunityId: quote.data.opportunityId,
+      companyId: quote.data.companyId,
+      createdBy: quote.data.createdBy,
+      sourceDocument: "Quote" as const,
+      sourceDocumentId: quote.data.id,
+      entityName: quote.data.quoteId
+    };
+  }
+
+  // Try sales order
+  const salesOrder = await client
+    .from("salesOrders")
+    .select("id, salesOrderId, opportunityId, companyId, createdBy")
+    .eq("id", documentId)
+    .maybeSingle();
+  if (salesOrder.data) {
+    return {
+      opportunityId: salesOrder.data.opportunityId,
+      companyId: salesOrder.data.companyId,
+      createdBy: salesOrder.data.createdBy,
+      sourceDocument: "Sales Order" as const,
+      sourceDocumentId: salesOrder.data.id,
+      entityName: salesOrder.data.salesOrderId
+    };
+  }
+
+  // Try sales RFQ
+  const salesRfq = await client
+    .from("salesRfqs")
+    .select("id, salesRfqId, opportunityId, companyId, createdBy")
+    .eq("id", documentId)
+    .maybeSingle();
+  if (salesRfq.data) {
+    return {
+      opportunityId: salesRfq.data.opportunityId,
+      companyId: salesRfq.data.companyId,
+      createdBy: salesRfq.data.createdBy,
+      sourceDocument: "Request for Quote" as const,
+      sourceDocumentId: salesRfq.data.id,
+      entityName: salesRfq.data.salesRfqId
+    };
+  }
+
+  return null;
+}

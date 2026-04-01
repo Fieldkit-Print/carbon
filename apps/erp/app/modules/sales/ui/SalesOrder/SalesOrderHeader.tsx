@@ -11,6 +11,9 @@ import {
   Heading,
   HStack,
   IconButton,
+  Input,
+  InputGroup,
+  InputRightElement,
   Modal,
   ModalBody,
   ModalContent,
@@ -38,7 +41,8 @@ import {
   LuPanelLeft,
   LuPanelRight,
   LuTrash,
-  LuTruck
+  LuTruck,
+  LuUpload
 } from "react-icons/lu";
 import type { FetcherWithComponents } from "react-router";
 import { Await, Link, useFetcher, useParams } from "react-router";
@@ -205,6 +209,15 @@ const SalesOrderHeader = () => {
   const salesOrderToJobsModal = useDisclosure();
   const confirmDisclosure = useDisclosure();
   const deleteSalesOrderModal = useDisclosure();
+  const uploadLinkModal = useDisclosure();
+  const uploadLinkFetcher = useFetcher<{ externalLinkId?: string }>();
+
+  useEffect(() => {
+    if (uploadLinkFetcher.data?.externalLinkId) {
+      uploadLinkModal.onOpen();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadLinkFetcher.data]);
   const [customers] = useCustomers();
 
   const { trigger: auditLogTrigger, drawer: auditLogDrawer } = useAuditLog({
@@ -299,6 +312,25 @@ const SalesOrderHeader = () => {
                     Export Lines to CSV
                   </CSVLink>
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={!permissions.can("create", "sales")}
+                  onClick={() => {
+                    uploadLinkFetcher.submit(
+                      {
+                        entityId: orderId,
+                        customerId: routeData?.salesOrder?.customerId ?? ""
+                      },
+                      {
+                        method: "post",
+                        action: path.to.uploadLink
+                      }
+                    );
+                  }}
+                >
+                  <DropdownMenuIcon icon={<LuUpload />} />
+                  Request Files
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   destructive
                   disabled={
@@ -637,9 +669,61 @@ const SalesOrderHeader = () => {
           }}
         />
       )}
+      {uploadLinkModal.isOpen && uploadLinkFetcher.data?.externalLinkId && (
+        <UploadLinkModal
+          externalLinkId={uploadLinkFetcher.data.externalLinkId}
+          onClose={uploadLinkModal.onClose}
+        />
+      )}
       {auditLogDrawer}
     </>
   );
 };
 
 export default SalesOrderHeader;
+
+function UploadLinkModal({
+  externalLinkId,
+  onClose
+}: {
+  externalLinkId: string;
+  onClose: () => void;
+}) {
+  if (typeof window === "undefined") return null;
+
+  const uploadUrl = `${window.location.origin}${path.to.externalUpload(
+    externalLinkId
+  )}`;
+  return (
+    <Modal
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+    >
+      <ModalContent>
+        <ModalHeader>
+          <ModalTitle>Request Files</ModalTitle>
+          <ModalDescription>
+            Share this link with your customer so they can upload files
+          </ModalDescription>
+        </ModalHeader>
+        <ModalBody>
+          <InputGroup>
+            <Input value={uploadUrl} />
+            <InputRightElement>
+              <Copy text={uploadUrl} />
+            </InputRightElement>
+          </InputGroup>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+}

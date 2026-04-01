@@ -801,6 +801,7 @@ export const path = {
     externalSupplierQuote: (id: string) =>
       generatePath(`/share/supplier-quote/${id}`),
     externalScar: (id: string) => generatePath(`/share/scar/${id}`),
+    externalUpload: (id: string) => generatePath(`/share/upload/${id}`),
     externalTraining: (assignmentId: string) =>
       generatePath(`/share/training/${assignmentId}`),
     feedback: `${x}/feedback`,
@@ -1352,6 +1353,7 @@ export const path = {
     quoteShipment: (id: string) => generatePath(`${x}/quote/${id}/shipment`),
     quoteStatus: (id: string) => generatePath(`${x}/quote/${id}/status`),
     quotes: `${x}/sales/quotes`,
+    uploadLink: `${x}/sales/upload-link`,
     receipt: (id: string) => generatePath(`${x}/receipt/${id}`),
     receiptInvoice: (id: string) => generatePath(`${x}/receipt/${id}/invoice`),
     receiptDetails: (id: string) => generatePath(`${x}/receipt/${id}/details`),
