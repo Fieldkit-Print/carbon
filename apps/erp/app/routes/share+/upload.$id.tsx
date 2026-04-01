@@ -99,7 +99,7 @@ export default function UploadPage() {
   if (state === UploadState.NotFound) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted p-4">
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center gap-4 p-8">
             <Heading size="h4">Link Not Found</Heading>
             <p className="text-muted-foreground text-center">
@@ -114,7 +114,7 @@ export default function UploadPage() {
   if (state === UploadState.Expired) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted p-4">
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center gap-4 p-8">
             <Heading size="h4">Link Expired</Heading>
             <p className="text-muted-foreground text-center">
@@ -211,7 +211,7 @@ function UploadPageContent({
           className="w-auto mx-auto max-w-5xl"
         />
       )}
-      <Card className="w-full max-w-2xl">
+      <Card className="w-full max-w-5xl mx-auto">
         <CardHeader>
           <VStack spacing={1}>
             <CardTitle>{companyName}</CardTitle>
