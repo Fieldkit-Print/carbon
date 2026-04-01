@@ -14,7 +14,7 @@ import {
 import { FunctionRegion } from "@supabase/supabase-js";
 import { useState } from "react";
 import { FaCheck } from "react-icons/fa6";
-import { LuAlertCircle } from "react-icons/lu";
+import { LuCircleAlert } from "react-icons/lu";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { data, useFetcher, useLoaderData } from "react-router";
 import {
@@ -251,7 +251,7 @@ export default function ScanEndPage() {
       <div className="flex min-h-screen items-center justify-center bg-muted p-4">
         <Card className="w-full max-w-sm">
           <CardContent className="flex flex-col items-center gap-4 p-8">
-            <LuAlertCircle className="h-12 w-12 text-muted-foreground" />
+            <LuCircleAlert className="h-12 w-12 text-muted-foreground" />
             <Heading size="h4">Operation Not Found</Heading>
             <p className="text-muted-foreground text-center">
               This QR code is not valid.
