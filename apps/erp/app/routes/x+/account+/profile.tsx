@@ -16,7 +16,7 @@ import {
   InputOTPSlot,
   VStack
 } from "@carbon/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { data, redirect, useFetcher, useLoaderData } from "react-router";
 import {
@@ -238,6 +238,14 @@ function PinForm({ hasPin }: { hasPin: boolean }) {
   const [mode, setMode] = useState<"view" | "edit">("view");
   const isSubmitting = fetcher.state !== "idle";
 
+  // Reset form after successful submission
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data) {
+      setMode("view");
+      setPin("");
+    }
+  }, [fetcher.state, fetcher.data]);
+
   if (mode === "view") {
     return (
       <HStack spacing={4} className="items-center">
@@ -266,13 +274,7 @@ function PinForm({ hasPin }: { hasPin: boolean }) {
   }
 
   return (
-    <fetcher.Form
-      method="post"
-      onSubmit={() => {
-        setMode("view");
-        setPin("");
-      }}
-    >
+    <fetcher.Form method="post">
       <input type="hidden" name="intent" value="pin" />
       <input type="hidden" name="pin" value={pin} />
       <VStack spacing={4}>
