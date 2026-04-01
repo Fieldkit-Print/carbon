@@ -150,7 +150,8 @@ export const procedureStepType = [
   "Person",
   "List",
   "File",
-  "Inspection"
+  "Inspection",
+  "ProofUpload"
 ] as const;
 
 export const processTypes = [

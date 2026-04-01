@@ -2288,6 +2288,7 @@ export const JobOperation = ({
           activeStep={activeStep}
           attribute={selectedStep}
           onClose={onDeselectStep}
+          jobId={operation.jobId}
         />
       ) : null}
 

@@ -58952,6 +58952,7 @@ export type Database = {
         | "File"
         | "Task"
         | "Inspection"
+        | "ProofUpload"
       processType: "Inside" | "Outside" | "Inside and Outside"
       productionEventType: "Setup" | "Labor" | "Machine"
       productionQuantityType: "Rework" | "Scrap" | "Production"
@@ -60033,6 +60034,7 @@ export const Constants = {
         "File",
         "Task",
         "Inspection",
+        "ProofUpload",
       ],
       processType: ["Inside", "Outside", "Inside and Outside"],
       productionEventType: ["Setup", "Labor", "Machine"],

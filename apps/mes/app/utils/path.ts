@@ -122,6 +122,7 @@ export const path = {
     onboarding: `${ERP_URL}/onboarding`,
     operation: (id: string) => generatePath(`${x}/operation/${id}`),
     operations: `${x}/operations?saved=1`,
+    proofUpload: `${x}/proof-upload`,
     productionEvent: `${x}/event`,
     recent: `${x}/recent`,
     record: `${x}/record`,

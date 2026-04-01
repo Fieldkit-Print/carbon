@@ -36,6 +36,7 @@ import {
 } from "@carbon/react";
 import { formatDateTime, parseMentionsFromDocument } from "@carbon/utils";
 import { useNumberFormatter } from "@react-aria/i18n";
+import { nanoid } from "nanoid";
 import { useEffect, useMemo, useState } from "react";
 import {
   LuChevronDown,
@@ -327,6 +328,11 @@ export function PreviewStepRecord({
           <LuPaperclip className="size-4 text-muted-foreground" />
         </div>
       )}
+      {step.type === "ProofUpload" && record?.value && (
+        <div className="flex justify-end gap-2 text-sm">
+          <LuPaperclip className="size-4 text-muted-foreground" />
+        </div>
+      )}
       {step.type === "Inspection" && (
         <div className="flex justify-end gap-2 items-center text-sm">
           {record?.value && (
@@ -342,11 +348,13 @@ export function PreviewStepRecord({
 export function RecordModal({
   attribute,
   activeStep,
-  onClose
+  onClose,
+  jobId
 }: {
   attribute: JobOperationStep;
   activeStep: number;
   onClose: () => void;
+  jobId?: string;
 }) {
   const [employees] = usePeople();
   const employeeOptions = useMemo(() => {
@@ -362,6 +370,7 @@ export function RecordModal({
   const [filePath, setFilePath] = useState<string | null>(null);
 
   const fetcher = useFetcher<{ success: boolean }>();
+  const proofFetcher = useFetcher();
 
   const onDrop = async (acceptedFiles: File[]) => {
     if (!acceptedFiles[0] || !carbon) return;
@@ -384,6 +393,44 @@ export function RecordModal({
     } else if (upload.data?.path) {
       toast.success(`Uploaded: ${fileUpload.name}`);
       setFilePath(upload.data.path);
+    }
+  };
+
+  const onProofDrop = async (acceptedFiles: File[]) => {
+    if (!acceptedFiles[0] || !carbon || !jobId) return;
+    const fileUpload = acceptedFiles[0];
+    const modelId = nanoid();
+    const ext = fileUpload.name.split(".").pop() ?? "pdf";
+
+    setFile(fileUpload);
+    toast.info(`Uploading ${fileUpload.name}`);
+
+    const modelPath = `${company.id}/models/${modelId}.${ext}`;
+
+    const upload = await carbon.storage
+      .from("private")
+      .upload(modelPath, fileUpload, {
+        cacheControl: `${12 * 60 * 60}`,
+        upsert: true
+      });
+
+    if (upload.error) {
+      toast.error(`Failed to upload file: ${fileUpload.name}`);
+      setFile(null);
+    } else if (upload.data?.path) {
+      toast.success(`Uploaded: ${fileUpload.name}`);
+      setFilePath(upload.data.path);
+
+      proofFetcher.submit(
+        {
+          modelId,
+          name: fileUpload.name,
+          modelPath: upload.data.path,
+          size: String(fileUpload.size),
+          jobId
+        },
+        { method: "post", action: path.to.proofUpload }
+      );
     }
   };
 
@@ -453,6 +500,9 @@ export function RecordModal({
                   value={booleanControlled ? "true" : "false"}
                 />
               </>
+            )}
+            {attribute.type === "ProofUpload" && (
+              <Hidden name="value" value={filePath ?? ""} />
             )}
             <VStack spacing={4}>
               {attribute.description && (
@@ -545,6 +595,25 @@ export function RecordModal({
                   </div>
                 </>
               )}
+              {attribute.type === "ProofUpload" &&
+                (file ? (
+                  <div className="flex flex-col gap-2 items-center justify-center py-6 w-full">
+                    <LuFile className="size-10 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">{file.name}</p>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setFile(null);
+                        setFilePath(null);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <FileDropzone onDrop={onProofDrop} />
+                ))}
             </VStack>
           </ModalBody>
           <ModalFooter>
@@ -555,7 +624,8 @@ export function RecordModal({
               isLoading={fetcher.state !== "idle"}
               isDisabled={
                 fetcher.state !== "idle" ||
-                (attribute.type === "File" && !filePath)
+                (attribute.type === "File" && !filePath) ||
+                (attribute.type === "ProofUpload" && !filePath)
               }
               rightIcon={<LuCircleCheck />}
               type="submit"
