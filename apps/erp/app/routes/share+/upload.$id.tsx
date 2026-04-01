@@ -125,8 +125,41 @@ export default function UploadPage() {
   return <UploadPageContent {...data} />;
 }
 
-const MAX_FILE_SIZE_MB = 200;
+const MAX_FILE_SIZE_MB = 1024;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+function uploadWithProgress(
+  url: string,
+  file: File,
+  onProgress: (percent: number) => void
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("x-upsert", "true");
+
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      resolve(xhr.status >= 200 && xhr.status < 300);
+    });
+
+    xhr.addEventListener("error", () => resolve(false));
+    xhr.addEventListener("abort", () => resolve(false));
+
+    xhr.send(file);
+  });
+}
+
+interface UploadProgress {
+  fileName: string;
+  percent: number;
+  status: "uploading" | "done" | "error";
+}
 
 function UploadPageContent({
   externalLinkId,
@@ -151,9 +184,13 @@ function UploadPageContent({
   const logo = mode === "dark" ? logoDark : logoLight;
   const revalidator = useRevalidator();
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<UploadProgress[]>([]);
 
   const uploadFile = useCallback(
-    async (file: File): Promise<boolean> => {
+    async (
+      file: File,
+      onProgress: (percent: number) => void
+    ): Promise<boolean> => {
       // 1. Get signed upload URL
       const signForm = new FormData();
       signForm.set("intent", "sign");
@@ -169,16 +206,14 @@ function UploadPageContent({
         return false;
       }
 
-      // 2. Upload directly to Supabase Storage
-      const uploadRes = await fetch(signData.signedUrl, {
-        method: "PUT",
-        headers: {
-          "x-upsert": "true"
-        },
-        body: file
-      });
+      // 2. Upload directly to Supabase Storage with progress
+      const success = await uploadWithProgress(
+        signData.signedUrl,
+        file,
+        onProgress
+      );
 
-      if (!uploadRes.ok) {
+      if (!success) {
         return false;
       }
 
@@ -203,27 +238,59 @@ function UploadPageContent({
     async (acceptedFiles: File[]) => {
       if (!acceptedFiles.length) return;
       setUploading(true);
+      setProgress(
+        acceptedFiles.map((f) => ({
+          fileName: f.name,
+          percent: 0,
+          status: "uploading" as const
+        }))
+      );
 
       const uploaded: string[] = [];
       const errors: string[] = [];
 
-      for (const file of acceptedFiles) {
+      for (let i = 0; i < acceptedFiles.length; i++) {
+        const file = acceptedFiles[i];
         if (file.size > MAX_FILE_SIZE_BYTES) {
           toast.error(
             `${file.name} exceeds the ${MAX_FILE_SIZE_MB}MB file size limit`
+          );
+          setProgress((prev) =>
+            prev.map((p, idx) =>
+              idx === i ? { ...p, status: "error" as const } : p
+            )
           );
           continue;
         }
 
         try {
-          const success = await uploadFile(file);
+          const success = await uploadFile(file, (percent) => {
+            setProgress((prev) =>
+              prev.map((p, idx) => (idx === i ? { ...p, percent } : p))
+            );
+          });
           if (success) {
             uploaded.push(file.name);
+            setProgress((prev) =>
+              prev.map((p, idx) =>
+                idx === i ? { ...p, percent: 100, status: "done" as const } : p
+              )
+            );
           } else {
             errors.push(file.name);
+            setProgress((prev) =>
+              prev.map((p, idx) =>
+                idx === i ? { ...p, status: "error" as const } : p
+              )
+            );
           }
         } catch {
           errors.push(file.name);
+          setProgress((prev) =>
+            prev.map((p, idx) =>
+              idx === i ? { ...p, status: "error" as const } : p
+            )
+          );
         }
       }
 
@@ -238,6 +305,7 @@ function UploadPageContent({
 
       revalidator.revalidate();
       setUploading(false);
+      setTimeout(() => setProgress([]), 2000);
     },
     [uploadFile, revalidator]
   );
@@ -322,11 +390,44 @@ function UploadPageContent({
                 </p>
                 {!uploading && (
                   <p className="text-xs text-muted-foreground">
-                    Max file size: {MAX_FILE_SIZE_MB}MB
+                    Max file size: 1GB
                   </p>
                 )}
               </VStack>
             </div>
+
+            {progress.length > 0 && (
+              <VStack spacing={2} className="w-full">
+                {progress.map((p) => (
+                  <div key={p.fileName} className="w-full">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm truncate mr-4">
+                        {p.fileName}
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {p.status === "done"
+                          ? "Complete"
+                          : p.status === "error"
+                            ? "Failed"
+                            : `${p.percent}%`}
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          p.status === "error"
+                            ? "bg-destructive"
+                            : p.status === "done"
+                              ? "bg-green-500"
+                              : "bg-primary"
+                        }`}
+                        style={{ width: `${p.percent}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </VStack>
+            )}
 
             {files.length > 0 && (
               <VStack spacing={2} className="w-full">
