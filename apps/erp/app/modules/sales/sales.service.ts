@@ -3598,7 +3598,7 @@ export async function getEntityForUploadLink(
   // Try sales RFQ
   const salesRfq = await client
     .from("salesRfqs")
-    .select("id, salesRfqId, opportunityId, companyId, createdBy")
+    .select("id, rfqId, opportunityId, companyId, createdBy")
     .eq("id", documentId)
     .maybeSingle();
   if (salesRfq.data) {
@@ -3608,7 +3608,7 @@ export async function getEntityForUploadLink(
       createdBy: salesRfq.data.createdBy,
       sourceDocument: "Request for Quote" as const,
       sourceDocumentId: salesRfq.data.id,
-      entityName: salesRfq.data.salesRfqId
+      entityName: salesRfq.data.rfqId
     };
   }
 
