@@ -32,30 +32,24 @@ export const meta = () => {
   return [{ title: "Upload Files" }];
 };
 
-enum UploadState {
-  Valid,
-  Expired,
-  NotFound
-}
-
 export async function loader({ params }: LoaderFunctionArgs) {
   const { id } = params;
   if (!id) {
-    return { state: UploadState.NotFound, data: null };
+    return { state: "not-found" as const, data: null };
   }
 
   const serviceRole = getCarbonServiceRole();
   const externalLink = await getExternalLink(serviceRole, id);
 
   if (externalLink.error || !externalLink.data) {
-    return { state: UploadState.NotFound, data: null };
+    return { state: "not-found" as const, data: null };
   }
 
   if (
     externalLink.data.expiresAt &&
     new Date(externalLink.data.expiresAt) < new Date()
   ) {
-    return { state: UploadState.Expired, data: null };
+    return { state: "expired" as const, data: null };
   }
 
   const entity = await getEntityForUploadLink(
@@ -63,7 +57,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     externalLink.data.documentId
   );
   if (!entity) {
-    return { state: UploadState.NotFound, data: null };
+    return { state: "not-found" as const, data: null };
   }
 
   const [company, customer, files] = await Promise.all([
@@ -77,7 +71,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
   ]);
 
   return {
-    state: UploadState.Valid,
+    state: "valid" as const,
     data: {
       externalLinkId: id,
       entityName: entity.entityName,
@@ -87,7 +81,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
       logoDark: company.data?.logoDark ?? null,
       customerName: customer?.data?.name ?? "",
       files: (files.data ?? []).filter(
-        (f) => f.name !== ".emptyFolderPlaceholder"
+        (f: FileObject) => f.name !== ".emptyFolderPlaceholder"
       )
     }
   };
@@ -96,14 +90,14 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export default function UploadPage() {
   const { state, data } = useLoaderData<typeof loader>();
 
-  if (state === UploadState.NotFound) {
+  if (state === "not-found") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted p-4">
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center gap-4 p-8">
             <Heading size="h4">Link Not Found</Heading>
             <p className="text-muted-foreground text-center">
-              The upload link you're trying to access is not valid.
+              The upload link you&apos;re trying to access is not valid.
             </p>
           </CardContent>
         </Card>
@@ -111,7 +105,7 @@ export default function UploadPage() {
     );
   }
 
-  if (state === UploadState.Expired) {
+  if (state === "expired") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted p-4">
         <Card className="w-full max-w-md">
@@ -131,6 +125,9 @@ export default function UploadPage() {
   return <UploadPageContent {...data} />;
 }
 
+const MAX_FILE_SIZE_MB = 200;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 function UploadPageContent({
   externalLinkId,
   entityName,
@@ -140,83 +137,91 @@ function UploadPageContent({
   logoDark,
   customerName,
   files
-}: NonNullable<Awaited<ReturnType<typeof loader>>["data"]>) {
+}: {
+  externalLinkId: string;
+  entityName: string;
+  sourceDocument: string;
+  companyName: string;
+  logoLight: string | null;
+  logoDark: string | null;
+  customerName: string;
+  files: FileObject[];
+}) {
   const mode = useMode();
   const logo = mode === "dark" ? logoDark : logoLight;
   const revalidator = useRevalidator();
   const [uploading, setUploading] = useState(false);
 
-  const MAX_FILE_SIZE_MB = 200;
-  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+  const uploadFile = useCallback(
+    async (file: File): Promise<boolean> => {
+      // 1. Get signed upload URL
+      const signForm = new FormData();
+      signForm.set("intent", "sign");
+      signForm.set("fileName", file.name);
+
+      const signRes = await fetch(
+        `/api/sales/client-upload/${externalLinkId}`,
+        { method: "POST", body: signForm }
+      );
+      const signData = await signRes.json();
+
+      if (signData.error || !signData.signedUrl) {
+        return false;
+      }
+
+      // 2. Upload directly to Supabase Storage
+      const uploadRes = await fetch(signData.signedUrl, {
+        method: "PUT",
+        headers: {
+          "x-upsert": "true"
+        },
+        body: file
+      });
+
+      if (!uploadRes.ok) {
+        return false;
+      }
+
+      // 3. Record the document
+      const recordForm = new FormData();
+      recordForm.set("intent", "record");
+      recordForm.set("fileName", file.name);
+      recordForm.set("fileSize", String(file.size));
+      recordForm.set("storagePath", signData.storagePath);
+
+      await fetch(`/api/sales/client-upload/${externalLinkId}`, {
+        method: "POST",
+        body: recordForm
+      });
+
+      return true;
+    },
+    [externalLinkId]
+  );
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       if (!acceptedFiles.length) return;
-
-      const tooLarge = acceptedFiles.filter(
-        (f) => f.size > MAX_FILE_SIZE_BYTES
-      );
-      const validFiles = acceptedFiles.filter(
-        (f) => f.size <= MAX_FILE_SIZE_BYTES
-      );
-
-      if (tooLarge.length) {
-        toast.error(
-          `${tooLarge.map((f) => f.name).join(", ")} exceeded the ${MAX_FILE_SIZE_MB}MB file size limit`
-        );
-      }
-
-      if (!validFiles.length) return;
       setUploading(true);
 
       const uploaded: string[] = [];
       const errors: string[] = [];
 
-      for (const file of validFiles) {
-        try {
-          // 1. Get signed upload URL
-          const signForm = new FormData();
-          signForm.set("intent", "sign");
-          signForm.set("fileName", file.name);
-
-          const signRes = await fetch(
-            `/api/sales/client-upload/${externalLinkId}`,
-            { method: "POST", body: signForm }
+      for (const file of acceptedFiles) {
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          toast.error(
+            `${file.name} exceeds the ${MAX_FILE_SIZE_MB}MB file size limit`
           );
-          const signData = await signRes.json();
+          continue;
+        }
 
-          if (signData.error || !signData.signedUrl) {
+        try {
+          const success = await uploadFile(file);
+          if (success) {
+            uploaded.push(file.name);
+          } else {
             errors.push(file.name);
-            continue;
           }
-
-          // 2. Upload directly to storage
-          const uploadRes = await fetch(signData.signedUrl, {
-            method: "PUT",
-            headers: {
-              "Content-Type": file.type || "application/octet-stream"
-            },
-            body: file
-          });
-
-          if (!uploadRes.ok) {
-            errors.push(file.name);
-            continue;
-          }
-
-          // 3. Record the document
-          const recordForm = new FormData();
-          recordForm.set("intent", "record");
-          recordForm.set("fileName", file.name);
-          recordForm.set("fileSize", String(file.size));
-          recordForm.set("storagePath", signData.storagePath);
-
-          await fetch(`/api/sales/client-upload/${externalLinkId}`, {
-            method: "POST",
-            body: recordForm
-          });
-
-          uploaded.push(file.name);
         } catch {
           errors.push(file.name);
         }
@@ -234,11 +239,25 @@ function UploadPageContent({
       revalidator.revalidate();
       setUploading(false);
     },
-    [externalLinkId, revalidator]
+    [uploadFile, revalidator]
+  );
+
+  const onDropRejected = useCallback(
+    (fileRejections: Array<{ file: File }>) => {
+      for (const { file } of fileRejections) {
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          toast.error(
+            `${file.name} exceeds the ${MAX_FILE_SIZE_MB}MB file size limit`
+          );
+        }
+      }
+    },
+    []
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     multiple: true,
     disabled: uploading,
     maxSize: MAX_FILE_SIZE_BYTES
