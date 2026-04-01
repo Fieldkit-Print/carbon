@@ -3099,6 +3099,8 @@ export async function getProofApprovalByExternalId(
     .from("proofApproval")
     .select("*, job:jobId(id, name, status, modelUploadId)")
     .eq("externalLinkId", externalLinkId)
+    .order("version", { ascending: false })
+    .limit(1)
     .single();
 }
 

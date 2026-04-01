@@ -102,6 +102,8 @@ const JobHeader = () => {
 
   const releaseModal = useDisclosure();
   const skipProofModal = useDisclosure();
+  const proofWarningModal = useDisclosure();
+  const [proofWarning, setProofWarning] = useState<string>("");
   const cancelModal = useDisclosure();
   const completeModal = useDisclosure();
   const deleteJobModal = useDisclosure();
@@ -361,25 +363,41 @@ const JobHeader = () => {
 
           {["Draft", "Planned"].includes(status ?? "") && !proofReady && (
             <>
-              <sendProofFetcher.Form
-                method="post"
-                action={path.to.jobProof(jobId)}
-              >
-                <input type="hidden" name="type" value="send" />
-                <Button
-                  type="submit"
-                  isLoading={sendProofFetcher.state !== "idle"}
-                  isDisabled={
-                    sendProofFetcher.state !== "idle" ||
-                    statusFetcher.state !== "idle" ||
-                    !permissions.can("update", "production")
+              <Button
+                isLoading={sendProofFetcher.state !== "idle"}
+                isDisabled={
+                  sendProofFetcher.state !== "idle" ||
+                  statusFetcher.state !== "idle" ||
+                  !permissions.can("update", "production")
+                }
+                leftIcon={<LuSend />}
+                variant="primary"
+                onClick={() => {
+                  if (!routeData?.job?.salesOrderId) {
+                    setProofWarning(
+                      "This job does not have a sales order attached. A sales order with a customer contact is required to send a proof email."
+                    );
+                    proofWarningModal.onOpen();
+                    return;
                   }
-                  leftIcon={<LuSend />}
-                  variant="primary"
-                >
-                  Send Proof
-                </Button>
-              </sendProofFetcher.Form>
+                  if (!routeData?.job?.modelPath) {
+                    setProofWarning(
+                      "This job does not have a proof file uploaded. Please upload a proof in the model viewer before sending."
+                    );
+                    proofWarningModal.onOpen();
+                    return;
+                  }
+                  sendProofFetcher.submit(
+                    { type: "send" },
+                    {
+                      method: "post",
+                      action: path.to.jobProof(jobId)
+                    }
+                  );
+                }}
+              >
+                Send Proof
+              </Button>
               <Button
                 onClick={skipProofModal.onOpen}
                 isDisabled={
@@ -555,6 +573,22 @@ const JobHeader = () => {
                 Yes, Skip Proof
               </Button>
             </statusFetcher.Form>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <Modal
+        open={proofWarningModal.isOpen}
+        onOpenChange={proofWarningModal.onToggle}
+      >
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Cannot Send Proof</ModalTitle>
+            <ModalDescription>{proofWarning}</ModalDescription>
+          </ModalHeader>
+          <ModalFooter>
+            <Button variant="ghost" onClick={proofWarningModal.onClose}>
+              OK
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

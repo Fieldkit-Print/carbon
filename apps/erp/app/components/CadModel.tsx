@@ -1,5 +1,6 @@
 import { useCarbon } from "@carbon/auth";
 import {
+  Button,
   CardHeader,
   CardTitle,
   ClientOnly,
@@ -16,9 +17,9 @@ import {
   supportedModelTypes
 } from "@carbon/utils";
 import { nanoid } from "nanoid";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { LuCloudUpload } from "react-icons/lu";
+import { LuCloudUpload, LuRefreshCw } from "react-icons/lu";
 import { useFetcher } from "react-router";
 import { useUser } from "~/hooks";
 import { getPrivateUrl, path } from "~/utils/path";
@@ -58,6 +59,7 @@ const CadModel = ({
 
   const fetcher = useFetcher<{}>();
   const [file, setFile] = useState<File | null>(null);
+  const revisionInputRef = useRef<HTMLInputElement>(null);
 
   const onFileChange = async (file: File | null) => {
     const modelId = nanoid();
@@ -130,21 +132,59 @@ const CadModel = ({
             : false;
 
         return file || modelPath ? (
-          hasPdf ? (
-            <PdfViewer
-              file={file}
-              url={modelPath ? getPrivateUrl(modelPath) : null}
-              className={viewerClassName}
-            />
-          ) : (
-            <ModelViewer
-              key={modelPath}
-              file={file}
-              url={modelPath ? getPrivateUrl(modelPath) : null}
-              mode={mode}
-              className={viewerClassName}
-            />
-          )
+          <div className="relative">
+            {hasPdf ? (
+              <PdfViewer
+                file={file}
+                url={modelPath ? getPrivateUrl(modelPath) : null}
+                className={viewerClassName}
+              />
+            ) : (
+              <ModelViewer
+                key={modelPath}
+                file={file}
+                url={modelPath ? getPrivateUrl(modelPath) : null}
+                mode={mode}
+                className={viewerClassName}
+              />
+            )}
+            {!isReadOnly && (
+              <>
+                <input
+                  ref={revisionInputRef}
+                  type="file"
+                  className="sr-only"
+                  accept={supportedModelTypes.map((t) => `.${t}`).join(",")}
+                  onChange={(e) => {
+                    const selected = e.target.files?.[0];
+                    if (!selected) return;
+                    const ext = selected.name.split(".").pop()?.toLowerCase();
+                    if (!ext || !supportedModelTypes.includes(ext)) {
+                      toast.error("File type not supported");
+                      return;
+                    }
+                    if (selected.size > SIZE_LIMIT.bytes) {
+                      toast.error(
+                        `File size too big (max. ${SIZE_LIMIT.format()})`
+                      );
+                      return;
+                    }
+                    onFileChange(selected);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute top-2 left-2 z-10"
+                  leftIcon={<LuRefreshCw />}
+                  onClick={() => revisionInputRef.current?.click()}
+                >
+                  Upload New Revision
+                </Button>
+              </>
+            )}
+          </div>
         ) : (
           <CadModelUpload
             className={uploadClassName}

@@ -37,12 +37,22 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
       const serviceRole = getCarbonServiceRole();
 
-      // Create an external link for proof sharing
-      const externalLink = await upsertExternalLink(serviceRole, {
-        companyId,
-        documentType: "ProofApproval",
-        documentId: jobId
-      });
+      // Find or create an external link for proof sharing
+      const existingLink = await serviceRole
+        .from("externalLink")
+        .select("id")
+        .eq("documentType", "ProofApproval")
+        .eq("documentId", jobId)
+        .eq("companyId", companyId)
+        .maybeSingle();
+
+      const externalLink = existingLink.data
+        ? existingLink
+        : await upsertExternalLink(serviceRole, {
+            companyId,
+            documentType: "ProofApproval",
+            documentId: jobId
+          });
 
       // Create proof approval record
       const proofApproval = await createProofApproval(serviceRole, {
