@@ -7,6 +7,7 @@ import {
 import { setCompanyId } from "@carbon/auth/company.server";
 import {
   destroyAuthSession,
+  getAuthSession,
   requireAuthSession,
   updateCompanySession
 } from "@carbon/auth/session.server";
@@ -70,6 +71,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { accessToken, companyId, expiresAt, expiresIn, userId } =
     await requireAuthSession(request, { verify: true });
   console.log(`[perf] requireAuthSession: ${Date.now() - authStart}ms`);
+
+  // Reject PIN-authenticated sessions in the ERP
+  const authSession = await getAuthSession(request);
+  if (authSession?.authMethod === "pin") {
+    throw redirect("/login", await destroyAuthSession(request));
+  }
 
   const client = getCarbon(accessToken);
 

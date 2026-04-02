@@ -8,6 +8,7 @@ export interface AuthSession {
   email: string;
   expiresIn: number;
   expiresAt: number;
+  authMethod?: "pin" | "email" | "oauth";
 }
 
 export type Company = NonNullable<

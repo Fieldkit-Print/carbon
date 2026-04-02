@@ -103,6 +103,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return data({ success: false, message: "Incorrect PIN" });
     }
 
+    authSession.authMethod = "pin";
     const sessionCookie = await setAuthSession(request, { authSession });
     const companyIdCookie = setCompanyId(authSession.companyId);
 
