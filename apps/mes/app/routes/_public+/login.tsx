@@ -37,7 +37,7 @@ import {
 } from "@carbon/react";
 import { ItarLoginDisclaimer } from "@carbon/remix";
 import { Edition } from "@carbon/utils";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LuCircleAlert, LuKeyboard } from "react-icons/lu";
 import type {
   ActionFunctionArgs,
@@ -333,8 +333,23 @@ function PinLogin({
   onSwitchToEmail: () => void;
 }) {
   const [pin, setPin] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
   const isSubmitting = fetcher.state !== "idle";
   const isError = fetcher.data?.success === false;
+
+  // Auto-submit when PIN reaches 4 digits (after React re-renders the hidden input)
+  useEffect(() => {
+    if (pin.length === 4 && formRef.current) {
+      formRef.current.requestSubmit();
+    }
+  }, [pin]);
+
+  // Clear PIN on error so user can re-enter
+  useEffect(() => {
+    if (isError) {
+      setPin("");
+    }
+  }, [isError]);
 
   return (
     <VStack spacing={4} className="items-center">
@@ -343,7 +358,7 @@ function PinLogin({
         Use your 4-digit production PIN to sign in.
       </p>
 
-      <fetcher.Form method="post">
+      <fetcher.Form method="post" ref={formRef}>
         <input type="hidden" name="intent" value="pin" />
         <input type="hidden" name="pin" value={pin} />
         <VStack spacing={4} className="items-center">
@@ -351,10 +366,6 @@ function PinLogin({
             maxLength={4}
             value={pin}
             onChange={setPin}
-            onComplete={() => {
-              const form = document.querySelector("form") as HTMLFormElement;
-              if (form) form.requestSubmit();
-            }}
             inputMode="numeric"
             disabled={isSubmitting}
           >

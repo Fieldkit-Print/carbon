@@ -12,7 +12,7 @@ import {
   VStack
 } from "@carbon/react";
 import { FunctionRegion } from "@supabase/supabase-js";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaCheck } from "react-icons/fa6";
 import { LuCircleAlert } from "react-icons/lu";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
@@ -281,29 +281,61 @@ export default function ScanEndPage() {
     );
   }
 
-  return <PinEntry data={loaderData!} />;
+  return (
+    <PinEntry
+      data={
+        loaderData as {
+          operationId: string;
+          jobName: string;
+          completeAll: boolean;
+        }
+      }
+    />
+  );
 }
 
 function PinEntry({
   data: initialData
 }: {
-  data: NonNullable<
-    Extract<
-      Awaited<ReturnType<typeof loader>>,
-      { state: ScanState.Valid }
-    >["data"]
-  >;
+  data: {
+    operationId: string;
+    jobName: string;
+    completeAll: boolean;
+  };
 }) {
   const fetcher = useFetcher<typeof action>();
+  const formRef = useRef<HTMLFormElement>(null);
   const [pin, setPin] = useState("");
+  const [showResult, setShowResult] = useState(false);
 
   const isSubmitting = fetcher.state !== "idle";
   const result = fetcher.data;
   const isSuccess = result?.success === true;
   const isError = result?.success === false;
 
-  if (isSuccess) {
-    const successResult = result as {
+  // Auto-submit when PIN reaches 4 digits (after React re-renders the hidden input)
+  useEffect(() => {
+    if (pin.length === 4 && formRef.current) {
+      formRef.current.requestSubmit();
+    }
+  }, [pin]);
+
+  // Show result screen on success
+  useEffect(() => {
+    if (isSuccess) {
+      setShowResult(true);
+    }
+  }, [isSuccess]);
+
+  // Clear PIN on error so user can re-enter
+  useEffect(() => {
+    if (isError) {
+      setPin("");
+    }
+  }, [isError]);
+
+  if (showResult && isSuccess) {
+    const successResult = result as unknown as {
       quantity: number;
       jobName: string;
       employeeName: string;
@@ -333,7 +365,7 @@ function PinEntry({
               variant="ghost"
               onClick={() => {
                 setPin("");
-                fetcher.data = undefined;
+                setShowResult(false);
               }}
             >
               Scan Another
@@ -359,21 +391,13 @@ function PinEntry({
             <p className="text-muted-foreground text-sm text-center">
               Enter your 4-digit PIN
             </p>
-            <fetcher.Form method="post">
+            <fetcher.Form method="post" ref={formRef}>
               <input type="hidden" name="pin" value={pin} />
               <VStack spacing={4} className="items-center">
                 <InputOTP
                   maxLength={4}
                   value={pin}
-                  onChange={(value) => {
-                    setPin(value);
-                  }}
-                  onComplete={() => {
-                    const form = document.querySelector(
-                      "form"
-                    ) as HTMLFormElement;
-                    if (form) form.requestSubmit();
-                  }}
+                  onChange={setPin}
                   inputMode="numeric"
                   disabled={isSubmitting}
                 >
