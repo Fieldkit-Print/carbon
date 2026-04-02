@@ -1,5 +1,6 @@
 import { assertIsPost, error, success } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
+import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { flash } from "@carbon/auth/session.server";
 import { validationError, validator } from "@carbon/form";
 import { getLocalTimeZone, now } from "@internationalized/date";
@@ -13,7 +14,8 @@ import {
 
 export async function action({ request }: ActionFunctionArgs) {
   assertIsPost(request);
-  const { client, companyId, userId } = await requirePermissions(request, {});
+  const { companyId, userId } = await requirePermissions(request, {});
+  const serviceRole = getCarbonServiceRole();
 
   const formData = await request.formData();
   const validation = await validator(productionEventValidator).validate(
@@ -34,7 +36,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (productionAction === "Start") {
     const startEvent = await startProductionEvent(
-      client,
+      serviceRole,
       {
         ...d,
         startTime: now(timezone ?? getLocalTimeZone()).toAbsoluteString(),
@@ -60,7 +62,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (!id) {
       return data({}, await flash(request, error("No event id provided")));
     }
-    const endEvent = await endProductionEvent(client, {
+    const endEvent = await endProductionEvent(serviceRole, {
       id,
       endTime: now(timezone ?? getLocalTimeZone()).toAbsoluteString(),
       employeeId: userId

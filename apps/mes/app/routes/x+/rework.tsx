@@ -1,5 +1,6 @@
 import { assertIsPost, error, success } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
+import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { flash } from "@carbon/auth/session.server";
 import { validationError, validator } from "@carbon/form";
 import type { ActionFunctionArgs } from "react-router";
@@ -9,7 +10,7 @@ import { insertReworkQuantity } from "~/services/operations.service";
 
 export async function action({ request }: ActionFunctionArgs) {
   assertIsPost(request);
-  const { client, companyId, userId } = await requirePermissions(request, {});
+  const { companyId, userId } = await requirePermissions(request, {});
 
   const formData = await request.formData();
   const validation = await validator(nonScrapQuantityValidator).validate(
@@ -20,7 +21,8 @@ export async function action({ request }: ActionFunctionArgs) {
     return validationError(validation.error);
   }
 
-  const insertRework = await insertReworkQuantity(client, {
+  const serviceRole = getCarbonServiceRole();
+  const insertRework = await insertReworkQuantity(serviceRole, {
     ...validation.data,
     companyId,
     createdBy: userId

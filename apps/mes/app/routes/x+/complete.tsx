@@ -12,7 +12,7 @@ import { path } from "~/utils/path";
 
 export async function action({ request }: ActionFunctionArgs) {
   assertIsPost(request);
-  const { client, companyId, userId } = await requirePermissions(request, {});
+  const { companyId, userId } = await requirePermissions(request, {});
 
   const formData = await request.formData();
   const validation = await validator(nonScrapQuantityValidator).validate(
@@ -73,7 +73,7 @@ export async function action({ request }: ActionFunctionArgs) {
   } else {
     // biome-ignore lint/correctness/noUnusedVariables: suppressed due to migration
     const { trackedEntityId, trackingType, ...d } = validation.data;
-    const insertProduction = await insertProductionQuantity(client, {
+    const insertProduction = await insertProductionQuantity(serviceRole, {
       ...d,
       companyId,
       createdBy: userId

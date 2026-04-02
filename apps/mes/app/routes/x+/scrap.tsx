@@ -11,7 +11,7 @@ import { insertScrapQuantity } from "~/services/operations.service";
 
 export async function action({ request }: ActionFunctionArgs) {
   assertIsPost(request);
-  const { client, companyId, userId } = await requirePermissions(request, {});
+  const { companyId, userId } = await requirePermissions(request, {});
 
   const formData = await request.formData();
   const validation = await validator(scrapQuantityValidator).validate(formData);
@@ -23,7 +23,8 @@ export async function action({ request }: ActionFunctionArgs) {
   // biome-ignore lint/correctness/noUnusedVariables: suppressed due to migration
   const { trackedEntityId, trackingType, ...d } = validation.data;
 
-  const insertScrap = await insertScrapQuantity(client, {
+  const serviceRole = getCarbonServiceRole();
+  const insertScrap = await insertScrapQuantity(serviceRole, {
     ...d,
     companyId,
     createdBy: userId
