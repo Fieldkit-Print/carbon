@@ -265,7 +265,7 @@ async function sendProofApprovalReminders() {
   const { data: proofs, error: proofsError } = await serviceRole
     .from("proofApproval")
     .select(
-      "id, jobId, companyId, version, requestedAt, requestedBy, externalLinkId, job(id, jobId, name, salesOrderId)"
+      "id, jobId, companyId, version, requestedAt, requestedBy, externalLinkId, job(id, jobId, salesOrderId)"
     )
     .eq("status", "Pending")
     .not("externalLinkId", "is", null);
@@ -365,7 +365,7 @@ async function sendProofApprovalReminders() {
 
               const emailTemplate = ProofReminderEmail({
                 company,
-                jobName: job.name ?? job.jobId ?? "Job",
+                jobName: job.jobId ?? "Job",
                 proofUrl,
                 version: proof.version,
                 recipient: {
@@ -383,7 +383,7 @@ async function sendProofApprovalReminders() {
 
               await sendEmailResendTask.trigger({
                 to: email,
-                subject: `Reminder: Proof awaiting approval — ${job.name ?? job.jobId}`,
+                subject: `Reminder: Proof awaiting approval — ${job.jobId}`,
                 html,
                 text,
                 companyId: proof.companyId,
