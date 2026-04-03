@@ -2,6 +2,7 @@ import { assertIsPost, error, success } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { flash } from "@carbon/auth/session.server";
+import type { generateSubProductionFilesTask } from "@carbon/jobs/trigger/generate-sub-production-files";
 import { FunctionRegion } from "@supabase/supabase-js";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
@@ -13,6 +14,7 @@ import {
   updateJobStatus
 } from "~/modules/production";
 import { path, requestReferrer } from "~/utils/path";
+import { tasks } from "~/utils/tasks";
 
 export async function action({ request, params }: ActionFunctionArgs) {
   assertIsPost(request);
@@ -31,7 +33,18 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   // Handle skip proof (no status change, just sets flag)
   if (action === "skipProof") {
-    await client.from("job").update({ proofSkipped: true }).eq("id", id);
+    const { error: skipError } = await client
+      .from("job")
+      .update({ proofSkipped: true })
+      .eq("id", id);
+
+    if (skipError) {
+      throw redirect(
+        requestReferrer(request) ?? path.to.job(id),
+        await flash(request, error(skipError, "Failed to skip proof"))
+      );
+    }
+
     throw redirect(
       requestReferrer(request) ?? path.to.job(id),
       await flash(request, success("Proof approval skipped"))
@@ -85,6 +98,31 @@ export async function action({ request, params }: ActionFunctionArgs) {
           )
         );
       }
+    }
+
+    // Lock production file and trigger sub-production file generation
+    const serviceRoleForLock = getCarbonServiceRole();
+    const { data: jobForLock } = await serviceRoleForLock
+      .from("job")
+      .select("modelUploadId")
+      .eq("id", id)
+      .single();
+
+    if (jobForLock?.modelUploadId) {
+      await serviceRoleForLock
+        .from("modelUpload")
+        .update({ locked: true })
+        .eq("id", jobForLock.modelUploadId);
+
+      await tasks.trigger<typeof generateSubProductionFilesTask>(
+        "generate-sub-production-files",
+        {
+          jobId: id,
+          companyId,
+          modelUploadId: jobForLock.modelUploadId,
+          userId
+        }
+      );
     }
   }
 
