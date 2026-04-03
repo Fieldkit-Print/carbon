@@ -22,6 +22,8 @@ const payloadSchema = z.object({
     NotificationEvent.MaintenanceDispatchCreated,
     NotificationEvent.MaintenanceDispatchAssignment,
     NotificationEvent.NonConformanceAssignment,
+    NotificationEvent.ProofApprovalRequested,
+    NotificationEvent.ProofApprovalResponse,
     NotificationEvent.ProcedureAssignment,
     NotificationEvent.PurchaseInvoiceAssignment,
     NotificationEvent.PurchaseOrderAssignment,
@@ -35,7 +37,9 @@ const payloadSchema = z.object({
     NotificationEvent.SuggestionResponse,
     NotificationEvent.SupplierQuoteAssignment,
     NotificationEvent.SupplierQuoteResponse,
-    NotificationEvent.TrainingAssignment
+    NotificationEvent.TrainingAssignment,
+    NotificationEvent.QuoteReminderPending,
+    NotificationEvent.ProofReminderPending
   ]),
   from: z.string().optional(),
   documentType: z.enum(["purchaseOrder", "qualityDocument"]).optional()
@@ -126,6 +130,17 @@ export const approvalWorkflow = workflow(
   NotificationWorkflow.Approval,
   async ({ payload, step }) => {
     await step.inApp(NotificationType.ApprovalInApp, () => ({
+      body: payload.description,
+      payload
+    }));
+  },
+  { payloadSchema }
+);
+
+export const reminderWorkflow = workflow(
+  NotificationWorkflow.Reminder,
+  async ({ payload, step }) => {
+    await step.inApp(NotificationType.ReminderInApp, () => ({
       body: payload.description,
       payload
     }));

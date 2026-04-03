@@ -95,7 +95,12 @@ export const notifyTask = task({
         case NotificationEvent.ApprovalApproved:
         case NotificationEvent.ApprovalRejected:
         case NotificationEvent.ApprovalRequested:
+        case NotificationEvent.ProofApprovalResponse:
           return NotificationWorkflow.Approval;
+        case NotificationEvent.QuoteReminderPending:
+        case NotificationEvent.ProofReminderPending:
+        case NotificationEvent.InvoiceReminderPending:
+          return NotificationWorkflow.Reminder;
         default:
           return null;
       }
@@ -395,6 +400,36 @@ export const notifyTask = task({
           const respondedBy = externalNotes?.lastSubmittedBy as string | undefined || "Supplier";
           return `Supplier Quote ${supplierQuote?.data?.supplierQuoteId} was submitted by ${respondedBy}`;
 
+        case NotificationEvent.ProofApprovalResponse: {
+          const proofApproval = await client
+            .from("proofApproval")
+            .select("*, job(id, jobId)")
+            .eq("jobId", documentId)
+            .order("version", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (proofApproval.error || !proofApproval.data) {
+            return "Proof approval response received";
+          }
+
+          const jobLabel = (proofApproval.data.job as any)?.jobId ?? "Job";
+          const status = proofApproval.data.status;
+          const notes = proofApproval.data.decisionNotes;
+          const decidedBy = proofApproval.data.decidedBy;
+
+          if (status === "Approved") {
+            return `Proof for ${jobLabel} was approved${decidedBy ? ` by ${decidedBy}` : ""}`;
+          }
+
+          if (status === "Rejected") {
+            const base = `Proof for ${jobLabel} was rejected${decidedBy ? ` by ${decidedBy}` : ""}`;
+            return notes ? `${base}: "${notes}"` : base;
+          }
+
+          return `Proof for ${jobLabel} received a response`;
+        }
+
         case NotificationEvent.ApprovalRequested:
           if (documentType === "purchaseOrder") {
             const purchaseOrderResult = await client
@@ -485,6 +520,33 @@ export const notifyTask = task({
             return `Quality document "${qdRejected.data.name ?? "Untitled"}" was rejected`;
           }
           return "Your approval request was rejected";
+
+        case NotificationEvent.QuoteReminderPending: {
+          const reminderQuote = await client
+            .from("quote")
+            .select("quoteId")
+            .eq("id", documentId)
+            .single();
+          if (reminderQuote.error) {
+            console.error("Failed to get quote for reminder", reminderQuote.error);
+            throw reminderQuote.error;
+          }
+          return `Quote ${reminderQuote.data.quoteId} is awaiting customer response`;
+        }
+
+        case NotificationEvent.ProofReminderPending: {
+          const reminderProof = await client
+            .from("proofApproval")
+            .select("*, job(id, jobId)")
+            .eq("id", documentId)
+            .single();
+          if (reminderProof.error) {
+            console.error("Failed to get proof for reminder", reminderProof.error);
+            throw reminderProof.error;
+          }
+          const reminderJobLabel = (reminderProof.data.job as any)?.jobId ?? "Job";
+          return `Proof for ${reminderJobLabel} is awaiting customer approval`;
+        }
 
         default:
           return null;

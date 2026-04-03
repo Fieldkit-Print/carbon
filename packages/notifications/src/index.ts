@@ -14,7 +14,8 @@ export enum NotificationWorkflow {
   JobCompleted = "job-completed",
   Message = "message",
   SuggestionResponse = "suggestion-response",
-  SupplierQuoteResponse = "supplier-quote-response"
+  SupplierQuoteResponse = "supplier-quote-response",
+  Reminder = "reminder"
 }
 
 export enum NotificationEvent {
@@ -45,7 +46,10 @@ export enum NotificationEvent {
   SuggestionResponse = "suggestion-response",
   SupplierQuoteAssignment = "supplier-quote-assignment",
   SupplierQuoteResponse = "supplier-quote-response",
-  TrainingAssignment = "training-assignment"
+  TrainingAssignment = "training-assignment",
+  QuoteReminderPending = "quote-reminder-pending",
+  ProofReminderPending = "proof-reminder-pending",
+  InvoiceReminderPending = "invoice-reminder-pending"
 }
 
 export enum NotificationType {
@@ -56,7 +60,8 @@ export enum NotificationType {
   ExpirationInApp = "expiration-in-app",
   MessageInApp = "message-in-app",
   SuggestionResponseInApp = "suggestion-response-in-app",
-  SupplierQuoteResponseInApp = "supplier-quote-response-in-app"
+  SupplierQuoteResponseInApp = "supplier-quote-response-in-app",
+  ReminderInApp = "reminder-in-app"
 }
 
 export type TriggerUser = {
