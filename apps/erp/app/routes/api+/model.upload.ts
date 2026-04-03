@@ -69,6 +69,27 @@ export async function action({ request }: ActionFunctionArgs) {
       .eq("id", salesOrderLineId);
   }
   if (jobId) {
+    // Check if the job's current production file is locked
+    const { data: existingJob } = await client
+      .from("job")
+      .select("modelUploadId")
+      .eq("id", jobId)
+      .single();
+
+    if (existingJob?.modelUploadId) {
+      const { data: existingModel } = await client
+        .from("modelUpload")
+        .select("locked")
+        .eq("id", existingJob.modelUploadId)
+        .single();
+
+      if (existingModel?.locked) {
+        throw new Error(
+          "Production file is locked and cannot be changed after release"
+        );
+      }
+    }
+
     await client.from("job").update({ modelUploadId: modelId }).eq("id", jobId);
   }
 

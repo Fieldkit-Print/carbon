@@ -24,8 +24,8 @@ import {
 import { convertKbToString, formatDate } from "@carbon/utils";
 import { useDndContext, useDraggable } from "@dnd-kit/core";
 import type { FileObject } from "@supabase/storage-js";
-import type { ChangeEvent } from "react";
-import { useCallback } from "react";
+import type { ChangeEvent, Dispatch, SetStateAction } from "react";
+import { useCallback, useState } from "react";
 import {
   LuEllipsisVertical,
   LuGripVertical,
@@ -42,6 +42,39 @@ import { path } from "~/utils/path";
 import { stripSpecialCharacters } from "~/utils/string";
 import type { Opportunity } from "../../types";
 import { useOptimisticDocumentDrag } from "../SalesRFQ/useOptimiticDocumentDrag";
+
+interface UploadProgress {
+  fileName: string;
+  percent: number;
+  status: "uploading" | "done" | "error";
+}
+
+function uploadWithProgress(
+  url: string,
+  file: File,
+  onProgress: (percent: number) => void
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("x-upsert", "true");
+
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      resolve(xhr.status >= 200 && xhr.status < 300);
+    });
+
+    xhr.addEventListener("error", () => resolve(false));
+    xhr.addEventListener("abort", () => resolve(false));
+
+    xhr.send(file);
+  });
+}
 
 type OpportunityDocumentsProps = {
   attachments: FileObject[];
@@ -65,10 +98,11 @@ const OpportunityDocuments = ({
       type
     });
   const effectiveCanDelete = isReadOnlyProp ? false : canDelete;
+  const [progress, setProgress] = useState<UploadProgress[]>([]);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      upload(acceptedFiles);
+      upload(acceptedFiles, setProgress);
     },
     [upload]
   );
@@ -102,6 +136,7 @@ const OpportunityDocuments = ({
                 opportunityId={opportunity.id}
                 id={id}
                 type={type}
+                setProgress={setProgress}
               />
             )}
           </CardAction>
@@ -178,6 +213,36 @@ const OpportunityDocuments = ({
             </Tbody>
           </Table>
           {!isReadOnlyProp && <FileDropzone onDrop={onDrop} />}
+          {progress.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {progress.map((p) => (
+                <div key={p.fileName}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm truncate mr-4">{p.fileName}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {p.status === "done"
+                        ? "Complete"
+                        : p.status === "error"
+                          ? "Failed"
+                          : `${p.percent}%`}
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        p.status === "error"
+                          ? "bg-destructive"
+                          : p.status === "done"
+                            ? "bg-green-500"
+                            : "bg-primary"
+                      }`}
+                      style={{ width: `${p.percent}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -272,6 +337,7 @@ type OpportunityDocumentFormProps = {
   opportunityId: string;
   id: string;
   type: "Sales Order" | "Request for Quote" | "Quote" | "Sales Invoice";
+  setProgress?: Dispatch<SetStateAction<UploadProgress[]>>;
 };
 
 export const useOpportunityDocuments = ({
@@ -365,35 +431,84 @@ export const useOpportunityDocuments = ({
   );
 
   const upload = useCallback(
-    async (files: File[]) => {
+    async (
+      files: File[],
+      setProgress?: Dispatch<SetStateAction<UploadProgress[]>>
+    ) => {
       if (!carbon) {
         toast.error("Carbon client not available");
         return;
       }
 
-      for (const file of files) {
-        const fileName = getPath(file);
-        toast.info(`Uploading ${file.name}`);
+      setProgress?.(
+        files.map((f) => ({
+          fileName: f.name,
+          percent: 0,
+          status: "uploading" as const
+        }))
+      );
 
-        const fileUpload = await carbon.storage
-          .from("private")
-          .upload(fileName, file, {
-            cacheControl: `${12 * 60 * 60}`,
-            upsert: true
-          });
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const storagePath = getPath(file);
 
-        if (fileUpload.error) {
+        try {
+          // Create a signed upload URL for XHR progress tracking
+          const { data: signedUrl, error: signError } = await carbon.storage
+            .from("private")
+            .createSignedUploadUrl(storagePath, { upsert: true });
+
+          if (signError || !signedUrl) {
+            toast.error(`Failed to upload file: ${file.name}`);
+            setProgress?.((prev) =>
+              prev.map((p, idx) =>
+                idx === i ? { ...p, status: "error" as const } : p
+              )
+            );
+            continue;
+          }
+
+          const success = await uploadWithProgress(
+            signedUrl.signedUrl,
+            file,
+            (percent) => {
+              setProgress?.((prev) =>
+                prev.map((p, idx) => (idx === i ? { ...p, percent } : p))
+              );
+            }
+          );
+
+          if (success) {
+            setProgress?.((prev) =>
+              prev.map((p, idx) =>
+                idx === i ? { ...p, percent: 100, status: "done" as const } : p
+              )
+            );
+            createDocumentRecord({
+              path: storagePath,
+              name: file.name,
+              size: file.size
+            });
+          } else {
+            toast.error(`Failed to upload file: ${file.name}`);
+            setProgress?.((prev) =>
+              prev.map((p, idx) =>
+                idx === i ? { ...p, status: "error" as const } : p
+              )
+            );
+          }
+        } catch {
           toast.error(`Failed to upload file: ${file.name}`);
-        } else if (fileUpload.data?.path) {
-          toast.success(`Uploaded: ${file.name}`);
-          createDocumentRecord({
-            path: fileUpload.data.path,
-            name: file.name,
-            size: file.size
-          });
+          setProgress?.((prev) =>
+            prev.map((p, idx) =>
+              idx === i ? { ...p, status: "error" as const } : p
+            )
+          );
         }
       }
+
       revalidator.revalidate();
+      setTimeout(() => setProgress?.([]), 2000);
     },
     [getPath, createDocumentRecord, carbon, revalidator]
   );
@@ -416,7 +531,7 @@ const OpportunityDocumentForm = (props: OpportunityDocumentFormProps) => {
 
   const uploadFiles = async (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && carbon && company) {
-      upload(Array.from(e.target.files));
+      upload(Array.from(e.target.files), props.setProgress);
     }
   };
 

@@ -522,6 +522,7 @@ serve(async (req: Request) => {
                   exchangeRate: quote.data.exchangeRate ?? 1,
                   taxPercent: line.taxPercent,
                   shippingCost: selectedLines![line.id!].shippingCost,
+                  modelUploadId: line.modelUploadId,
                 };
               });
 

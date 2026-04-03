@@ -61,7 +61,23 @@ export async function executePdfToolbox(
     form.append("args", JSON.stringify(input.cliArgs));
   }
   if (input.processPlan) {
-    form.append("processPlan", input.processPlan);
+    if (input.processPlan.includes("/")) {
+      // Storage path — download .kfpx from Supabase and send as file
+      const { data: planData, error: planError } = await client.storage
+        .from("private")
+        .download(input.processPlan);
+
+      if (planError || !planData) {
+        throw new Error(
+          `Failed to download process plan: ${planError?.message ?? "no data"}`
+        );
+      }
+
+      form.append("processPlanFile", planData, "plan.kfpx");
+    } else {
+      // Filename — use baked-in process plan lookup
+      form.append("processPlan", input.processPlan);
+    }
   }
   form.append("outputExtension", outputExt);
 

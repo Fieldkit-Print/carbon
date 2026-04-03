@@ -59,25 +59,33 @@ fastify.post("/process", async (request, reply) => {
   const tmpDir = await mkdtemp(path.join(os.tmpdir(), "ptb-"));
 
   try {
-    const data = await request.file();
-    if (!data) {
+    // Parse multipart form — supports multiple file parts
+    let fileBuffer = null;
+    let processPlanBuffer = null;
+    const fields = {};
+
+    const parts = request.parts();
+    for await (const part of parts) {
+      if (part.type === "file") {
+        const chunks = [];
+        for await (const chunk of part.file) {
+          chunks.push(chunk);
+        }
+        const buf = Buffer.concat(chunks);
+
+        if (part.fieldname === "processPlanFile") {
+          processPlanBuffer = buf;
+        } else {
+          fileBuffer = buf;
+        }
+      } else {
+        fields[part.fieldname] = part.value;
+      }
+    }
+
+    if (!fileBuffer) {
       reply.code(400);
       return { error: "No file uploaded" };
-    }
-
-    // Read the uploaded file
-    const chunks = [];
-    for await (const chunk of data.file) {
-      chunks.push(chunk);
-    }
-    const fileBuffer = Buffer.concat(chunks);
-
-    // Parse fields from the multipart form
-    const fields = {};
-    for (const [key, field] of Object.entries(data.fields)) {
-      if (field && typeof field === "object" && "value" in field) {
-        fields[key] = field.value;
-      }
     }
 
     const cliArgs = fields.args ? JSON.parse(fields.args) : [];
@@ -104,7 +112,13 @@ fastify.post("/process", async (request, reply) => {
     }
 
     // Profile (process plan) - required positional arg
-    if (processPlan) {
+    if (processPlanBuffer) {
+      // Inline process plan file uploaded in the request
+      const inlinePlanPath = path.join(tmpDir, "plan.kfpx");
+      await fs.writeFile(inlinePlanPath, processPlanBuffer);
+      args.push(inlinePlanPath);
+    } else if (processPlan) {
+      // Filename lookup from baked-in process plans directory
       const planPath = path.join(PROCESS_PLANS_DIR, processPlan);
       args.push(planPath);
     }
