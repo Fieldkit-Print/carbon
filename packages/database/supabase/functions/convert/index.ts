@@ -790,54 +790,46 @@ serve(async (req: Request) => {
         const readableIdToLineIdMapping = new Map<string, string>();
         let itemInserts: Database["public"]["Tables"]["item"]["Insert"][] = [];
         if (linesToCreateItems.length > 0) {
-          itemInserts = await Promise.all(
-            linesToCreateItems.map(async (line) => {
-              let revisionId = line.customerPartRevision ?? "0";
-              let readableId = line.customerPartId ?? "";
-              let suffix = 1;
-
-              // Check for uniqueness and append a suffix if necessary
-              while (true) {
-                const { data, error } = await client
-                  .from("item")
-                  .select("id")
-                  .eq("readableId", readableId)
-                  .eq("revision", revisionId)
-                  .eq("companyId", companyId)
-                  .single();
-
-                if (
-                  // If multiple line items in the RFQ have the same customer part number and revision,
-                  // make sure they get assiged different readableIds
-                  !readableIdToLineIdMapping.has(readableId) &&
-                  (error || !data)
-                ) {
-                  // readableId is unique, we can use it
-                  break;
-                }
-
-                // If not unique, append or increment suffix
-                revisionId = `${revisionId} (${suffix})`;
-                suffix++;
-              }
-
-              readableIdToLineIdMapping.set(readableId, line.id!);
-              return {
-                readableId,
-                revision: revisionId,
-                type: "Part" as const,
-                active: false,
-                name: line.description ?? line.itemName ?? "",
-                description: "",
-                itemTrackingType: "Inventory" as const,
-                replenishmentSystem: "Make" as const,
-                defaultMethodType: "Make" as const,
-                unitOfMeasureCode: "EA",
-                companyId: companyId,
-                createdBy: userId,
-              };
-            })
+          // Get the highest existing numeric part number and increment from there
+          const { data: lastNumericId } = await client.rpc(
+            "get_next_numeric_sequence",
+            { company_id: companyId, item_type: "Part" }
           );
+
+          let nextSequence: number;
+          let padLength: number;
+
+          if (lastNumericId) {
+            const currentSequence = parseInt(lastNumericId, 10);
+            nextSequence = currentSequence + 1;
+            // Preserve the padding length of the existing sequence
+            padLength = lastNumericId.length;
+          } else {
+            nextSequence = 1;
+            padLength = 9;
+          }
+
+          itemInserts = linesToCreateItems.map((line) => {
+            const readableId = nextSequence.toString().padStart(padLength, "0");
+            nextSequence++;
+
+            readableIdToLineIdMapping.set(readableId, line.id!);
+
+            return {
+              readableId,
+              revision: line.customerPartRevision ?? "0",
+              type: "Part" as const,
+              active: false,
+              name: line.description ?? line.itemName ?? "",
+              description: "",
+              itemTrackingType: "Inventory" as const,
+              replenishmentSystem: "Make" as const,
+              defaultMethodType: "Make" as const,
+              unitOfMeasureCode: "EA",
+              companyId: companyId,
+              createdBy: userId,
+            };
+          });
         }
 
         if (!salesRfq.data.customerId) {
