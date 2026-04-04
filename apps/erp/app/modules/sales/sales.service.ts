@@ -1570,6 +1570,7 @@ export async function finalizeQuote(
     .from("quote")
     .update({
       status: "Sent",
+      completedDate: now(getLocalTimeZone()).toAbsoluteString(),
       updatedAt: today(getLocalTimeZone()).toString(),
       updatedBy: userId
     })
