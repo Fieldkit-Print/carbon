@@ -66,11 +66,9 @@ async function sendQuoteReminders() {
   const { data: quotes, error: quotesError } = await serviceRole
     .from("quote")
     .select(
-      "id, quoteId, companyId, completedDate, expirationDate, externalLinkId, salesPersonId, customerContactId, customerReference"
+      "id, quoteId, companyId, completedDate, updatedAt, createdAt, expirationDate, externalLinkId, salesPersonId, customerContactId, customerReference"
     )
     .eq("status", "Sent")
-    .not("completedDate", "is", null)
-    .not("externalLinkId", "is", null)
     .not("customerContactId", "is", null);
 
   if (quotesError) {
@@ -115,8 +113,10 @@ async function sendQuoteReminders() {
   );
 
   for (const quote of quotes) {
+    const sentDate = quote.completedDate ?? quote.updatedAt ?? quote.createdAt;
+    if (!sentDate) continue;
     const daysSinceSent = Math.floor(
-      (now - new Date(quote.completedDate!).getTime()) / MS_PER_DAY
+      (now - new Date(sentDate).getTime()) / MS_PER_DAY
     );
 
     const reminderType = getReminderTier(daysSinceSent);
@@ -163,7 +163,9 @@ async function sendQuoteReminders() {
           continue;
         }
 
-        const digitalQuoteUrl = `${appUrl}/share/quote/${quote.externalLinkId}`;
+        const digitalQuoteUrl = quote.externalLinkId
+          ? `${appUrl}/share/quote/${quote.externalLinkId}`
+          : undefined;
         const firstName = (customerContact?.contact as any)?.firstName;
 
         const emailTemplate = QuoteReminderEmail({

@@ -3,7 +3,7 @@ import type { Email } from "../types";
 
 interface QuoteReminderEmailProps extends Email {
   quoteId: string;
-  digitalQuoteUrl: string;
+  digitalQuoteUrl?: string;
   expirationDate?: string | null;
   daysSinceSent: number;
 }
@@ -51,9 +51,11 @@ const QuoteReminderEmail = ({
           {recipient.firstName ? `Hi ${recipient.firstName},` : "Hi,"}
         </Text>
         <Text>{getReminderCopy(daysSinceSent, expirationDate)}</Text>
-        <Text>
-          <Link href={digitalQuoteUrl}>View Quote</Link>
-        </Text>
+        {digitalQuoteUrl && (
+          <Text>
+            <Link href={digitalQuoteUrl}>View Quote</Link>
+          </Text>
+        )}
         <Hr style={{ borderColor: "#eee" }} />
         <Text style={{ margin: "4px 0" }}>
           <strong>Quote:</strong> {quoteId}
