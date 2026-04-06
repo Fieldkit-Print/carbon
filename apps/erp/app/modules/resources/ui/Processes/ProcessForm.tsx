@@ -1,3 +1,4 @@
+import { useCarbon } from "@carbon/auth";
 import { ValidatedForm } from "@carbon/form";
 import {
   Button,
@@ -20,12 +21,15 @@ import {
   VStack
 } from "@carbon/react";
 import type { PostgrestResponse } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   LuCirclePlus,
   LuEllipsisVertical,
+  LuFileUp,
   LuPencil,
-  LuTrash
+  LuTrash,
+  LuTrash2
 } from "react-icons/lu";
 import { useFetcher, useNavigate } from "react-router";
 import type { z } from "zod";
@@ -42,7 +46,7 @@ import {
 } from "~/components/Form";
 import { useSupplierProcesses } from "~/components/Form/SupplierProcess";
 import WorkCenters from "~/components/Form/WorkCenters";
-import { usePermissions } from "~/hooks";
+import { usePermissions, useUser } from "~/hooks";
 import { SupplierProcessForm } from "~/modules/purchasing/ui/Supplier";
 
 import { processValidator } from "~/modules/resources";
@@ -144,6 +148,9 @@ const ProcessForm = ({
                   name="completeAllOnScan"
                   label=""
                   description="Complete all quantities on barcode scan"
+                />
+                <ProcessPlanUpload
+                  initialPath={initialValues.processPlanPath}
                 />
                 <CustomFormFields table="process" />
               </VStack>
@@ -247,5 +254,92 @@ function SupplierProcesses({ processId }: { processId?: string }) {
         />
       )}
     </>
+  );
+}
+
+function ProcessPlanUpload({ initialPath }: { initialPath?: string }) {
+  const { carbon } = useCarbon();
+  const {
+    company: { id: companyId }
+  } = useUser();
+  const [storagePath, setStoragePath] = useState(initialPath ?? "");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fileName = storagePath ? storagePath.split("/").pop() : null;
+
+  const handleUpload = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !carbon) return;
+
+      setUploading(true);
+      const uploadPath = `${companyId}/process-plans/${file.name}`;
+
+      const { error } = await carbon.storage
+        .from("private")
+        .upload(uploadPath, file, { upsert: true });
+
+      if (error) {
+        toast.error(`Failed to upload process plan: ${error.message}`);
+        setUploading(false);
+        return;
+      }
+
+      setStoragePath(uploadPath);
+      setUploading(false);
+      toast.success(`Uploaded ${file.name}`);
+    },
+    [carbon, companyId]
+  );
+
+  const handleRemove = useCallback(() => {
+    setStoragePath("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, []);
+
+  return (
+    <div>
+      <input type="hidden" name="processPlanPath" value={storagePath} />
+      <label className="text-sm font-medium mb-1 block">PDF Process Plan</label>
+      {fileName ? (
+        <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+          <LuFileUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <span className="truncate flex-1">{fileName}</span>
+          <button
+            type="button"
+            onClick={handleRemove}
+            className="text-muted-foreground hover:text-destructive flex-shrink-0"
+          >
+            <LuTrash2 className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".kfpx"
+            onChange={handleUpload}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={() => fileInputRef.current?.click()}
+            isDisabled={uploading}
+          >
+            <LuFileUp className="h-4 w-4 mr-2" />
+            {uploading ? "Uploading..." : "Upload .kfpx"}
+          </Button>
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground mt-1">
+        Process plan for auto-generating sub-production files
+      </p>
+    </div>
   );
 }

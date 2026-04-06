@@ -1,4 +1,3 @@
-import { useCarbon } from "@carbon/auth";
 import { ValidatedForm } from "@carbon/form";
 import {
   Button,
@@ -14,9 +13,7 @@ import {
   VStack
 } from "@carbon/react";
 import type { PostgrestResponse } from "@supabase/supabase-js";
-import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { LuFileUp, LuTrash2 } from "react-icons/lu";
+import { useEffect } from "react";
 import { useFetcher } from "react-router";
 import type { z } from "zod";
 import {
@@ -142,9 +139,6 @@ const WorkCenterForm = ({
                   label="Default Unit"
                   value={initialValues.defaultStandardFactor}
                 />
-                <ProcessPlanUpload
-                  initialPath={initialValues.processPlanPath}
-                />
                 {/* <Ability
                   name="requiredAbilityId"
                   label="Required Ability"
@@ -165,93 +159,6 @@ const WorkCenterForm = ({
         </ModalDrawerContent>
       </ModalDrawer>
     </ModalDrawerProvider>
-  );
-};
-
-const ProcessPlanUpload = ({ initialPath }: { initialPath?: string }) => {
-  const { carbon } = useCarbon();
-  const {
-    company: { id: companyId }
-  } = useUser();
-  const [storagePath, setStoragePath] = useState(initialPath ?? "");
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const fileName = storagePath ? storagePath.split("/").pop() : null;
-
-  const handleUpload = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file || !carbon) return;
-
-      setUploading(true);
-      const uploadPath = `${companyId}/process-plans/${file.name}`;
-
-      const { error } = await carbon.storage
-        .from("private")
-        .upload(uploadPath, file, { upsert: true });
-
-      if (error) {
-        toast.error(`Failed to upload process plan: ${error.message}`);
-        setUploading(false);
-        return;
-      }
-
-      setStoragePath(uploadPath);
-      setUploading(false);
-      toast.success(`Uploaded ${file.name}`);
-    },
-    [carbon, companyId]
-  );
-
-  const handleRemove = useCallback(() => {
-    setStoragePath("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  }, []);
-
-  return (
-    <div>
-      <input type="hidden" name="processPlanPath" value={storagePath} />
-      <label className="text-sm font-medium mb-1 block">PDF Process Plan</label>
-      {fileName ? (
-        <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-          <LuFileUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          <span className="truncate flex-1">{fileName}</span>
-          <button
-            type="button"
-            onClick={handleRemove}
-            className="text-muted-foreground hover:text-destructive flex-shrink-0"
-          >
-            <LuTrash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ) : (
-        <div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".kfpx"
-            onChange={handleUpload}
-            className="hidden"
-          />
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            onClick={() => fileInputRef.current?.click()}
-            isDisabled={uploading}
-          >
-            <LuFileUp className="h-4 w-4 mr-2" />
-            {uploading ? "Uploading..." : "Upload .kfpx"}
-          </Button>
-        </div>
-      )}
-      <p className="text-xs text-muted-foreground mt-1">
-        Process plan for auto-generating sub-production files
-      </p>
-    </div>
   );
 };
 

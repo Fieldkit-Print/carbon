@@ -29,14 +29,14 @@ export const generateSubProductionFilesTask = schemaTask({
       );
     }
 
-    // Get job operations with work centers that have process plans configured
+    // Get job operations with processes that have process plans configured
     const { data: operations, error: opsError } = await client
       .from("jobOperation")
       .select(
-        "id, order, workCenterId, workCenter!inner(id, name, processPlanPath)"
+        "id, order, processId, process!inner(id, name, processPlanPath)"
       )
       .eq("jobId", jobId)
-      .not("workCenter.processPlanPath", "is", null)
+      .not("process.processPlanPath", "is", null)
       .order("order");
 
     if (opsError) {
@@ -60,7 +60,7 @@ export const generateSubProductionFilesTask = schemaTask({
     let generated = 0;
 
     for (const operation of operations) {
-      const workCenter = operation.workCenter as {
+      const process = operation.process as {
         id: string;
         name: string;
         processPlanPath: string;
@@ -68,20 +68,20 @@ export const generateSubProductionFilesTask = schemaTask({
 
       try {
         logger.info(`Processing operation ${operation.id}`, {
-          workCenter: workCenter.name,
-          processPlan: workCenter.processPlanPath,
+          process: process.name,
+          processPlan: process.processPlanPath,
         });
 
         const outputDir = `${companyId}/models/sub-production/${jobId}/${operation.id}`;
         const outputFileName = `${operation.id}.pdf`;
 
-        // Run the PDF Toolbox fixup with the work center's process plan
+        // Run the PDF Toolbox fixup with the process's plan
         const result = await pdfFixupTask
           .triggerAndWait({
             companyId,
             inputPath: modelUpload.modelPath,
             outputDir,
-            processPlan: workCenter.processPlanPath,
+            processPlan: process.processPlanPath,
             outputFileName,
           })
           .unwrap();
@@ -92,7 +92,7 @@ export const generateSubProductionFilesTask = schemaTask({
           .from("modelUpload")
           .upsert({
             id: subModelId,
-            name: `${workCenter.name} - ${modelUpload.name}`,
+            name: `${process.name} - ${modelUpload.name}`,
             modelPath: result.outputPath,
             size: 0,
             companyId,

@@ -303,7 +303,8 @@ export const processValidator = z
     workCenters: z
       .array(z.string().min(1, { message: "Invalid work center" }))
       .optional(),
-    completeAllOnScan: zfd.checkbox()
+    completeAllOnScan: zfd.checkbox(),
+    processPlanPath: zfd.text(z.string().optional())
   })
   .refine((data) => {
     if (data.processType !== "Outside" && !data.workCenters) {
@@ -492,7 +493,6 @@ export const workCenterValidator = z.object({
   overheadRate: zfd.numeric(z.number().min(0)),
   processes: z
     .array(z.string().min(1, { message: "Invalid process" }))
-    .optional(),
-  processPlanPath: zfd.text(z.string().optional())
+    .optional()
   // requiredAbilityId: zfd.text(z.string().optional()),
 });
