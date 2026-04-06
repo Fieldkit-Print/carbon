@@ -315,6 +315,7 @@ const initialOperation: Omit<
   machineTime: 0,
   machineUnit: "Minutes/Piece",
   operationUnitCost: 0,
+  operationSetupCost: 0,
   operationLeadTime: 0,
   operationOrder: "After Previous",
   operationType: "Inside",
@@ -2105,6 +2106,7 @@ function OperationForm({
     operationLeadTime: number;
     operationType: string;
     operationUnitCost: number;
+    operationSetupCost: number;
     overheadRate: number;
     processId: string;
     procedureId: string;
@@ -2125,6 +2127,7 @@ function OperationForm({
     operationLeadTime: item.data.operationLeadTime ?? 0,
     operationType: item.data.operationType ?? "Inside",
     operationUnitCost: item.data.operationUnitCost ?? 0,
+    operationSetupCost: item.data.operationSetupCost ?? 0,
     overheadRate: item.data.overheadRate ?? 0,
     processId: item.data.processId ?? "",
     procedureId: item.data.procedureId ?? "",
@@ -2186,6 +2189,12 @@ function OperationForm({
             }, 0) / supplierProcesses.data.length
           : p.operationMinimumCost,
       operationUnitCost: item.data.operationUnitCost ?? 0,
+      operationSetupCost:
+        supplierProcesses.data && supplierProcesses.data.length > 0
+          ? supplierProcesses.data.reduce((acc, sp) => {
+              return (acc += sp.setupCost ?? 0);
+            }, 0) / supplierProcesses.data.length
+          : (p.operationSetupCost ?? 0),
       operationLeadTime:
         supplierProcesses.data && supplierProcesses.data.length > 0
           ? supplierProcesses.data.reduce((acc, sp) => {
@@ -2239,6 +2248,7 @@ function OperationForm({
       ...d,
       operationMinimumCost: data?.minimumCost ?? 0,
       operationUnitCost: 0, // TODO: get the unit cost from the purchase order history
+      operationSetupCost: data?.setupCost ?? 0,
       operationLeadTime: data?.leadTime ?? 0
     }));
   };
@@ -2355,6 +2365,22 @@ function OperationForm({
                 setProcessData((d) => ({
                   ...d,
                   operationUnitCost: newValue
+                }))
+              }
+            />
+            <NumberControlled
+              name="operationSetupCost"
+              label="Setup Cost"
+              minValue={0}
+              value={processData.operationSetupCost ?? 0}
+              formatOptions={{
+                style: "currency",
+                currency: baseCurrency
+              }}
+              onChange={(newValue) =>
+                setProcessData((d) => ({
+                  ...d,
+                  operationSetupCost: newValue
                 }))
               }
             />

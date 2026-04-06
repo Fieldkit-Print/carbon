@@ -236,21 +236,32 @@ export const getRatesFromWorkCenters =
     };
   };
 
+type SupplierProcessPriceBreakMap = Record<
+  string,
+  { quantity: number; unitPrice: number }[]
+>;
+
 export const getRatesFromSupplierProcesses =
   (
-    processes: Database["public"]["Tables"]["supplierProcess"]["Row"][] | null
+    processes: Database["public"]["Tables"]["supplierProcess"]["Row"][] | null,
+    processPriceBreaks?: SupplierProcessPriceBreakMap
   ) =>
   (
     processId: string,
-    supplierProcessId: string | null
+    supplierProcessId: string | null,
+    quantity?: number
   ): {
     operationMinimumCost: number;
     operationLeadTime: number;
+    operationUnitCost: number;
+    operationSetupCost: number;
   } => {
     if (!processes) {
       return {
         operationMinimumCost: 0,
         operationLeadTime: 0,
+        operationUnitCost: 0,
+        operationSetupCost: 0,
       };
     }
 
@@ -260,9 +271,17 @@ export const getRatesFromSupplierProcesses =
       );
 
       if (supplierProcess) {
+        const breaks = processPriceBreaks?.[supplierProcessId] ?? [];
+        const operationUnitCost =
+          quantity && breaks.length > 0
+            ? lookupPriceFromBreaks(breaks, quantity, 0)
+            : 0;
+
         return {
           operationMinimumCost: supplierProcess.minimumCost,
           operationLeadTime: supplierProcess.leadTime,
+          operationUnitCost,
+          operationSetupCost: supplierProcess.setupCost ?? 0,
         };
       }
     }
@@ -282,12 +301,16 @@ export const getRatesFromSupplierProcesses =
       return {
         operationMinimumCost,
         operationLeadTime,
+        operationUnitCost: 0,
+        operationSetupCost: 0,
       };
     }
 
     return {
       operationMinimumCost: 0,
       operationLeadTime: 0,
+      operationUnitCost: 0,
+      operationSetupCost: 0,
     };
   };
 
@@ -720,7 +743,8 @@ export async function calculateQuoteLinePrices(
         effects.outsideCost.push((quantity) => {
           const unitCost =
             operation.operationUnitCost * node.quantity * quantity;
-          return Math.max(operation.operationMinimumCost, unitCost);
+          const setupCost = (operation as any).operationSetupCost ?? 0;
+          return Math.max(operation.operationMinimumCost, unitCost) + setupCost;
         });
       }
     }

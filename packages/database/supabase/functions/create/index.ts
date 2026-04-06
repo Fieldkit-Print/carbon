@@ -415,7 +415,7 @@ serve(async (req: Request) => {
               .map((d) => d.operationSupplierProcessId)
               .filter(Boolean)
           );
-          const [supplierProcesses, existingPurchaseOrderLines] =
+          const [supplierProcesses, existingPurchaseOrderLines, supplierProcessPrices, supplierProcessAddons] =
             await Promise.all([
               client
                 .from("supplierProcess")
@@ -429,6 +429,15 @@ serve(async (req: Request) => {
                   "jobOperationId",
                   outsideOperations.map((d) => d.id)
                 ),
+              client
+                .from("supplierProcessPrice")
+                .select("supplierProcessId, quantity, unitPrice")
+                .in("supplierProcessId", Array.from(supplierProcessIds))
+                .order("quantity", { ascending: true }),
+              client
+                .from("supplierProcessAddon")
+                .select("supplierProcessId, name, amount, feeType")
+                .in("supplierProcessId", Array.from(supplierProcessIds)),
             ]);
 
           if (supplierProcesses.error)
@@ -636,14 +645,34 @@ serve(async (req: Request) => {
                 );
 
                 if (item && supplierProcess) {
-                  const totalCostWithUnitPrice =
-                    (operation.operationUnitCost ?? 0) *
-                    (operation.operationQuantity ?? 0);
+                  // Look up unit cost from price breaks if available
+                  const opQty = operation.operationQuantity ?? 0;
+                  const priceBreaks = (supplierProcessPrices.data ?? [])
+                    .filter((p) => p.supplierProcessId === supplierProcess.id);
+                  let unitCost = operation.operationUnitCost ?? 0;
+                  if (priceBreaks.length > 0 && opQty > 0) {
+                    const eligible = priceBreaks.filter((pb) => pb.quantity <= opQty);
+                    if (eligible.length > 0) {
+                      unitCost = eligible.reduce((best, pb) =>
+                        pb.quantity > best.quantity ? pb : best
+                      ).unitPrice;
+                    }
+                  }
+
+                  const totalCostWithUnitPrice = unitCost * opQty;
                   const totalCostWithMinimumCost =
                     (operation.operationMinimumCost ?? 0) >
                     totalCostWithUnitPrice
                       ? operation.operationMinimumCost ?? 0
                       : totalCostWithUnitPrice;
+
+                  const lineExchangeRate =
+                    exchangeRates.find(
+                      (d) =>
+                        d.currencyCode ===
+                        suppliers.data?.find((d) => d.id === supplier)
+                          ?.currencyCode
+                    )?.exchangeRate ?? 1;
 
                   // Create purchase order line
                   purchaseOrderLineInserts.push({
@@ -651,28 +680,54 @@ serve(async (req: Request) => {
                     purchaseOrderLineType: item.type,
                     itemId: item.id,
                     description: item.name || item.description,
-                    purchaseQuantity: operation.operationQuantity || 1,
+                    purchaseQuantity: opQty || 1,
                     purchaseUnitOfMeasureCode: item.unitOfMeasureCode,
                     inventoryUnitOfMeasureCode: item.unitOfMeasureCode,
                     conversionFactor: 1,
                     supplierUnitPrice:
-                      operation.operationQuantity &&
-                      operation.operationQuantity > 0
-                        ? totalCostWithMinimumCost / operation.operationQuantity
+                      opQty > 0
+                        ? totalCostWithMinimumCost / opQty
                         : totalCostWithMinimumCost,
                     locationId: job.data?.locationId,
                     jobId: job.data?.id,
                     jobOperationId: operation.id,
                     companyId,
                     createdBy: userId,
-                    exchangeRate:
-                      exchangeRates.find(
-                        (d) =>
-                          d.currencyCode ===
-                          suppliers.data?.find((d) => d.id === supplier)
-                            ?.currencyCode
-                      )?.exchangeRate ?? 1,
+                    exchangeRate: lineExchangeRate,
                   });
+
+                  // Setup cost line
+                  const setupCost = supplierProcess.setupCost ?? 0;
+                  if (setupCost > 0) {
+                    purchaseOrderLineInserts.push({
+                      purchaseOrderId,
+                      purchaseOrderLineType: "Comment",
+                      description: `Setup - ${item.name || item.description}`,
+                      purchaseQuantity: 1,
+                      supplierUnitPrice: setupCost,
+                      companyId,
+                      createdBy: userId,
+                      exchangeRate: lineExchangeRate,
+                    });
+                  }
+
+                  // Add-on fee lines
+                  const addons = (supplierProcessAddons.data ?? [])
+                    .filter((a) => a.supplierProcessId === supplierProcess.id);
+                  for (const addon of addons) {
+                    if (addon.amount > 0) {
+                      purchaseOrderLineInserts.push({
+                        purchaseOrderId,
+                        purchaseOrderLineType: "Comment",
+                        description: addon.name,
+                        purchaseQuantity: addon.feeType === "per-piece" ? (opQty || 1) : 1,
+                        supplierUnitPrice: addon.amount,
+                        companyId,
+                        createdBy: userId,
+                        exchangeRate: lineExchangeRate,
+                      });
+                    }
+                  }
                 }
               }
 

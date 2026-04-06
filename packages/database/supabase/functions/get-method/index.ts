@@ -40,6 +40,18 @@ import { KyselyDatabase } from "../lib/postgres/index.ts";
 const pool = getConnectionPool(1);
 const db = getDatabaseClient<DB>(pool);
 
+function buildProcessPriceBreakMap(
+  prices: { supplierProcessId: string; quantity: number; unitPrice: number }[] | null | undefined
+): Record<string, { quantity: number; unitPrice: number }[]> {
+  const map: Record<string, { quantity: number; unitPrice: number }[]> = {};
+  if (!prices) return map;
+  for (const p of prices) {
+    if (!map[p.supplierProcessId]) map[p.supplierProcessId] = [];
+    map[p.supplierProcessId].push({ quantity: p.quantity, unitPrice: p.unitPrice });
+  }
+  return map;
+}
+
 const partsValidator = z.object({
   billOfMaterial: z.boolean().default(true),
   billOfProcess: z.boolean().default(true),
@@ -313,7 +325,7 @@ serve(async (req: Request) => {
         const itemId = sourceId;
         const isConfigured = !!configuration;
 
-        const [makeMethod, jobMakeMethod, workCenters, supplierProcesses, job] =
+        const [makeMethod, jobMakeMethod, workCenters, supplierProcesses, job, supplierProcessPrices] =
           await Promise.all([
             client
               .from("activeMakeMethods")
@@ -339,6 +351,11 @@ serve(async (req: Request) => {
               .eq("id", jobId)
               .eq("companyId", companyId)
               .single(),
+            client
+              .from("supplierProcessPrice")
+              .select("supplierProcessId, quantity, unitPrice")
+              .eq("companyId", companyId)
+              .order("quantity", { ascending: true }),
           ]);
 
         if (makeMethod.error) {
@@ -385,8 +402,11 @@ serve(async (req: Request) => {
         const getLaborAndOverheadRates = getRatesFromWorkCenters(
           workCenters?.data
         );
+
+        const processPriceBreakMap = buildProcessPriceBreakMap(supplierProcessPrices?.data);
         const getOutsideOperationRates = getRatesFromSupplierProcesses(
-          supplierProcesses?.data
+          supplierProcesses?.data,
+          processPriceBreakMap
         );
 
         // Get configuration code by field
@@ -635,7 +655,8 @@ serve(async (req: Request) => {
                 operationSupplierProcessId: op.operationSupplierProcessId,
                 ...getOutsideOperationRates(
                   processId,
-                  op.operationSupplierProcessId
+                  op.operationSupplierProcessId,
+                  operationQuantity
                 ),
                 workInstruction: (!node.data.isRoot || parts.workInstructions) ? op.workInstruction : {},
                 targetQuantity,
@@ -1079,7 +1100,7 @@ serve(async (req: Request) => {
         const itemId = sourceId;
         const isConfigured = !!configuration;
 
-        const [makeMethod, jobMakeMethod, workCenters, supplierProcesses] =
+        const [makeMethod, jobMakeMethod, workCenters, supplierProcesses, supplierProcessPrices] =
           await Promise.all([
             client
               .from("activeMakeMethods")
@@ -1098,6 +1119,11 @@ serve(async (req: Request) => {
               .from("supplierProcess")
               .select("*")
               .eq("companyId", companyId),
+            client
+              .from("supplierProcessPrice")
+              .select("supplierProcessId, quantity, unitPrice")
+              .eq("companyId", companyId)
+              .order("quantity", { ascending: true }),
           ]);
 
         if (makeMethod.error) {
@@ -1163,8 +1189,10 @@ serve(async (req: Request) => {
         const getLaborAndOverheadRates = getRatesFromWorkCenters(
           workCenters?.data
         );
+        const processPriceBreakMap2 = buildProcessPriceBreakMap(supplierProcessPrices?.data);
         const getOutsideOperationRates = getRatesFromSupplierProcesses(
-          supplierProcesses?.data
+          supplierProcesses?.data,
+          processPriceBreakMap2
         );
 
         // Get configuration code by field
@@ -1267,7 +1295,8 @@ serve(async (req: Request) => {
                 operationSupplierProcessId: op.operationSupplierProcessId,
                 ...getOutsideOperationRates(
                   op.processId,
-                  op.operationSupplierProcessId
+                  op.operationSupplierProcessId,
+                  operationQuantity
                 ),
                 tags: op.tags ?? [],
                 workInstruction: parts.workInstructions ? op.workInstruction : {},
@@ -1537,6 +1566,7 @@ serve(async (req: Request) => {
           supplierProcesses,
           configurationRules,
           quote,
+          supplierProcessPrices,
         ] = await Promise.all([
           client
             .from("activeMakeMethods")
@@ -1566,6 +1596,11 @@ serve(async (req: Request) => {
             .eq("id", quoteId)
             .eq("companyId", companyId)
             .single(),
+          client
+            .from("supplierProcessPrice")
+            .select("supplierProcessId, quantity, unitPrice")
+            .eq("companyId", companyId)
+            .order("quantity", { ascending: true }),
         ]);
 
         const configurationCodeByField = configurationRules?.data?.reduce<
@@ -1610,8 +1645,10 @@ serve(async (req: Request) => {
         const getLaborAndOverheadRates = getRatesFromWorkCenters(
           workCenters?.data
         );
+        const processPriceBreakMap3 = buildProcessPriceBreakMap(supplierProcessPrices?.data);
         const getOutsideOperationRates = getRatesFromSupplierProcesses(
-          supplierProcesses?.data
+          supplierProcesses?.data,
+          processPriceBreakMap3
         );
 
         await db.transaction().execute(async (trx: Transaction<KyselyDatabase>) => {
@@ -2234,7 +2271,7 @@ serve(async (req: Request) => {
         const itemId = sourceId;
         const isConfigured = !!configuration;
 
-        const [makeMethod, quoteMakeMethod, workCenters, supplierProcesses] =
+        const [makeMethod, quoteMakeMethod, workCenters, supplierProcesses, supplierProcessPrices] =
           await Promise.all([
             client
               .from("activeMakeMethods")
@@ -2253,6 +2290,11 @@ serve(async (req: Request) => {
               .from("supplierProcess")
               .select("*")
               .eq("companyId", companyId),
+            client
+              .from("supplierProcessPrice")
+              .select("supplierProcessId, quantity, unitPrice")
+              .eq("companyId", companyId)
+              .order("quantity", { ascending: true }),
           ]);
 
         if (makeMethod.error) {
@@ -2291,8 +2333,10 @@ serve(async (req: Request) => {
         const getLaborAndOverheadRates = getRatesFromWorkCenters(
           workCenters?.data
         );
+        const processPriceBreakMap4 = buildProcessPriceBreakMap(supplierProcessPrices?.data);
         const getOutsideOperationRates = getRatesFromSupplierProcesses(
-          supplierProcesses?.data
+          supplierProcesses?.data,
+          processPriceBreakMap4
         );
 
         // Get configuration code by field

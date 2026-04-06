@@ -4757,6 +4757,243 @@ export type Database = {
           },
         ]
       }
+      customerAssetEvent: {
+        Row: {
+          companyId: string
+          createdAt: string
+          createdBy: string
+          destination: string | null
+          eventDate: string
+          eventType: string
+          id: string
+          itemId: string
+          notes: string | null
+          sourceDocument: string | null
+          sourceDocumentId: string | null
+        }
+        Insert: {
+          companyId: string
+          createdAt?: string
+          createdBy: string
+          destination?: string | null
+          eventDate?: string
+          eventType: string
+          id?: string
+          itemId: string
+          notes?: string | null
+          sourceDocument?: string | null
+          sourceDocumentId?: string | null
+        }
+        Update: {
+          companyId?: string
+          createdAt?: string
+          createdBy?: string
+          destination?: string | null
+          eventDate?: string
+          eventType?: string
+          id?: string
+          itemId?: string
+          notes?: string | null
+          sourceDocument?: string | null
+          sourceDocumentId?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customerAssetEvent_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "customFieldTables"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employeesAcrossCompanies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employeeSummary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "userDefaults"
+            referencedColumns: ["userId"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_itemId_fkey"
+            columns: ["itemId"]
+            isOneToOne: false
+            referencedRelation: "consumables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_itemId_fkey"
+            columns: ["itemId"]
+            isOneToOne: false
+            referencedRelation: "item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_itemId_fkey"
+            columns: ["itemId"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_itemId_fkey"
+            columns: ["itemId"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_itemId_fkey"
+            columns: ["itemId"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerAssetEvent_itemId_fkey"
+            columns: ["itemId"]
+            isOneToOne: false
+            referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customerCarrierAccount: {
+        Row: {
+          accountNumber: string
+          carrier: Database["public"]["Enums"]["shippingCarrier"]
+          companyId: string
+          createdAt: string
+          createdBy: string
+          customerId: string
+          description: string | null
+          id: string
+          updatedAt: string | null
+          updatedBy: string | null
+        }
+        Insert: {
+          accountNumber: string
+          carrier?: Database["public"]["Enums"]["shippingCarrier"]
+          companyId: string
+          createdAt?: string
+          createdBy: string
+          customerId: string
+          description?: string | null
+          id?: string
+          updatedAt?: string | null
+          updatedBy?: string | null
+        }
+        Update: {
+          accountNumber?: string
+          carrier?: Database["public"]["Enums"]["shippingCarrier"]
+          companyId?: string
+          createdAt?: string
+          createdBy?: string
+          customerId?: string
+          description?: string | null
+          id?: string
+          updatedAt?: string | null
+          updatedBy?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customerCarrierAccount_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerCarrierAccount_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerCarrierAccount_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "customFieldTables"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "customerCarrierAccount_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "customerCarrierAccount_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerCarrierAccount_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customerCarrierAccount_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "salesOrderCustomers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customerContact: {
         Row: {
           contactId: string
@@ -6959,18 +7196,21 @@ export type Database = {
           companyId: string
           employeeTypeId: string
           id: string
+          pinHash: string | null
         }
         Insert: {
           active?: boolean
           companyId: string
           employeeTypeId: string
           id?: string
+          pinHash?: string | null
         }
         Update: {
           active?: boolean
           companyId?: string
           employeeTypeId?: string
           id?: string
+          pinHash?: string | null
         }
         Relationships: [
           {
@@ -9353,6 +9593,7 @@ export type Database = {
           companyId: string | null
           createdAt: string
           createdBy: string
+          customerId: string | null
           defaultMethodType: Database["public"]["Enums"]["methodType"] | null
           description: string | null
           embedding: unknown
@@ -9378,6 +9619,7 @@ export type Database = {
           companyId?: string | null
           createdAt?: string
           createdBy: string
+          customerId?: string | null
           defaultMethodType?: Database["public"]["Enums"]["methodType"] | null
           description?: string | null
           embedding?: unknown
@@ -9403,6 +9645,7 @@ export type Database = {
           companyId?: string | null
           createdAt?: string
           createdBy?: string
+          customerId?: string | null
           defaultMethodType?: Database["public"]["Enums"]["methodType"] | null
           description?: string | null
           embedding?: unknown
@@ -9520,6 +9763,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "userDefaults"
             referencedColumns: ["userId"]
+          },
+          {
+            foreignKeyName: "item_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "salesOrderCustomers"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "item_modelUploadId_fkey"
@@ -10811,6 +11075,7 @@ export type Database = {
           notes: Json | null
           priority: number
           productionQuantity: number | null
+          proofSkipped: boolean
           quantity: number
           quantityComplete: number
           quantityReceivedToInventory: number
@@ -10851,6 +11116,7 @@ export type Database = {
           notes?: Json | null
           priority?: number
           productionQuantity?: number | null
+          proofSkipped?: boolean
           quantity?: number
           quantityComplete?: number
           quantityReceivedToInventory?: number
@@ -10891,6 +11157,7 @@ export type Database = {
           notes?: Json | null
           priority?: number
           productionQuantity?: number | null
+          proofSkipped?: boolean
           quantity?: number
           quantityComplete?: number
           quantityReceivedToInventory?: number
@@ -11850,6 +12117,7 @@ export type Database = {
           operationMinimumCost: number
           operationOrder: Database["public"]["Enums"]["methodOperationOrder"]
           operationQuantity: number | null
+          operationSetupCost: number
           operationSupplierProcessId: string | null
           operationType: Database["public"]["Enums"]["operationType"]
           operationUnitCost: number
@@ -11896,6 +12164,7 @@ export type Database = {
           operationMinimumCost?: number
           operationOrder?: Database["public"]["Enums"]["methodOperationOrder"]
           operationQuantity?: number | null
+          operationSetupCost?: number
           operationSupplierProcessId?: string | null
           operationType?: Database["public"]["Enums"]["operationType"]
           operationUnitCost?: number
@@ -11942,6 +12211,7 @@ export type Database = {
           operationMinimumCost?: number
           operationOrder?: Database["public"]["Enums"]["methodOperationOrder"]
           operationQuantity?: number | null
+          operationSetupCost?: number
           operationSupplierProcessId?: string | null
           operationType?: Database["public"]["Enums"]["operationType"]
           operationUnitCost?: number
@@ -13665,6 +13935,7 @@ export type Database = {
           createdBy: string
           customFields: Json | null
           id: string
+          ignoreRelease: boolean
           latitude: number | null
           longitude: number | null
           name: string
@@ -13685,6 +13956,7 @@ export type Database = {
           createdBy: string
           customFields?: Json | null
           id?: string
+          ignoreRelease?: boolean
           latitude?: number | null
           longitude?: number | null
           name: string
@@ -13705,6 +13977,7 @@ export type Database = {
           createdBy?: string
           customFields?: Json | null
           id?: string
+          ignoreRelease?: boolean
           latitude?: number | null
           longitude?: number | null
           name?: string
@@ -16814,6 +17087,7 @@ export type Database = {
           operationLeadTime: number | null
           operationMinimumCost: number | null
           operationOrder: Database["public"]["Enums"]["methodOperationOrder"]
+          operationSetupCost: number
           operationSupplierProcessId: string | null
           operationType: Database["public"]["Enums"]["operationType"]
           operationUnitCost: number | null
@@ -16844,6 +17118,7 @@ export type Database = {
           operationLeadTime?: number | null
           operationMinimumCost?: number | null
           operationOrder?: Database["public"]["Enums"]["methodOperationOrder"]
+          operationSetupCost?: number
           operationSupplierProcessId?: string | null
           operationType?: Database["public"]["Enums"]["operationType"]
           operationUnitCost?: number | null
@@ -16874,6 +17149,7 @@ export type Database = {
           operationLeadTime?: number | null
           operationMinimumCost?: number | null
           operationOrder?: Database["public"]["Enums"]["methodOperationOrder"]
+          operationSetupCost?: number
           operationSupplierProcessId?: string | null
           operationType?: Database["public"]["Enums"]["operationType"]
           operationUnitCost?: number | null
@@ -21339,11 +21615,19 @@ export type Database = {
           companyId: string
           createdAt: string
           createdBy: string
+          easypostShipmentId: string | null
+          estimatedDeliveryDate: string | null
           height: number
           id: string
+          labelFormat: string | null
+          labelUrl: string | null
           length: number
           predefinedPackage: string | null
+          selectedRate: Json | null
           shipmentId: string
+          trackingNumber: string | null
+          trackingStatus: string | null
+          trackingUpdatedAt: string | null
           updatedAt: string | null
           updatedBy: string | null
           weight: number
@@ -21353,11 +21637,19 @@ export type Database = {
           companyId: string
           createdAt?: string
           createdBy: string
+          easypostShipmentId?: string | null
+          estimatedDeliveryDate?: string | null
           height?: number
           id?: string
+          labelFormat?: string | null
+          labelUrl?: string | null
           length?: number
           predefinedPackage?: string | null
+          selectedRate?: Json | null
           shipmentId: string
+          trackingNumber?: string | null
+          trackingStatus?: string | null
+          trackingUpdatedAt?: string | null
           updatedAt?: string | null
           updatedBy?: string | null
           weight?: number
@@ -21367,11 +21659,19 @@ export type Database = {
           companyId?: string
           createdAt?: string
           createdBy?: string
+          easypostShipmentId?: string | null
+          estimatedDeliveryDate?: string | null
           height?: number
           id?: string
+          labelFormat?: string | null
+          labelUrl?: string | null
           length?: number
           predefinedPackage?: string | null
+          selectedRate?: Json | null
           shipmentId?: string
+          trackingNumber?: string | null
+          trackingStatus?: string | null
+          trackingUpdatedAt?: string | null
           updatedAt?: string | null
           updatedBy?: string | null
           weight?: number
@@ -29337,6 +29637,7 @@ export type Database = {
           operationLeadTime: number
           operationMinimumCost: number
           operationOrder: Database["public"]["Enums"]["methodOperationOrder"]
+          operationSetupCost: number
           operationSupplierProcessId: string | null
           operationType: Database["public"]["Enums"]["operationType"]
           operationUnitCost: number
@@ -29372,6 +29673,7 @@ export type Database = {
           operationLeadTime?: number
           operationMinimumCost?: number
           operationOrder?: Database["public"]["Enums"]["methodOperationOrder"]
+          operationSetupCost?: number
           operationSupplierProcessId?: string | null
           operationType?: Database["public"]["Enums"]["operationType"]
           operationUnitCost?: number
@@ -29407,6 +29709,7 @@ export type Database = {
           operationLeadTime?: number
           operationMinimumCost?: number
           operationOrder?: Database["public"]["Enums"]["methodOperationOrder"]
+          operationSetupCost?: number
           operationSupplierProcessId?: string | null
           operationType?: Database["public"]["Enums"]["operationType"]
           operationUnitCost?: number
@@ -30876,6 +31179,62 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "userDefaults"
             referencedColumns: ["userId"]
+          },
+        ]
+      }
+      reminderLog: {
+        Row: {
+          companyId: string
+          documentId: string
+          documentType: string
+          id: string
+          reminderType: string
+          sentAt: string
+        }
+        Insert: {
+          companyId: string
+          documentId: string
+          documentType: string
+          id?: string
+          reminderType: string
+          sentAt?: string
+        }
+        Update: {
+          companyId?: string
+          documentId?: string
+          documentType?: string
+          id?: string
+          reminderType?: string
+          sentAt?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminderLog_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminderLog_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminderLog_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "customFieldTables"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "reminderLog_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["companyId"]
           },
         ]
       }
@@ -32353,10 +32712,13 @@ export type Database = {
           nonTaxableAddOnCost: number
           promisedDate: string | null
           quantityInvoiced: number | null
+          quantityReturned: number
           quantitySent: number | null
           quantityToInvoice: number | null
           quantityToSend: number | null
           requiresInspection: boolean
+          returnedComplete: boolean
+          returnedDate: string | null
           saleQuantity: number | null
           salesOrderId: string
           salesOrderLineType: Database["public"]["Enums"]["salesOrderLineType"]
@@ -32397,10 +32759,13 @@ export type Database = {
           nonTaxableAddOnCost?: number
           promisedDate?: string | null
           quantityInvoiced?: number | null
+          quantityReturned?: number
           quantitySent?: number | null
           quantityToInvoice?: number | null
           quantityToSend?: number | null
           requiresInspection?: boolean
+          returnedComplete?: boolean
+          returnedDate?: string | null
           saleQuantity?: number | null
           salesOrderId: string
           salesOrderLineType: Database["public"]["Enums"]["salesOrderLineType"]
@@ -32441,10 +32806,13 @@ export type Database = {
           nonTaxableAddOnCost?: number
           promisedDate?: string | null
           quantityInvoiced?: number | null
+          quantityReturned?: number
           quantitySent?: number | null
           quantityToInvoice?: number | null
           quantityToSend?: number | null
           requiresInspection?: boolean
+          returnedComplete?: boolean
+          returnedDate?: string | null
           saleQuantity?: number | null
           salesOrderId?: string
           salesOrderLineType?: Database["public"]["Enums"]["salesOrderLineType"]
@@ -32759,6 +33127,7 @@ export type Database = {
         Row: {
           assignee: string | null
           companyId: string
+          customerCarrierAccountId: string | null
           customerId: string | null
           customerLocationId: string | null
           customFields: Json | null
@@ -32781,6 +33150,7 @@ export type Database = {
         Insert: {
           assignee?: string | null
           companyId: string
+          customerCarrierAccountId?: string | null
           customerId?: string | null
           customerLocationId?: string | null
           customFields?: Json | null
@@ -32803,6 +33173,7 @@ export type Database = {
         Update: {
           assignee?: string | null
           companyId?: string
+          customerCarrierAccountId?: string | null
           customerId?: string | null
           customerLocationId?: string | null
           customFields?: Json | null
@@ -32885,6 +33256,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "integrations"
             referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "salesOrderShipment_customerCarrierAccountId_fkey"
+            columns: ["customerCarrierAccountId"]
+            isOneToOne: false
+            referencedRelation: "customerCarrierAccount"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "salesOrderShipment_customerId_fkey"
@@ -33168,6 +33546,7 @@ export type Database = {
           customerLocationId: string | null
           customerReference: string | null
           customFields: Json | null
+          emailId: string | null
           employeeId: string | null
           expirationDate: string | null
           externalNotes: Json | null
@@ -33197,6 +33576,7 @@ export type Database = {
           customerLocationId?: string | null
           customerReference?: string | null
           customFields?: Json | null
+          emailId?: string | null
           employeeId?: string | null
           expirationDate?: string | null
           externalNotes?: Json | null
@@ -33226,6 +33606,7 @@ export type Database = {
           customerLocationId?: string | null
           customerReference?: string | null
           customFields?: Json | null
+          emailId?: string | null
           employeeId?: string | null
           expirationDate?: string | null
           externalNotes?: Json | null
@@ -34684,8 +35065,10 @@ export type Database = {
           companyId: string
           createdAt: string
           createdBy: string
+          customerCarrierAccountId: string | null
           customerId: string | null
           customFields: Json | null
+          easypostOrderId: string | null
           easypostShipmentId: string | null
           easypostTrackerId: string | null
           estimatedDeliveryDate: string | null
@@ -34723,8 +35106,10 @@ export type Database = {
           companyId: string
           createdAt?: string
           createdBy: string
+          customerCarrierAccountId?: string | null
           customerId?: string | null
           customFields?: Json | null
+          easypostOrderId?: string | null
           easypostShipmentId?: string | null
           easypostTrackerId?: string | null
           estimatedDeliveryDate?: string | null
@@ -34762,8 +35147,10 @@ export type Database = {
           companyId?: string
           createdAt?: string
           createdBy?: string
+          customerCarrierAccountId?: string | null
           customerId?: string | null
           customFields?: Json | null
+          easypostOrderId?: string | null
           easypostShipmentId?: string | null
           easypostTrackerId?: string | null
           estimatedDeliveryDate?: string | null
@@ -34894,6 +35281,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "userDefaults"
             referencedColumns: ["userId"]
+          },
+          {
+            foreignKeyName: "shipment_customerCarrierAccountId_fkey"
+            columns: ["customerCarrierAccountId"]
+            isOneToOne: false
+            referencedRelation: "customerCarrierAccount"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "shipment_customerId_fkey"
@@ -37622,6 +38016,7 @@ export type Database = {
           leadTime: number
           minimumCost: number
           processId: string
+          setupCost: number
           supplierId: string
           tags: string[] | null
           updatedAt: string | null
@@ -37636,6 +38031,7 @@ export type Database = {
           leadTime?: number
           minimumCost?: number
           processId: string
+          setupCost?: number
           supplierId: string
           tags?: string[] | null
           updatedAt?: string | null
@@ -37650,6 +38046,7 @@ export type Database = {
           leadTime?: number
           minimumCost?: number
           processId?: string
+          setupCost?: number
           supplierId?: string
           tags?: string[] | null
           updatedAt?: string | null
@@ -37798,6 +38195,234 @@ export type Database = {
           },
           {
             foreignKeyName: "supplierProcess_updatedBy_fkey"
+            columns: ["updatedBy"]
+            isOneToOne: false
+            referencedRelation: "userDefaults"
+            referencedColumns: ["userId"]
+          },
+        ]
+      }
+      supplierProcessAddon: {
+        Row: {
+          amount: number
+          companyId: string
+          createdAt: string
+          createdBy: string
+          feeType: string
+          id: string
+          name: string
+          supplierProcessId: string
+          updatedAt: string | null
+          updatedBy: string | null
+        }
+        Insert: {
+          amount?: number
+          companyId: string
+          createdAt?: string
+          createdBy: string
+          feeType?: string
+          id?: string
+          name: string
+          supplierProcessId: string
+          updatedAt?: string | null
+          updatedBy?: string | null
+        }
+        Update: {
+          amount?: number
+          companyId?: string
+          createdAt?: string
+          createdBy?: string
+          feeType?: string
+          id?: string
+          name?: string
+          supplierProcessId?: string
+          updatedAt?: string | null
+          updatedBy?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplierProcessAddon_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessAddon_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessAddon_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "customFieldTables"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "supplierProcessAddon_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "supplierProcessAddon_supplierProcessId_fkey"
+            columns: ["supplierProcessId"]
+            isOneToOne: false
+            referencedRelation: "supplierProcess"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessAddon_supplierProcessId_fkey"
+            columns: ["supplierProcessId"]
+            isOneToOne: false
+            referencedRelation: "supplierProcesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplierProcessPrice: {
+        Row: {
+          companyId: string
+          createdAt: string
+          createdBy: string
+          quantity: number
+          supplierProcessId: string
+          unitPrice: number
+          updatedAt: string | null
+          updatedBy: string | null
+        }
+        Insert: {
+          companyId: string
+          createdAt?: string
+          createdBy: string
+          quantity?: number
+          supplierProcessId: string
+          unitPrice: number
+          updatedAt?: string | null
+          updatedBy?: string | null
+        }
+        Update: {
+          companyId?: string
+          createdAt?: string
+          createdBy?: string
+          quantity?: number
+          supplierProcessId?: string
+          unitPrice?: number
+          updatedAt?: string | null
+          updatedBy?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplierProcessPrice_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "customFieldTables"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_companyId_fkey"
+            columns: ["companyId"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["companyId"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employeesAcrossCompanies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "employeeSummary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_createdBy_fkey"
+            columns: ["createdBy"]
+            isOneToOne: false
+            referencedRelation: "userDefaults"
+            referencedColumns: ["userId"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_supplierProcessId_fkey"
+            columns: ["supplierProcessId"]
+            isOneToOne: false
+            referencedRelation: "supplierProcess"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_supplierProcessId_fkey"
+            columns: ["supplierProcessId"]
+            isOneToOne: false
+            referencedRelation: "supplierProcesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_updatedBy_fkey"
+            columns: ["updatedBy"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_updatedBy_fkey"
+            columns: ["updatedBy"]
+            isOneToOne: false
+            referencedRelation: "employeesAcrossCompanies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_updatedBy_fkey"
+            columns: ["updatedBy"]
+            isOneToOne: false
+            referencedRelation: "employeeSummary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_updatedBy_fkey"
+            columns: ["updatedBy"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplierProcessPrice_updatedBy_fkey"
             columns: ["updatedBy"]
             isOneToOne: false
             referencedRelation: "userDefaults"
@@ -39543,6 +40168,7 @@ export type Database = {
       }
       terms: {
         Row: {
+          cardOnFileTerms: Json | null
           id: string
           purchasingTerms: Json | null
           salesTerms: Json | null
@@ -39550,6 +40176,7 @@ export type Database = {
           updatedBy: string | null
         }
         Insert: {
+          cardOnFileTerms?: Json | null
           id?: string
           purchasingTerms?: Json | null
           salesTerms?: Json | null
@@ -39557,6 +40184,7 @@ export type Database = {
           updatedBy?: string | null
         }
         Update: {
+          cardOnFileTerms?: Json | null
           id?: string
           purchasingTerms?: Json | null
           salesTerms?: Json | null
@@ -46826,7 +47454,9 @@ export type Database = {
           modelUploadId: string | null
           name: string | null
           notes: Json | null
+          priority: number | null
           productionQuantity: number | null
+          proofSkipped: boolean | null
           quantity: number | null
           quantityComplete: number | null
           quantityReceivedToInventory: number | null
@@ -48629,6 +49259,7 @@ export type Database = {
           companyId: string | null
           createdAt: string | null
           createdBy: string | null
+          customerId: string | null
           customFields: Json | null
           defaultMethodType: Database["public"]["Enums"]["methodType"] | null
           description: string | null
@@ -48756,6 +49387,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "userDefaults"
             referencedColumns: ["userId"]
+          },
+          {
+            foreignKeyName: "item_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "customer"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_customerId_fkey"
+            columns: ["customerId"]
+            isOneToOne: false
+            referencedRelation: "salesOrderCustomers"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "item_unitOfMeasureCode_fkey"
@@ -53121,7 +53773,7 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["shipmentCountryCode"]
+            columns: ["invoiceCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
@@ -53135,7 +53787,7 @@ export type Database = {
           },
           {
             foreignKeyName: "address_countryCode_fkey"
-            columns: ["invoiceCountryCode"]
+            columns: ["shipmentCountryCode"]
             isOneToOne: false
             referencedRelation: "country"
             referencedColumns: ["alpha2"]
@@ -53158,6 +53810,7 @@ export type Database = {
           datePaid: string | null
           exchangeRate: number | null
           exchangeRateUpdatedAt: string | null
+          externalLinkId: string | null
           externalNotes: Json | null
           id: string | null
           internalNotes: Json | null
@@ -53273,6 +53926,13 @@ export type Database = {
             columns: ["customerId"]
             isOneToOne: false
             referencedRelation: "salesOrderCustomers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salesInvoice_externalLinkId_fkey"
+            columns: ["externalLinkId"]
+            isOneToOne: false
+            referencedRelation: "externalLink"
             referencedColumns: ["id"]
           },
           {
@@ -53448,10 +54108,13 @@ export type Database = {
           orderDate: string | null
           promisedDate: string | null
           quantityInvoiced: number | null
+          quantityReturned: number | null
           quantitySent: number | null
           quantityToInvoice: number | null
           quantityToSend: number | null
           requiresInspection: boolean | null
+          returnedComplete: boolean | null
+          returnedDate: string | null
           saleQuantity: number | null
           salesOrderId: string | null
           salesOrderLineType:
@@ -55282,7 +55945,9 @@ export type Database = {
           minimumCost: number | null
           processId: string | null
           processName: string | null
+          setupCost: number | null
           supplierId: string | null
+          tags: string[] | null
           updatedAt: string | null
           updatedBy: string | null
         }
@@ -57843,6 +58508,7 @@ export type Database = {
           companyId: string
           createdAt: string
           createdBy: string
+          customerId: string
           customFields: Json
           defaultMethodType: Database["public"]["Enums"]["methodType"]
           description: string
@@ -58734,6 +59400,7 @@ export type Database = {
         | "ProofApproval"
         | "SalesInvoice"
         | "PaymentMethod"
+        | "ClientUpload"
       factor:
         | "Hours/Piece"
         | "Hours/100 Pieces"
@@ -59795,6 +60462,7 @@ export const Constants = {
         "ProofApproval",
         "SalesInvoice",
         "PaymentMethod",
+        "ClientUpload",
       ],
       factor: [
         "Hours/Piece",

@@ -4,9 +4,10 @@ import { flash } from "@carbon/auth/session.server";
 import { validationError, validator } from "@carbon/form";
 import type {
   ActionFunctionArgs,
-  ClientActionFunctionArgs
+  ClientActionFunctionArgs,
+  LoaderFunctionArgs
 } from "react-router";
-import { redirect, useNavigate, useParams } from "react-router";
+import { redirect, useLoaderData, useNavigate, useParams } from "react-router";
 import { useRouteData } from "~/hooks";
 import type { SupplierProcess } from "~/modules/purchasing";
 import {
@@ -14,13 +15,40 @@ import {
   upsertSupplierProcess
 } from "~/modules/purchasing";
 import SupplierProcessForm from "~/modules/purchasing/ui/Supplier/SupplierProcessForm";
+import { getDatabaseClient } from "~/services/database.server";
 import { setCustomFields } from "~/utils/form";
 import { path } from "~/utils/path";
 import { supplierProcessesQuery } from "~/utils/react-query";
 
+export async function loader({ request, params }: LoaderFunctionArgs) {
+  const { client } = await requirePermissions(request, {
+    view: "purchasing"
+  });
+
+  const { id } = params;
+  if (!id) throw new Error("Could not find id");
+
+  const [priceBreaksResult, addonsResult] = await Promise.all([
+    client
+      .from("supplierProcessPrice")
+      .select("quantity, unitPrice")
+      .eq("supplierProcessId", id)
+      .order("quantity", { ascending: true }),
+    client
+      .from("supplierProcessAddon")
+      .select("name, amount, feeType")
+      .eq("supplierProcessId", id)
+  ]);
+
+  return {
+    priceBreaks: priceBreaksResult.data ?? [],
+    addons: addonsResult.data ?? []
+  };
+}
+
 export async function action({ request, params }: ActionFunctionArgs) {
   assertIsPost(request);
-  const { client, userId } = await requirePermissions(request, {
+  const { client, companyId, userId } = await requirePermissions(request, {
     create: "purchasing"
   });
 
@@ -57,6 +85,69 @@ export async function action({ request, params }: ActionFunctionArgs) {
     );
   }
 
+  // Price breaks: delete + insert
+  const priceBreaksRaw = formData.get("priceBreaks");
+  if (priceBreaksRaw) {
+    const priceBreaks = JSON.parse(priceBreaksRaw as string) as {
+      quantity: number;
+      unitPrice: number;
+    }[];
+    const db = getDatabaseClient();
+    await db.transaction().execute(async (trx) => {
+      await trx
+        .deleteFrom("supplierProcessPrice")
+        .where("supplierProcessId", "=", id)
+        .execute();
+      if (priceBreaks.length > 0) {
+        await trx
+          .insertInto("supplierProcessPrice")
+          .values(
+            priceBreaks.map((pb) => ({
+              supplierProcessId: id,
+              quantity: pb.quantity,
+              unitPrice: pb.unitPrice,
+              companyId,
+              createdBy: userId,
+              updatedBy: userId
+            }))
+          )
+          .execute();
+      }
+    });
+  }
+
+  // Addons: delete + insert
+  const addonsRaw = formData.get("addons");
+  if (addonsRaw) {
+    const addons = JSON.parse(addonsRaw as string) as {
+      name: string;
+      amount: number;
+      feeType: string;
+    }[];
+    const db = getDatabaseClient();
+    await db.transaction().execute(async (trx) => {
+      await trx
+        .deleteFrom("supplierProcessAddon")
+        .where("supplierProcessId", "=", id)
+        .execute();
+      if (addons.length > 0) {
+        await trx
+          .insertInto("supplierProcessAddon")
+          .values(
+            addons.map((a) => ({
+              supplierProcessId: id,
+              name: a.name,
+              amount: a.amount,
+              feeType: a.feeType,
+              companyId,
+              createdBy: userId
+            }))
+          )
+          .execute();
+      }
+    });
+  }
+
   return redirect(path.to.supplierProcesses(supplierId));
 }
 
@@ -87,6 +178,8 @@ export default function SupplierProcessRoute() {
   const { supplierId, id } = useParams();
   if (!supplierId) throw new Error("Could not find supplier id");
   if (!id) throw new Error("Could not find id");
+
+  const { priceBreaks, addons } = useLoaderData<typeof loader>();
   const routeData = useRouteData<{ processes: SupplierProcess[] }>(
     path.to.supplierProcesses(supplierId)
   );
@@ -101,12 +194,21 @@ export default function SupplierProcessRoute() {
     supplierId: process.supplierId ?? "",
     processId: process.processId ?? "",
     minimumCost: process.minimumCost ?? 0,
+    setupCost: process.setupCost ?? 0,
     leadTime: process.leadTime ?? 0
   };
 
   return (
     <SupplierProcessForm
       initialValues={initialValues}
+      priceBreaks={priceBreaks}
+      addons={
+        addons as {
+          name: string;
+          amount: number;
+          feeType: "flat" | "per-piece";
+        }[]
+      }
       onClose={() => navigate(-1)}
     />
   );

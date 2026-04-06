@@ -56,6 +56,50 @@ export async function action({ request, params }: ActionFunctionArgs) {
     );
   }
 
+  const newId = createSupplierProcess.data?.id;
+
+  if (newId) {
+    const priceBreaksRaw = formData.get("priceBreaks");
+    if (priceBreaksRaw) {
+      const priceBreaks = JSON.parse(priceBreaksRaw as string) as {
+        quantity: number;
+        unitPrice: number;
+      }[];
+      if (priceBreaks.length > 0) {
+        await client.from("supplierProcessPrice").insert(
+          priceBreaks.map((pb) => ({
+            supplierProcessId: newId,
+            quantity: pb.quantity,
+            unitPrice: pb.unitPrice,
+            companyId,
+            createdBy: userId
+          }))
+        );
+      }
+    }
+
+    const addonsRaw = formData.get("addons");
+    if (addonsRaw) {
+      const addons = JSON.parse(addonsRaw as string) as {
+        name: string;
+        amount: number;
+        feeType: string;
+      }[];
+      if (addons.length > 0) {
+        await client.from("supplierProcessAddon").insert(
+          addons.map((a) => ({
+            supplierProcessId: newId,
+            name: a.name,
+            amount: a.amount,
+            feeType: a.feeType,
+            companyId,
+            createdBy: userId
+          }))
+        );
+      }
+    }
+  }
+
   return modal
     ? createSupplierProcess
     : redirect(path.to.supplierProcesses(supplierId));
@@ -94,6 +138,7 @@ export default function NewSupplierProcessRoute() {
     supplierId: supplierId,
     processId: "",
     minimumCost: 0,
+    setupCost: 0,
     leadTime: 0
   };
 

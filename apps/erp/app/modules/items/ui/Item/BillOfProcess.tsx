@@ -198,6 +198,7 @@ const initialOperation: Omit<
   operationMinimumCost: 0,
   operationLeadTime: 0,
   operationUnitCost: 0,
+  operationSetupCost: 0,
   piecesPerUnit: 1
 };
 
@@ -977,6 +978,7 @@ function OperationForm({
     operationMinimumCost: item.data.operationMinimumCost ?? 0,
     operationLeadTime: item.data.operationLeadTime ?? 0,
     operationUnitCost: item.data.operationUnitCost ?? 0,
+    operationSetupCost: item.data.operationSetupCost ?? 0,
     piecesPerUnit: item.data.piecesPerUnit ?? 1
   });
 
@@ -1007,6 +1009,12 @@ function OperationForm({
             }, 0) / supplierProcesses.data.length
           : p.operationMinimumCost,
       operationUnitCost: item.data.operationUnitCost ?? 0,
+      operationSetupCost:
+        supplierProcesses.data && supplierProcesses.data.length > 0
+          ? supplierProcesses.data.reduce((acc, sp) => {
+              return (acc += sp.setupCost ?? 0);
+            }, 0) / supplierProcesses.data.length
+          : (p.operationSetupCost ?? 0),
       operationLeadTime:
         supplierProcesses.data && supplierProcesses.data.length > 0
           ? supplierProcesses.data.reduce((acc, sp) => {
@@ -1247,6 +1255,22 @@ function OperationForm({
                 setProcessData((d) => ({
                   ...d,
                   operationUnitCost: newValue
+                }))
+              }
+            />
+            <NumberControlled
+              name="operationSetupCost"
+              label="Setup Cost"
+              minValue={0}
+              value={processData.operationSetupCost ?? 0}
+              formatOptions={{
+                style: "currency",
+                currency: baseCurrency
+              }}
+              onChange={(newValue) =>
+                setProcessData((d) => ({
+                  ...d,
+                  operationSetupCost: newValue
                 }))
               }
             />
