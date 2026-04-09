@@ -582,7 +582,7 @@ const MaterialProperties = () => {
             className="w-full"
           >
             <MaterialType
-              label="Type"
+              label="Brand"
               name="materialTypeId"
               substanceId={substanceId}
               formId={formId}
@@ -807,7 +807,7 @@ function getPropertyName(field?: string) {
     case "finishId":
       return "finish";
     case "materialTypeId":
-      return "type";
+      return "brand";
     default:
       return field;
   }

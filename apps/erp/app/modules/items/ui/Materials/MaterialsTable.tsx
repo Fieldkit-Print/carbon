@@ -219,7 +219,7 @@ const MaterialsTable = memo(({ data, tags, count }: MaterialsTableProps) => {
       },
       {
         accessorKey: "materialType",
-        header: "Type",
+        header: "Brand",
         cell: (item) => item.getValue(),
         meta: {
           icon: <LuPuzzle />,

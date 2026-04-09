@@ -237,7 +237,7 @@ const MaterialForm = ({
                 />
                 <MaterialType
                   name="materialTypeId"
-                  label="Type"
+                  label="Brand"
                   substanceId={substanceId}
                   formId={formId}
                   onChange={(value) => {

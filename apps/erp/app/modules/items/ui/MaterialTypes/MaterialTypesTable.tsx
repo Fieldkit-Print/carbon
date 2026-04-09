@@ -67,7 +67,7 @@ const MaterialTypesTable = memo(({ data, count }: MaterialTypesTableProps) => {
       },
       {
         accessorKey: "name",
-        header: "Type",
+        header: "Brand",
         cell: ({ row }) =>
           row.original.companyId === null ? (
             row.original.name
@@ -128,7 +128,7 @@ const MaterialTypesTable = memo(({ data, count }: MaterialTypesTableProps) => {
             }}
           >
             <MenuIcon icon={<LuPencil />} />
-            Edit Material Type
+            Edit Material Brand
           </MenuItem>
           <MenuItem
             disabled={
@@ -142,7 +142,7 @@ const MaterialTypesTable = memo(({ data, count }: MaterialTypesTableProps) => {
             }}
           >
             <MenuIcon icon={<LuTrash />} />
-            Delete Material Type
+            Delete Material Brand
           </MenuItem>
         </>
       );
@@ -158,13 +158,13 @@ const MaterialTypesTable = memo(({ data, count }: MaterialTypesTableProps) => {
       primaryAction={
         permissions.can("create", "parts") && (
           <New
-            label="Material Type"
+            label="Material Brand"
             to={`${path.to.newMaterialType}?${params.toString()}`}
           />
         )
       }
       renderContextMenu={renderContextMenu}
-      title="Material Types"
+      title="Material Brands"
     />
   );
 });

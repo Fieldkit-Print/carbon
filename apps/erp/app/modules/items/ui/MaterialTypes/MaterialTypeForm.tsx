@@ -81,7 +81,7 @@ const MaterialTypeForm = ({
           >
             <ModalDrawerHeader>
               <ModalDrawerTitle>
-                {isEditing ? "Edit" : "New"} Material Type
+                {isEditing ? "Edit" : "New"} Material Brand
               </ModalDrawerTitle>
             </ModalDrawerHeader>
             <ModalDrawerBody>
