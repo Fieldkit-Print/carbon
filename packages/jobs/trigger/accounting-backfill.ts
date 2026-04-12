@@ -6,8 +6,8 @@
  * - "push-to-accounting": Only push Carbon entities to the provider
  * - "two-way": Pull from provider AND push unsynced Carbon entities
  *
- * This prevents unnecessary syncing (e.g., items configured as push-only
- * won't be pulled from Xero, and POs configured as push-only won't try to pull).
+ * Phase 1: Master data (customers, vendors, items) — no dependencies
+ * Phase 2: Transactions (invoices, bills, purchase orders) — depend on master data
  */
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import {
@@ -22,6 +22,7 @@ import {
   RatelimitError,
   SyncFactory,
   type AccountingEntityType,
+  type QuickBooksProvider,
   type SyncDirection,
   type XeroProvider,
 } from "@carbon/ee/accounting";
@@ -61,6 +62,26 @@ async function withRateLimitRetry<T>(
   }
 }
 
+/** Map push entity table names to accounting entity types */
+const PUSH_ENTITY_MAP: Record<string, AccountingEntityType> = {
+  customer: "customer",
+  supplier: "vendor",
+  item: "item",
+  salesInvoice: "invoice",
+  purchaseInvoice: "bill",
+  purchaseOrder: "purchaseOrder",
+};
+
+/** Map accounting entity types to DB table names for getUnsyncedEntityIds */
+const ENTITY_TABLE_MAP: Record<string, string> = {
+  customer: "customer",
+  vendor: "supplier",
+  item: "item",
+  invoice: "salesInvoice",
+  bill: "purchaseInvoice",
+  purchaseOrder: "purchaseOrder",
+};
+
 // ============================================================
 // SCHEMAS
 // ============================================================
@@ -74,6 +95,9 @@ const BackfillPayloadSchema = z.object({
       customers: z.boolean().default(true),
       vendors: z.boolean().default(true),
       items: z.boolean().default(true),
+      invoices: z.boolean().default(true),
+      bills: z.boolean().default(true),
+      purchaseOrders: z.boolean().default(true),
     })
     .default({}),
 });
@@ -95,16 +119,32 @@ function shouldPush(direction: SyncDirection): boolean {
 const PullPagePayloadSchema = z.object({
   companyId: z.string(),
   provider: z.nativeEnum(ProviderID),
-  entityType: z.enum(["contact", "item"]),
+  entityType: z.enum([
+    "contact",
+    "customer",
+    "vendor",
+    "item",
+    "invoice",
+    "bill",
+    "purchaseOrder",
+  ]),
   page: z.number(),
-  includeCustomers: z.boolean().default(true),
-  includeVendors: z.boolean().default(true),
+  // Only used for Xero's combined "contact" entity type
+  includeCustomers: z.boolean().optional().default(true),
+  includeVendors: z.boolean().optional().default(true),
 });
 
 const PushBatchPayloadSchema = z.object({
   companyId: z.string(),
   provider: z.nativeEnum(ProviderID),
-  entityType: z.enum(["customer", "supplier", "item"]),
+  entityType: z.enum([
+    "customer",
+    "supplier",
+    "item",
+    "salesInvoice",
+    "purchaseInvoice",
+    "purchaseOrder",
+  ]),
   entityIds: z.array(z.string()),
 });
 
@@ -139,17 +179,19 @@ export const accountingPullPageTask = task({
       payload.companyId,
       integration.id,
       integration.metadata
-    ) as XeroProvider;
+    );
 
     const pool = getPostgresConnectionPool(5);
     const kysely = getPostgresClient(pool, PostgresDriver);
 
     try {
+      // ── Xero: combined contact endpoint ──
       if (payload.entityType === "contact") {
+        const xero = provider as XeroProvider;
         logger.info(`[PULL] Fetching contacts page ${payload.page}`);
         const response = await withRateLimitRetry(
           () =>
-            provider.listContacts({
+            xero.listContacts({
               page: payload.page,
               summaryOnly: true,
             }),
@@ -242,11 +284,14 @@ export const accountingPullPageTask = task({
           hasMore: response.hasMore,
           pulled: { customers: customersPulled, vendors: vendorsPulled },
         };
-      } else {
-        // Items
+      }
+
+      // ── Xero: items ──
+      if (payload.entityType === "item" && payload.provider === ProviderID.XERO) {
+        const xero = provider as XeroProvider;
         logger.info(`[PULL] Fetching items page ${payload.page}`);
         const response = await withRateLimitRetry(
-          () => provider.listItems({ page: payload.page }),
+          () => xero.listItems({ page: payload.page }),
           `listItems page ${payload.page}`
         );
 
@@ -295,6 +340,141 @@ export const accountingPullPageTask = task({
           pulled: { items: result.successCount },
         };
       }
+
+      // ── QuickBooks: individual entity types ──
+      const qb = provider as QuickBooksProvider;
+
+      type ListResult = { ids: string[]; hasMore: boolean };
+
+      const fetchPage = async (): Promise<ListResult> => {
+        switch (payload.entityType) {
+          case "customer": {
+            const res = await withRateLimitRetry(
+              () => qb.listCustomers(payload.page),
+              `listCustomers page ${payload.page}`
+            );
+            return {
+              ids: res.customers.map((c) => c.Id),
+              hasMore: res.hasMore,
+            };
+          }
+          case "vendor": {
+            const res = await withRateLimitRetry(
+              () => qb.listVendors(payload.page),
+              `listVendors page ${payload.page}`
+            );
+            return {
+              ids: res.vendors.map((v) => v.Id),
+              hasMore: res.hasMore,
+            };
+          }
+          case "item": {
+            const res = await withRateLimitRetry(
+              () => qb.listItems(payload.page),
+              `listItems page ${payload.page}`
+            );
+            return {
+              ids: res.items.map((i) => i.Id),
+              hasMore: res.hasMore,
+            };
+          }
+          case "invoice": {
+            const res = await withRateLimitRetry(
+              () => qb.listInvoices(payload.page),
+              `listInvoices page ${payload.page}`
+            );
+            return {
+              ids: res.invoices.map((i) => i.Id),
+              hasMore: res.hasMore,
+            };
+          }
+          case "bill": {
+            const res = await withRateLimitRetry(
+              () => qb.listBills(payload.page),
+              `listBills page ${payload.page}`
+            );
+            return {
+              ids: res.bills.map((b) => b.Id),
+              hasMore: res.hasMore,
+            };
+          }
+          case "purchaseOrder": {
+            const res = await withRateLimitRetry(
+              () => qb.listPurchaseOrders(payload.page),
+              `listPurchaseOrders page ${payload.page}`
+            );
+            return {
+              ids: res.purchaseOrders.map((po) => po.Id),
+              hasMore: res.hasMore,
+            };
+          }
+          default:
+            throw new Error(
+              `Unsupported entity type: ${payload.entityType}`
+            );
+        }
+      };
+
+      // Map entity types to accounting entity types for SyncFactory
+      const PULL_ENTITY_MAP: Record<string, AccountingEntityType> = {
+        customer: "customer",
+        vendor: "vendor",
+        item: "item",
+        invoice: "invoice",
+        bill: "bill",
+        purchaseOrder: "purchaseOrder",
+      };
+
+      const accountingEntityType = PULL_ENTITY_MAP[payload.entityType];
+      if (!accountingEntityType) {
+        throw new Error(
+          `No accounting entity mapping for: ${payload.entityType}`
+        );
+      }
+
+      logger.info(
+        `[PULL] Fetching ${payload.entityType} page ${payload.page}`
+      );
+
+      const { ids, hasMore } = await fetchPage();
+
+      if (ids.length === 0) {
+        return {
+          hasMore: false,
+          pulled: { [payload.entityType]: 0 },
+        };
+      }
+
+      const syncer = SyncFactory.getSyncer({
+        database: kysely,
+        companyId: payload.companyId,
+        provider,
+        config: provider.getSyncConfig(accountingEntityType),
+        entityType: accountingEntityType,
+      });
+
+      const result = await withRateLimitRetry(
+        () => syncer.pullBatchFromAccounting(ids),
+        `pullBatchFromAccounting ${payload.entityType} page ${payload.page}`
+      );
+
+      logger.info(
+        `[PULL] Page ${payload.page}: pulled ${result.successCount} ${payload.entityType}`,
+        {
+          results: result.results.map((r) => ({
+            status: r.status,
+            action: r.action,
+            localId: r.localId,
+            remoteId: r.remoteId,
+            error: r.error,
+          })),
+        }
+      );
+
+      return {
+        hasMore,
+        pulled: { [payload.entityType]: result.successCount },
+      };
     } finally {
       await pool.end();
     }
@@ -329,15 +509,15 @@ export const accountingPushBatchTask = task({
       payload.companyId,
       integration.id,
       integration.metadata
-    ) as XeroProvider;
+    );
 
     const pool = getPostgresConnectionPool(5);
     const kysely = getPostgresClient(pool, PostgresDriver);
 
     try {
-      // Map entity type to accounting entity type
       const entityType: AccountingEntityType =
-        payload.entityType === "supplier" ? "vendor" : payload.entityType;
+        PUSH_ENTITY_MAP[payload.entityType] ??
+        (payload.entityType as AccountingEntityType);
 
       const syncer = SyncFactory.getSyncer({
         database: kysely,
@@ -404,17 +584,23 @@ export const accountingBackfillTask = task({
       payload.companyId,
       integration.id,
       integration.metadata
-    ) as XeroProvider;
+    );
 
     // Get sync direction config for each entity type
     const customerConfig = provider.getSyncConfig("customer");
     const vendorConfig = provider.getSyncConfig("vendor");
     const itemConfig = provider.getSyncConfig("item");
+    const invoiceConfig = provider.getSyncConfig("invoice");
+    const billConfig = provider.getSyncConfig("bill");
+    const purchaseOrderConfig = provider.getSyncConfig("purchaseOrder");
 
     const result = {
       customers: { pulled: 0, pushed: 0 },
       vendors: { pulled: 0, pushed: 0 },
       items: { pulled: 0, pushed: 0 },
+      invoices: { pulled: 0, pushed: 0 },
+      bills: { pulled: 0, pushed: 0 },
+      purchaseOrders: { pulled: 0, pushed: 0 },
       totalPulled: 0,
       totalPushed: 0,
     };
@@ -441,66 +627,165 @@ export const accountingBackfillTask = task({
         shouldPull: itemConfig?.enabled && shouldPull(itemConfig.direction),
         shouldPush: itemConfig?.enabled && shouldPush(itemConfig.direction),
       },
+      invoice: {
+        enabled: invoiceConfig?.enabled,
+        direction: invoiceConfig?.direction,
+        shouldPull:
+          invoiceConfig?.enabled && shouldPull(invoiceConfig.direction),
+        shouldPush:
+          invoiceConfig?.enabled && shouldPush(invoiceConfig.direction),
+      },
+      bill: {
+        enabled: billConfig?.enabled,
+        direction: billConfig?.direction,
+        shouldPull: billConfig?.enabled && shouldPull(billConfig.direction),
+        shouldPush: billConfig?.enabled && shouldPush(billConfig.direction),
+      },
+      purchaseOrder: {
+        enabled: purchaseOrderConfig?.enabled,
+        direction: purchaseOrderConfig?.direction,
+        shouldPull:
+          purchaseOrderConfig?.enabled &&
+          shouldPull(purchaseOrderConfig.direction),
+        shouldPush:
+          purchaseOrderConfig?.enabled &&
+          shouldPush(purchaseOrderConfig.direction),
+      },
     });
 
     // ============================================================
-    // PHASE 1: Pull from accounting (respecting direction config)
+    // PHASE 1: MASTER DATA (customers, vendors, items)
     // ============================================================
 
-    // Determine which contact types to pull based on their direction config
-    const pullCustomers =
-      payload.entityTypes.customers &&
-      customerConfig?.enabled &&
-      shouldPull(customerConfig.direction);
+    // ── Pull master data ──
 
-    const pullVendors =
-      payload.entityTypes.vendors &&
-      vendorConfig?.enabled &&
-      shouldPull(vendorConfig.direction);
+    if (payload.provider === ProviderID.XERO) {
+      // Xero: combined contact endpoint
+      const pullCustomers =
+        payload.entityTypes.customers &&
+        customerConfig?.enabled &&
+        shouldPull(customerConfig.direction);
 
-    // Pull contacts (customers and vendors) if their config allows pulling
-    if (pullCustomers || pullVendors) {
-      let page = 1;
-      let hasMore = true;
+      const pullVendors =
+        payload.entityTypes.vendors &&
+        vendorConfig?.enabled &&
+        shouldPull(vendorConfig.direction);
 
-      logger.info("[PULL] Starting contact pull phase", {
-        pullCustomers,
-        pullVendors,
-      });
+      if (pullCustomers || pullVendors) {
+        let page = 1;
+        let hasMore = true;
 
-      while (hasMore) {
-        const pullResult = await accountingPullPageTask.triggerAndWait({
-          companyId: payload.companyId,
-          provider: payload.provider,
-          entityType: "contact",
-          page,
-          includeCustomers: pullCustomers,
-          includeVendors: pullVendors,
+        logger.info("[PULL] Starting contact pull phase (Xero)", {
+          pullCustomers,
+          pullVendors,
         });
 
-        if (pullResult.ok) {
-          result.customers.pulled += pullResult.output.pulled.customers ?? 0;
-          result.vendors.pulled += pullResult.output.pulled.vendors ?? 0;
-          hasMore = pullResult.output.hasMore;
-        } else {
-          logger.error(`[PULL] Failed to pull contacts page ${page}`);
-          hasMore = false;
-        }
+        while (hasMore) {
+          const pullResult = await accountingPullPageTask.triggerAndWait({
+            companyId: payload.companyId,
+            provider: payload.provider,
+            entityType: "contact",
+            page,
+            includeCustomers: pullCustomers,
+            includeVendors: pullVendors,
+          });
 
-        page++;
+          if (pullResult.ok) {
+            result.customers.pulled +=
+              pullResult.output.pulled.customers ?? 0;
+            result.vendors.pulled += pullResult.output.pulled.vendors ?? 0;
+            hasMore = pullResult.output.hasMore;
+          } else {
+            logger.error(`[PULL] Failed to pull contacts page ${page}`);
+            hasMore = false;
+          }
 
-        // Small delay between pages to avoid rate limits
-        if (hasMore) {
-          await wait.for({ seconds: 1 });
+          page++;
+
+          if (hasMore) {
+            await wait.for({ seconds: 1 });
+          }
         }
+      } else {
+        logger.info(
+          "[PULL] Skipping contact pull - not enabled or direction is push-only"
+        );
       }
     } else {
-      logger.info(
-        "[PULL] Skipping contact pull - not enabled or direction is push-only"
-      );
+      // QuickBooks: separate customer and vendor endpoints
+      const pullCustomers =
+        payload.entityTypes.customers &&
+        customerConfig?.enabled &&
+        shouldPull(customerConfig.direction);
+
+      if (pullCustomers) {
+        let page = 1;
+        let hasMore = true;
+
+        logger.info("[PULL] Starting customer pull phase (QuickBooks)");
+
+        while (hasMore) {
+          const pullResult = await accountingPullPageTask.triggerAndWait({
+            companyId: payload.companyId,
+            provider: payload.provider,
+            entityType: "customer",
+            page,
+          });
+
+          if (pullResult.ok) {
+            result.customers.pulled +=
+              pullResult.output.pulled.customer ?? 0;
+            hasMore = pullResult.output.hasMore;
+          } else {
+            logger.error(`[PULL] Failed to pull customers page ${page}`);
+            hasMore = false;
+          }
+
+          page++;
+
+          if (hasMore) {
+            await wait.for({ seconds: 1 });
+          }
+        }
+      }
+
+      const pullVendors =
+        payload.entityTypes.vendors &&
+        vendorConfig?.enabled &&
+        shouldPull(vendorConfig.direction);
+
+      if (pullVendors) {
+        let page = 1;
+        let hasMore = true;
+
+        logger.info("[PULL] Starting vendor pull phase (QuickBooks)");
+
+        while (hasMore) {
+          const pullResult = await accountingPullPageTask.triggerAndWait({
+            companyId: payload.companyId,
+            provider: payload.provider,
+            entityType: "vendor",
+            page,
+          });
+
+          if (pullResult.ok) {
+            result.vendors.pulled += pullResult.output.pulled.vendor ?? 0;
+            hasMore = pullResult.output.hasMore;
+          } else {
+            logger.error(`[PULL] Failed to pull vendors page ${page}`);
+            hasMore = false;
+          }
+
+          page++;
+
+          if (hasMore) {
+            await wait.for({ seconds: 1 });
+          }
+        }
+      }
     }
 
-    // Pull items if their config allows pulling
+    // Pull items (both Xero and QuickBooks)
     const pullItems =
       payload.entityTypes.items &&
       itemConfig?.enabled &&
@@ -521,7 +806,10 @@ export const accountingBackfillTask = task({
         });
 
         if (pullResult.ok) {
-          result.items.pulled += pullResult.output.pulled.items ?? 0;
+          result.items.pulled +=
+            pullResult.output.pulled.items ??
+            pullResult.output.pulled.item ??
+            0;
           hasMore = pullResult.output.hasMore;
         } else {
           logger.error(`[PULL] Failed to pull items page ${page}`);
@@ -540,9 +828,7 @@ export const accountingBackfillTask = task({
       );
     }
 
-    // ============================================================
-    // PHASE 2: Push to accounting (respecting direction config)
-    // ============================================================
+    // ── Push master data ──
 
     const pool = getPostgresConnectionPool(5);
     const kysely = getPostgresClient(pool, PostgresDriver);
@@ -550,7 +836,7 @@ export const accountingBackfillTask = task({
     try {
       const mappingService = createMappingService(kysely, payload.companyId);
 
-      // Push customers if their config allows pushing
+      // Push customers
       const pushCustomers =
         payload.entityTypes.customers &&
         customerConfig?.enabled &&
@@ -591,7 +877,6 @@ export const accountingBackfillTask = task({
             hasMore = false;
           }
 
-          // Delay between batches
           if (hasMore) {
             await wait.for({ seconds: 2 });
           }
@@ -602,7 +887,7 @@ export const accountingBackfillTask = task({
         );
       }
 
-      // Push vendors if their config allows pushing
+      // Push vendors
       const pushVendors =
         payload.entityTypes.vendors &&
         vendorConfig?.enabled &&
@@ -653,7 +938,7 @@ export const accountingBackfillTask = task({
         );
       }
 
-      // Push items if their config allows pushing
+      // Push items
       const pushItems =
         payload.entityTypes.items &&
         itemConfig?.enabled &&
@@ -703,15 +988,305 @@ export const accountingBackfillTask = task({
           "[PUSH] Skipping items push - not enabled or direction is pull-only"
         );
       }
+
+      // ============================================================
+      // PHASE 2: TRANSACTIONS (invoices, bills, purchase orders)
+      // Depend on master data being synced first.
+      // ============================================================
+
+      // ── Pull transactions ──
+
+      const pullInvoices =
+        payload.entityTypes.invoices &&
+        invoiceConfig?.enabled &&
+        shouldPull(invoiceConfig.direction);
+
+      if (pullInvoices) {
+        let page = 1;
+        let hasMore = true;
+
+        logger.info("[PULL] Starting invoices pull phase");
+
+        while (hasMore) {
+          const pullResult = await accountingPullPageTask.triggerAndWait({
+            companyId: payload.companyId,
+            provider: payload.provider,
+            entityType: "invoice",
+            page,
+          });
+
+          if (pullResult.ok) {
+            result.invoices.pulled +=
+              pullResult.output.pulled.invoice ?? 0;
+            hasMore = pullResult.output.hasMore;
+          } else {
+            logger.error(`[PULL] Failed to pull invoices page ${page}`);
+            hasMore = false;
+          }
+
+          page++;
+
+          if (hasMore) {
+            await wait.for({ seconds: 1 });
+          }
+        }
+      } else {
+        logger.info(
+          "[PULL] Skipping invoices pull - not enabled or direction is push-only"
+        );
+      }
+
+      const pullBills =
+        payload.entityTypes.bills &&
+        billConfig?.enabled &&
+        shouldPull(billConfig.direction);
+
+      if (pullBills) {
+        let page = 1;
+        let hasMore = true;
+
+        logger.info("[PULL] Starting bills pull phase");
+
+        while (hasMore) {
+          const pullResult = await accountingPullPageTask.triggerAndWait({
+            companyId: payload.companyId,
+            provider: payload.provider,
+            entityType: "bill",
+            page,
+          });
+
+          if (pullResult.ok) {
+            result.bills.pulled += pullResult.output.pulled.bill ?? 0;
+            hasMore = pullResult.output.hasMore;
+          } else {
+            logger.error(`[PULL] Failed to pull bills page ${page}`);
+            hasMore = false;
+          }
+
+          page++;
+
+          if (hasMore) {
+            await wait.for({ seconds: 1 });
+          }
+        }
+      } else {
+        logger.info(
+          "[PULL] Skipping bills pull - not enabled or direction is push-only"
+        );
+      }
+
+      const pullPurchaseOrders =
+        payload.entityTypes.purchaseOrders &&
+        purchaseOrderConfig?.enabled &&
+        shouldPull(purchaseOrderConfig.direction);
+
+      if (pullPurchaseOrders) {
+        let page = 1;
+        let hasMore = true;
+
+        logger.info("[PULL] Starting purchase orders pull phase");
+
+        while (hasMore) {
+          const pullResult = await accountingPullPageTask.triggerAndWait({
+            companyId: payload.companyId,
+            provider: payload.provider,
+            entityType: "purchaseOrder",
+            page,
+          });
+
+          if (pullResult.ok) {
+            result.purchaseOrders.pulled +=
+              pullResult.output.pulled.purchaseOrder ?? 0;
+            hasMore = pullResult.output.hasMore;
+          } else {
+            logger.error(
+              `[PULL] Failed to pull purchase orders page ${page}`
+            );
+            hasMore = false;
+          }
+
+          page++;
+
+          if (hasMore) {
+            await wait.for({ seconds: 1 });
+          }
+        }
+      } else {
+        logger.info(
+          "[PULL] Skipping purchase orders pull - not enabled or direction is push-only"
+        );
+      }
+
+      // ── Push transactions ──
+
+      const pushInvoices =
+        payload.entityTypes.invoices &&
+        invoiceConfig?.enabled &&
+        shouldPush(invoiceConfig.direction);
+
+      if (pushInvoices) {
+        let hasMore = true;
+
+        logger.info("[PUSH] Starting invoices push phase");
+
+        while (hasMore) {
+          const unsyncedIds = await mappingService.getUnsyncedEntityIds(
+            "invoice",
+            "salesInvoice",
+            provider.id,
+            payload.batchSize
+          );
+
+          if (unsyncedIds.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          const pushResult = await accountingPushBatchTask.triggerAndWait({
+            companyId: payload.companyId,
+            provider: payload.provider,
+            entityType: "salesInvoice",
+            entityIds: unsyncedIds,
+          });
+
+          if (pushResult.ok) {
+            result.invoices.pushed += pushResult.output.successCount;
+          } else {
+            logger.error("[PUSH] Failed to push invoices batch");
+          }
+
+          if (unsyncedIds.length < payload.batchSize) {
+            hasMore = false;
+          }
+
+          if (hasMore) {
+            await wait.for({ seconds: 2 });
+          }
+        }
+      } else {
+        logger.info(
+          "[PUSH] Skipping invoices push - not enabled or direction is pull-only"
+        );
+      }
+
+      const pushBills =
+        payload.entityTypes.bills &&
+        billConfig?.enabled &&
+        shouldPush(billConfig.direction);
+
+      if (pushBills) {
+        let hasMore = true;
+
+        logger.info("[PUSH] Starting bills push phase");
+
+        while (hasMore) {
+          const unsyncedIds = await mappingService.getUnsyncedEntityIds(
+            "bill",
+            "purchaseInvoice",
+            provider.id,
+            payload.batchSize
+          );
+
+          if (unsyncedIds.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          const pushResult = await accountingPushBatchTask.triggerAndWait({
+            companyId: payload.companyId,
+            provider: payload.provider,
+            entityType: "purchaseInvoice",
+            entityIds: unsyncedIds,
+          });
+
+          if (pushResult.ok) {
+            result.bills.pushed += pushResult.output.successCount;
+          } else {
+            logger.error("[PUSH] Failed to push bills batch");
+          }
+
+          if (unsyncedIds.length < payload.batchSize) {
+            hasMore = false;
+          }
+
+          if (hasMore) {
+            await wait.for({ seconds: 2 });
+          }
+        }
+      } else {
+        logger.info(
+          "[PUSH] Skipping bills push - not enabled or direction is pull-only"
+        );
+      }
+
+      const pushPurchaseOrders =
+        payload.entityTypes.purchaseOrders &&
+        purchaseOrderConfig?.enabled &&
+        shouldPush(purchaseOrderConfig.direction);
+
+      if (pushPurchaseOrders) {
+        let hasMore = true;
+
+        logger.info("[PUSH] Starting purchase orders push phase");
+
+        while (hasMore) {
+          const unsyncedIds = await mappingService.getUnsyncedEntityIds(
+            "purchaseOrder",
+            "purchaseOrder",
+            provider.id,
+            payload.batchSize
+          );
+
+          if (unsyncedIds.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          const pushResult = await accountingPushBatchTask.triggerAndWait({
+            companyId: payload.companyId,
+            provider: payload.provider,
+            entityType: "purchaseOrder",
+            entityIds: unsyncedIds,
+          });
+
+          if (pushResult.ok) {
+            result.purchaseOrders.pushed += pushResult.output.successCount;
+          } else {
+            logger.error("[PUSH] Failed to push purchase orders batch");
+          }
+
+          if (unsyncedIds.length < payload.batchSize) {
+            hasMore = false;
+          }
+
+          if (hasMore) {
+            await wait.for({ seconds: 2 });
+          }
+        }
+      } else {
+        logger.info(
+          "[PUSH] Skipping purchase orders push - not enabled or direction is pull-only"
+        );
+      }
     } finally {
       await pool.end();
     }
 
     // Calculate totals
     result.totalPulled =
-      result.customers.pulled + result.vendors.pulled + result.items.pulled;
+      result.customers.pulled +
+      result.vendors.pulled +
+      result.items.pulled +
+      result.invoices.pulled +
+      result.bills.pulled +
+      result.purchaseOrders.pulled;
     result.totalPushed =
-      result.customers.pushed + result.vendors.pushed + result.items.pushed;
+      result.customers.pushed +
+      result.vendors.pushed +
+      result.items.pushed +
+      result.invoices.pushed +
+      result.bills.pushed +
+      result.purchaseOrders.pushed;
 
     logger.info(
       `[COMPLETE] Backfill finished. Pulled: ${result.totalPulled}, Pushed: ${result.totalPushed}`

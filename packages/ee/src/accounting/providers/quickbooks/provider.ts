@@ -14,9 +14,12 @@ import {
 } from "../../core/utils";
 import type {
   QBAccount,
+  QBBill,
   QBCompanyInfo,
   QBCustomer,
+  QBInvoice,
   QBItem,
+  QBPurchaseOrder,
   QBQueryResponse,
   QBVendor
 } from "./types";
@@ -236,6 +239,57 @@ export class QuickBooksProvider implements BaseProvider {
 
     const items = (result.data as any).Item ?? [];
     return { items, hasMore: items.length === pageSize };
+  }
+
+  async listInvoices(
+    page = 1,
+    pageSize = 100
+  ): Promise<{ invoices: QBInvoice[]; hasMore: boolean }> {
+    const startPosition = (page - 1) * pageSize + 1;
+    const result = await this.query<QBInvoice>(
+      `SELECT * FROM Invoice STARTPOSITION ${startPosition} MAXRESULTS ${pageSize}`
+    );
+
+    if (result.error || !result.data) {
+      return { invoices: [], hasMore: false };
+    }
+
+    const invoices = (result.data as any).Invoice ?? [];
+    return { invoices, hasMore: invoices.length === pageSize };
+  }
+
+  async listBills(
+    page = 1,
+    pageSize = 100
+  ): Promise<{ bills: QBBill[]; hasMore: boolean }> {
+    const startPosition = (page - 1) * pageSize + 1;
+    const result = await this.query<QBBill>(
+      `SELECT * FROM Bill STARTPOSITION ${startPosition} MAXRESULTS ${pageSize}`
+    );
+
+    if (result.error || !result.data) {
+      return { bills: [], hasMore: false };
+    }
+
+    const bills = (result.data as any).Bill ?? [];
+    return { bills, hasMore: bills.length === pageSize };
+  }
+
+  async listPurchaseOrders(
+    page = 1,
+    pageSize = 100
+  ): Promise<{ purchaseOrders: QBPurchaseOrder[]; hasMore: boolean }> {
+    const startPosition = (page - 1) * pageSize + 1;
+    const result = await this.query<QBPurchaseOrder>(
+      `SELECT * FROM PurchaseOrder STARTPOSITION ${startPosition} MAXRESULTS ${pageSize}`
+    );
+
+    if (result.error || !result.data) {
+      return { purchaseOrders: [], hasMore: false };
+    }
+
+    const purchaseOrders = (result.data as any).PurchaseOrder ?? [];
+    return { purchaseOrders, hasMore: purchaseOrders.length === pageSize };
   }
 
   async listAccounts(): Promise<QBAccount[]> {

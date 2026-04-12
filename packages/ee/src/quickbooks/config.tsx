@@ -3,6 +3,33 @@ import type { ComponentProps } from "react";
 import { z } from "zod";
 import { defineIntegration } from "../fns";
 
+const coerceBoolean = z.preprocess(
+  (v) =>
+    v === "true" || v === "on" ? true : v === "false" || v === "" ? false : v,
+  z.boolean()
+);
+
+const SystemOfRecordSchema = z.enum(["carbon", "accounting"]);
+
+const QuickBooksSettingsSchema = z.object({
+  backfillCustomers: coerceBoolean.optional().default(true),
+  backfillVendors: coerceBoolean.optional().default(true),
+  backfillItems: coerceBoolean.optional().default(true),
+  backfillInvoices: coerceBoolean.optional().default(true),
+  backfillBills: coerceBoolean.optional().default(true),
+  backfillPurchaseOrders: coerceBoolean.optional().default(true),
+  // Per-entity system of record settings
+  customerOwner: SystemOfRecordSchema.optional().default("accounting"),
+  vendorOwner: SystemOfRecordSchema.optional().default("accounting"),
+  itemOwner: SystemOfRecordSchema.optional().default("carbon"),
+  invoiceOwner: SystemOfRecordSchema.optional().default("accounting"),
+  billOwner: SystemOfRecordSchema.optional().default("accounting"),
+  purchaseOrderOwner: SystemOfRecordSchema.optional().default("carbon"),
+  // Default account codes for line items
+  defaultSalesAccountCode: z.string().optional(),
+  defaultPurchaseAccountCode: z.string().optional()
+});
+
 export const QuickBooks = defineIntegration({
   name: "QuickBooks",
   id: "quickbooks",
@@ -14,18 +41,228 @@ export const QuickBooks = defineIntegration({
   shortDescription:
     "Automatically post transactions from sales and purchase invoices.",
   images: [],
-  settings: [],
-  schema: z.object({}),
+  settingGroups: [
+    {
+      name: "Source of Truth",
+      description: "Which system's data takes priority when there are conflicts"
+    },
+    {
+      name: "Account Mapping",
+      description: "Default accounts for syncing transactions to QuickBooks"
+    }
+  ],
+  settings: [
+    {
+      name: "backfillCustomers",
+      label: "Customers",
+      description: "Include customers in sync",
+      group: "Entities to Sync",
+      type: "switch" as const,
+      required: false,
+      value: true
+    },
+    {
+      name: "backfillVendors",
+      label: "Vendors",
+      description: "Include vendors/suppliers in sync",
+      group: "Entities to Sync",
+      type: "switch" as const,
+      required: false,
+      value: true
+    },
+    {
+      name: "backfillItems",
+      label: "Items",
+      description: "Include items/products in sync",
+      group: "Entities to Sync",
+      type: "switch" as const,
+      required: false,
+      value: true
+    },
+    {
+      name: "backfillInvoices",
+      label: "Invoices",
+      description: "Include sales invoices in sync",
+      group: "Entities to Sync",
+      type: "switch" as const,
+      required: false,
+      value: true
+    },
+    {
+      name: "backfillBills",
+      label: "Bills",
+      description: "Include purchase invoices/bills in sync",
+      group: "Entities to Sync",
+      type: "switch" as const,
+      required: false,
+      value: true
+    },
+    {
+      name: "backfillPurchaseOrders",
+      label: "Purchase Orders",
+      description: "Include purchase orders in sync",
+      group: "Entities to Sync",
+      type: "switch" as const,
+      required: false,
+      value: true
+    },
+    {
+      name: "customerOwner",
+      label: "Customers",
+      group: "Source of Truth",
+      type: "options" as const,
+      listOptions: [
+        {
+          value: "accounting",
+          label: "QuickBooks",
+          description: "QuickBooks data overwrites Carbon data"
+        },
+        {
+          value: "carbon",
+          label: "Carbon",
+          description: "Carbon data overwrites QuickBooks data"
+        }
+      ],
+      required: false,
+      value: "accounting"
+    },
+    {
+      name: "vendorOwner",
+      label: "Vendors",
+      group: "Source of Truth",
+      type: "options" as const,
+      listOptions: [
+        {
+          value: "accounting",
+          label: "QuickBooks",
+          description: "QuickBooks data overwrites Carbon data"
+        },
+        {
+          value: "carbon",
+          label: "Carbon",
+          description: "Carbon data overwrites QuickBooks data"
+        }
+      ],
+      required: false,
+      value: "accounting"
+    },
+    {
+      name: "itemOwner",
+      label: "Items",
+      group: "Source of Truth",
+      type: "options" as const,
+      listOptions: [
+        {
+          value: "carbon",
+          label: "Carbon",
+          description: "Carbon data overwrites QuickBooks data"
+        },
+        {
+          value: "accounting",
+          label: "QuickBooks",
+          description: "QuickBooks data overwrites Carbon data"
+        }
+      ],
+      required: false,
+      value: "carbon"
+    },
+    {
+      name: "invoiceOwner",
+      label: "Invoices",
+      group: "Source of Truth",
+      type: "options" as const,
+      listOptions: [
+        {
+          value: "accounting",
+          label: "QuickBooks",
+          description: "QuickBooks data overwrites Carbon data"
+        },
+        {
+          value: "carbon",
+          label: "Carbon",
+          description: "Carbon data overwrites QuickBooks data"
+        }
+      ],
+      required: false,
+      value: "accounting"
+    },
+    {
+      name: "billOwner",
+      label: "Bills",
+      group: "Source of Truth",
+      type: "options" as const,
+      listOptions: [
+        {
+          value: "accounting",
+          label: "QuickBooks",
+          description: "QuickBooks data overwrites Carbon data"
+        },
+        {
+          value: "carbon",
+          label: "Carbon",
+          description: "Carbon data overwrites QuickBooks data"
+        }
+      ],
+      required: false,
+      value: "accounting"
+    },
+    {
+      name: "purchaseOrderOwner",
+      label: "Purchase Orders",
+      group: "Source of Truth",
+      type: "options" as const,
+      listOptions: [
+        {
+          value: "carbon",
+          label: "Carbon",
+          description: "Carbon data overwrites QuickBooks data"
+        },
+        {
+          value: "accounting",
+          label: "QuickBooks",
+          description: "QuickBooks data overwrites Carbon data"
+        }
+      ],
+      required: false,
+      value: "carbon"
+    },
+    {
+      name: "defaultSalesAccountCode",
+      label: "Default Sales Account",
+      description: "Account code to use for sales invoice line items",
+      group: "Account Mapping",
+      type: "options" as const,
+      listOptions: [], // Populated dynamically from QuickBooks
+      required: true,
+      value: ""
+    },
+    {
+      name: "defaultPurchaseAccountCode",
+      label: "Default Purchase Account",
+      description: "Account code to use for purchase order and bill line items",
+      group: "Account Mapping",
+      type: "options" as const,
+      listOptions: [], // Populated dynamically from QuickBooks
+      required: true,
+      value: ""
+    }
+  ],
+  schema: QuickBooksSettingsSchema,
   oauth: {
     authUrl: "https://appcenter.intuit.com/connect/oauth2",
     clientId: QUICKBOOKS_CLIENT_ID ?? "",
     redirectUri: "/api/integrations/quickbooks/oauth",
-    scopes: [
-      "com.intuit.quickbooks.accounting",
-      "com.intuit.quickbooks.payment"
-    ],
+    scopes: ["com.intuit.quickbooks.accounting"],
     tokenUrl: "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"
-  }
+  },
+  actions: [
+    {
+      id: "sync-data",
+      label: "Run Initial Sync",
+      description: "Runs the initial backfill for the selected entities above",
+      endpoint: "/api/integrations/quickbooks/backfill"
+    }
+  ]
 });
 
 function Logo(props: ComponentProps<"svg">) {
