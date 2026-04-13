@@ -1,4 +1,4 @@
-import { getAppUrl } from "@carbon/auth";
+import { getAppUrl, getMESUrl } from "@carbon/auth";
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
 import { ProofApprovalEmail } from "@carbon/documents/email";
 import { logger, schemaTask } from "@trigger.dev/sdk";
@@ -9,41 +9,73 @@ import { modelThumbnailTask } from "./model-thumbnail";
 import { pdfFixupTask } from "./pdf-toolbox/fixup";
 import { sendEmailResendTask } from "./send-email-resend";
 
+interface PipelineJobContext {
+  id: string;
+  jobId: string;
+  quantity: number | null;
+  customerName: string | null;
+  dueDate: string | null;
+  deadlineType: string | null;
+  salesOrderId: string | null;
+  tags: string[] | null;
+}
+
 /**
  * Builds the routing context JSON that gets passed to .kfpx flows.
  * This lets process plans make decisions based on downstream machines,
- * materials, quantities, etc.
+ * materials, quantities, etc. — and embed interactive elements like
+ * QR codes for MES scanning or job lookup.
  */
 function buildPipelineContext(
-  job: { id: string; jobId: string; quantity: number | null },
+  job: PipelineJobContext,
   operations: PipelineOperation[],
   currentIndex: number,
   materials: Array<{ name: string; itemId: string | null }>
 ): Record<string, unknown> {
   const current = operations[currentIndex];
+  const appUrl = getAppUrl();
+  const mesUrl = getMESUrl();
+
   return {
     job: {
       id: job.id,
       jobId: job.jobId,
       quantity: job.quantity,
+      customerName: job.customerName,
+      dueDate: job.dueDate,
+      deadlineType: job.deadlineType,
+      salesOrderId: job.salesOrderId,
+      tags: job.tags,
+      url: `${appUrl}/x/job/${job.id}`,
     },
     currentOperation: {
       id: current.id,
       process: current.processName,
       workCenter: current.workCenterName,
       order: current.order,
+      parameters: current.parameters,
+      scan: {
+        start: `${mesUrl}/share/scan/start/${current.id}`,
+        end: `${mesUrl}/share/scan/end/${current.id}`,
+      },
     },
     downstream: operations.slice(currentIndex + 1).map((op) => ({
       id: op.id,
       process: op.processName,
       workCenter: op.workCenterName,
       order: op.order,
+      parameters: op.parameters,
+      scan: {
+        start: `${mesUrl}/share/scan/start/${op.id}`,
+        end: `${mesUrl}/share/scan/end/${op.id}`,
+      },
     })),
     upstream: operations.slice(0, currentIndex).map((op) => ({
       id: op.id,
       process: op.processName,
       workCenter: op.workCenterName,
       order: op.order,
+      parameters: op.parameters,
     })),
     materials,
   };
@@ -62,6 +94,7 @@ interface PipelineOperation {
   hotFolderPath: string | null;
   modelUploadId: string | null;
   modelUploadModelPath: string | null;
+  parameters: Record<string, string>;
 }
 
 /**
@@ -225,10 +258,12 @@ export const generateSubProductionFilesTask = schemaTask({
     const { jobId, companyId, userId, phase } = payload;
     const client = getCarbonServiceRole();
 
-    // Resolve the master file from the job's item
+    // Resolve the master file and job metadata
     const { data: job, error: jobError } = await client
       .from("job")
-      .select("id, jobId, quantity, itemId, item!inner(modelUploadId)")
+      .select(
+        "id, jobId, quantity, itemId, dueDate, deadlineType, salesOrderId, tags, customerId, item!inner(modelUploadId), customer(name)"
+      )
       .eq("id", jobId)
       .single();
 
@@ -269,7 +304,8 @@ export const generateSubProductionFilesTask = schemaTask({
       .select(
         `id, order, operationOrder, processId, workCenterId, modelUploadId,
          process!inner(id, name, processPlanPath, runOnCreate, outputDestination),
-         workCenter(id, name)`
+         workCenter(id, name),
+         jobOperationParameter(key, value)`
       )
       .eq("jobId", jobId)
       .not("process.processPlanPath", "is", null)
@@ -333,6 +369,20 @@ export const generateSubProductionFilesTask = schemaTask({
         ? `${op.workCenterId}:${op.processId}`
         : null;
 
+      // Collapse key/value parameter rows into a flat object
+      const params = (
+        op.jobOperationParameter as Array<{
+          key: string;
+          value: string | null;
+        }> | null
+      ) ?? [];
+      const parameters: Record<string, string> = {};
+      for (const p of params) {
+        if (p.key && p.value != null) {
+          parameters[p.key] = p.value;
+        }
+      }
+
       return {
         id: op.id,
         order: op.order ?? 0,
@@ -347,6 +397,7 @@ export const generateSubProductionFilesTask = schemaTask({
         hotFolderPath: hotFolderKey ? hotFolderMap.get(hotFolderKey) ?? null : null,
         modelUploadId: op.modelUploadId,
         modelUploadModelPath: null, // Resolved below for already-processed ops
+        parameters,
       } as PipelineOperation & { runOnCreate: boolean };
     });
 
@@ -452,8 +503,18 @@ export const generateSubProductionFilesTask = schemaTask({
         const outputFileName = `${operation.id}.pdf`;
 
         // Build routing context for this operation
+        const customer = job.customer as { name: string } | null;
         const context = buildPipelineContext(
-          { id: job.id, jobId: job.jobId!, quantity: job.quantity },
+          {
+            id: job.id,
+            jobId: job.jobId!,
+            quantity: job.quantity,
+            customerName: customer?.name ?? null,
+            dueDate: job.dueDate,
+            deadlineType: job.deadlineType,
+            salesOrderId: job.salesOrderId,
+            tags: job.tags,
+          },
           pipelineOps,
           i,
           materialsList
