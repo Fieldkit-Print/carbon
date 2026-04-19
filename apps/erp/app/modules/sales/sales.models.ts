@@ -544,7 +544,7 @@ export const quoteShipmentValidator = z.object({
 
 export const salesOrderLineType = [
   "Part",
-  // "Service",
+  "Service",
   "Material",
   "Tool",
   "Consumable",

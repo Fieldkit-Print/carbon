@@ -378,13 +378,9 @@ const SalesOrderLineForm = ({
                           }
                         />
                         <DatePicker name="promisedDate" label="Promised Date" />
-                        {[
-                          "Part",
-                          "Material",
-                          "Service",
-                          "Tool",
-                          "Consumable"
-                        ].includes(lineType) && (
+                        {["Part", "Material", "Tool", "Consumable"].includes(
+                          lineType
+                        ) && (
                           <Location
                             name="locationId"
                             label="Location"

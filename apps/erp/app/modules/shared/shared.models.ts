@@ -107,8 +107,8 @@ export const methodItemType = [
   "Part",
   "Material",
   "Tool",
-  "Consumable"
-  // "Service",
+  "Consumable",
+  "Service"
 ] as const;
 
 export const methodOperationOrders = [
