@@ -122,6 +122,10 @@ export const path = {
       jiraCreateIssue: `${api}/integrations/jira/issue/create`,
       jiraLinkExistingIssue: `${api}/integrations/jira/issue/link`,
       jiraSyncNotes: `${api}/integrations/jira/issue/sync-notes`,
+      asanaCreateTask: `${api}/integrations/asana/task/create`,
+      asanaLinkExistingTask: `${api}/integrations/asana/task/link`,
+      asanaSyncNotes: `${api}/integrations/asana/task/sync-notes`,
+      asanaSalesOrder: `${api}/integrations/asana/sales-order`,
       outsideOperations: (jobId: string) =>
         generatePath(`${api}/production/outside-operations/${jobId}`),
       purchasingKpi: (key: string) =>
@@ -181,6 +185,8 @@ export const path = {
         generatePath(`${api}/purchasing/supplier-locations/${id}`),
       supplierProcesses: (id?: string) =>
         generatePath(`${api}/purchasing/supplier-processes/${id}`),
+      supplierProcessDetail: (id: string) =>
+        generatePath(`${api}/purchasing/supplier-process-detail/${id}`),
       supplierTypes: `${api}/purchasing/supplier-types`,
       tags: (table?: string) =>
         generatePath(`${api}/shared/tags?table=${table}`),

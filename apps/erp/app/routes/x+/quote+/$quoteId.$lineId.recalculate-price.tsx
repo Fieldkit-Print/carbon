@@ -64,6 +64,17 @@ export async function action({ request, params }: ActionFunctionArgs) {
     );
   }
 
+  const outsideOps = await client
+    .from("quoteOperation")
+    .select("operationLeadTime")
+    .eq("quoteLineId", lineId)
+    .eq("operationType", "Outside");
+
+  const outsideLeadTime = (outsideOps.data ?? []).reduce(
+    (sum, op) => sum + (op.operationLeadTime ?? 0),
+    0
+  );
+
   const inserts = unitPricesByQuantity.data.map((unitPrice, index) => {
     const quantity = quantities.data[index];
     return {
@@ -71,7 +82,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       quantity,
       unitPrice,
       discountPercent: 0,
-      leadTime: 0,
+      leadTime: outsideLeadTime,
       createdBy: userId,
       categoryMarkups: categoryMarkupsByQuantity.data[quantity] ?? undefined
     };

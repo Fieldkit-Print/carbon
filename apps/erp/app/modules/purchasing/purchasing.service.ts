@@ -1497,7 +1497,36 @@ export async function upsertSupplierProcess(
         customFields?: Json;
       })
 ) {
-  if ("createdBy" in supplierProcess) {
+  const isCreate = "createdBy" in supplierProcess;
+
+  if (supplierProcess.isPreferred) {
+    const companyId = isCreate
+      ? supplierProcess.companyId
+      : (
+          await client
+            .from("supplierProcess")
+            .select("companyId")
+            .eq("id", supplierProcess.id)
+            .single()
+        ).data?.companyId;
+
+    if (companyId) {
+      const clearPreferred = client
+        .from("supplierProcess")
+        .update({ isPreferred: false })
+        .eq("companyId", companyId)
+        .eq("processId", supplierProcess.processId)
+        .eq("isPreferred", true);
+
+      if (!isCreate) {
+        await clearPreferred.neq("id", supplierProcess.id);
+      } else {
+        await clearPreferred;
+      }
+    }
+  }
+
+  if (isCreate) {
     return client
       .from("supplierProcess")
       .insert([supplierProcess])

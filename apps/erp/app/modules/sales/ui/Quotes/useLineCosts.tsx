@@ -363,7 +363,10 @@ export function useLineCosts({
             const unitCost =
               operation.operationUnitCost *
               Math.ceil((data.quantity * quantity) / opPpu);
-            return Math.max(operation.operationMinimumCost, unitCost);
+            const setupCost = operation.operationSetupCost ?? 0;
+            return (
+              Math.max(operation.operationMinimumCost, unitCost) + setupCost
+            );
           });
         }
       });

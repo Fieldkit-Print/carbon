@@ -139,7 +139,8 @@ export default function NewSupplierProcessRoute() {
     processId: "",
     minimumCost: 0,
     setupCost: 0,
-    leadTime: 0
+    leadTime: 0,
+    isPreferred: false
   };
 
   return (

@@ -31,6 +31,8 @@ import { useFetcher, useNavigate, useParams } from "react-router";
 import type { z } from "zod";
 import { EditableNumber, EditableText } from "~/components/Editable";
 import {
+  // biome-ignore lint/suspicious/noShadowRestrictedNames: suppressed due to migration
+  Boolean,
   CustomFormFields,
   Hidden,
   // biome-ignore lint/suspicious/noShadowRestrictedNames: suppressed due to migration
@@ -173,6 +175,11 @@ const SupplierProcessForm = ({
                   name="leadTime"
                   label="Standard Lead Time"
                   minValue={0}
+                />
+                <Boolean
+                  name="isPreferred"
+                  label="Preferred Supplier"
+                  description="Default supplier used for cost rollup when a specific supplier process isn't selected."
                 />
 
                 <PriceBreaks

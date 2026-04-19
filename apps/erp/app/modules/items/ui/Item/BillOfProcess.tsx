@@ -97,7 +97,10 @@ import {
   WorkCenter
 } from "~/components/Form";
 import Procedure from "~/components/Form/Procedure";
-import { SupplierProcessPreview } from "~/components/Form/SupplierProcess";
+import {
+  SupplierProcessBreaksPreview,
+  SupplierProcessPreview
+} from "~/components/Form/SupplierProcess";
 import { getUnitHint } from "~/components/Form/UnitHint";
 import { useUnitOfMeasure } from "~/components/Form/UnitOfMeasure";
 import { ProcedureStepTypeIcon } from "~/components/Icons";
@@ -1285,6 +1288,9 @@ function OperationForm({
                   operationLeadTime: newValue
                 }))
               }
+            />
+            <SupplierProcessBreaksPreview
+              supplierProcessId={processData.operationSupplierProcessId}
             />
           </>
         ) : (

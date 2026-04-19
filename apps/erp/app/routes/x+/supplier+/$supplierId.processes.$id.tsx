@@ -195,7 +195,8 @@ export default function SupplierProcessRoute() {
     processId: process.processId ?? "",
     minimumCost: process.minimumCost ?? 0,
     setupCost: process.setupCost ?? 0,
-    leadTime: process.leadTime ?? 0
+    leadTime: process.leadTime ?? 0,
+    isPreferred: process.isPreferred ?? false
   };
 
   return (

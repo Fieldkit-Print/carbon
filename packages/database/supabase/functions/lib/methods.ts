@@ -289,6 +289,25 @@ export const getRatesFromSupplierProcesses =
     const relatedProcesses = processes.filter((p) => p.processId === processId);
 
     if (relatedProcesses.length > 0) {
+      const preferred = relatedProcesses.find(
+        (p) => (p as { isPreferred?: boolean }).isPreferred === true
+      );
+
+      if (preferred) {
+        const breaks = processPriceBreaks?.[preferred.id] ?? [];
+        const operationUnitCost =
+          quantity && breaks.length > 0
+            ? lookupPriceFromBreaks(breaks, quantity, 0)
+            : 0;
+
+        return {
+          operationMinimumCost: preferred.minimumCost ?? 0,
+          operationLeadTime: preferred.leadTime ?? 0,
+          operationUnitCost,
+          operationSetupCost: preferred.setupCost ?? 0,
+        };
+      }
+
       const operationMinimumCost =
         relatedProcesses.reduce((acc, process) => {
           return (acc += process.minimumCost ?? 0);
@@ -597,6 +616,8 @@ export async function calculateQuoteLinePrices(
     outsideCost: [],
   };
 
+  let outsideLeadTimeDays = 0;
+
   function pushBuyCostEffect(
     itemId: string,
     itemType: string,
@@ -746,6 +767,7 @@ export async function calculateQuoteLinePrices(
           const setupCost = (operation as any).operationSetupCost ?? 0;
           return Math.max(operation.operationMinimumCost, unitCost) + setupCost;
         });
+        outsideLeadTimeDays += (operation as any).operationLeadTime ?? 0;
       }
     }
 
@@ -802,7 +824,7 @@ export async function calculateQuoteLinePrices(
       categoryMarkups: defaultMarkups,
       exchangeRate,
       createdBy: userId,
-      leadTime: 0,
+      leadTime: outsideLeadTimeDays,
       discountPercent: 0,
     };
   });
