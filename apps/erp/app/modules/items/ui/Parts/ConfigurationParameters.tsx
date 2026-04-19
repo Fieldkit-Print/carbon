@@ -1,5 +1,6 @@
 import {
   Array as ArrayInput,
+  Boolean as BooleanInput,
   Combobox,
   Hidden,
   Input,
@@ -203,7 +204,10 @@ export default function ConfigurationParametersForm({
                   dataType: "numeric",
                   listOptions: [],
                   configurationParameterGroupId: undefined,
-                  materialFormFilterId: ""
+                  materialFormFilterId: "",
+                  description: "",
+                  defaultValue: "",
+                  required: false
                 }}
                 className="w-full"
               >
@@ -256,6 +260,13 @@ export default function ConfigurationParametersForm({
                         }))}
                       />
                     )}
+                    <Input name="description" label="Description" isOptional />
+                    <Input
+                      name="defaultValue"
+                      label="Default Value"
+                      isOptional
+                    />
+                    <BooleanInput name="required" label="Required" />
                   </div>
                   <HStack spacing={2}>
                     <Submit
@@ -868,7 +879,10 @@ function ConfigurableParameter({
             label: parameter.label,
             dataType: parameter.dataType,
             listOptions: parameter.listOptions ?? [],
-            materialFormFilterId: parameter.materialFormFilterId ?? undefined
+            materialFormFilterId: parameter.materialFormFilterId ?? undefined,
+            description: parameter.description ?? "",
+            defaultValue: parameter.defaultValue ?? "",
+            required: parameter.required ?? false
           }}
         >
           <Hidden name="id" />
@@ -920,6 +934,9 @@ function ConfigurableParameter({
                   }))}
                 />
               )}
+              <Input name="description" label="Description" isOptional />
+              <Input name="defaultValue" label="Default Value" isOptional />
+              <BooleanInput name="required" label="Required" />
             </div>
             <HStack className="w-full justify-end" spacing={2}>
               <Button variant="secondary" onClick={disclosure.onClose}>
@@ -958,10 +975,29 @@ function ConfigurableParameter({
                   />
                 </div>
                 <VStack spacing={0}>
-                  <span className="text-sm font-medium">{parameter.label}</span>
+                  <HStack spacing={2}>
+                    <span className="text-sm font-medium">
+                      {parameter.label}
+                    </span>
+                    {parameter.required && (
+                      <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                        Required
+                      </span>
+                    )}
+                  </HStack>
                   <span className="text-xs text-muted-foreground">
                     {parameter.key}
                   </span>
+                  {parameter.description && (
+                    <span className="text-xs text-muted-foreground/80">
+                      {parameter.description}
+                    </span>
+                  )}
+                  {parameter.defaultValue && (
+                    <span className="text-xs text-muted-foreground">
+                      Default: {parameter.defaultValue}
+                    </span>
+                  )}
                 </VStack>
               </HStack>
             </HStack>

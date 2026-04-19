@@ -48,27 +48,35 @@ interface ParameterFieldProps {
 }
 
 function getParameterSchema(parameter: ConfigurationParameter) {
+  const isRequired = parameter.required !== false;
+
   switch (parameter.dataType) {
-    case "numeric":
-      return zfd.numeric(
-        z.number({
-          required_error: `${parameter.label} is required`
-        })
-      );
-    case "text":
-      return z.string({
+    case "numeric": {
+      const base = z.number({
         required_error: `${parameter.label} is required`
       });
-    case "list":
-      return z.enum(parameter.listOptions as [string, ...string[]], {
+      return isRequired ? zfd.numeric(base) : zfd.numeric(base).optional();
+    }
+    case "text": {
+      const base = z.string({
         required_error: `${parameter.label} is required`
       });
+      return isRequired ? base : base.optional();
+    }
+    case "list": {
+      const base = z.enum(parameter.listOptions as [string, ...string[]], {
+        required_error: `${parameter.label} is required`
+      });
+      return isRequired ? base : base.optional();
+    }
     case "boolean":
       return z.boolean();
-    case "material":
-      return z.string({
+    case "material": {
+      const base = z.string({
         required_error: `${parameter.label} is required`
       });
+      return isRequired ? base : base.optional();
+    }
     default:
       return z.any();
   }
@@ -112,6 +120,28 @@ function useMaterialsWithFilter(materialFormFilterId?: string | null) {
   return materials;
 }
 
+function ParameterFieldLabel({
+  parameter
+}: {
+  parameter: ConfigurationParameter;
+}) {
+  return (
+    <div className="space-y-0.5">
+      <Label className="text-xs text-muted-foreground" htmlFor={parameter.key}>
+        {parameter.label}
+        {parameter.required === false && (
+          <span className="ml-1 text-muted-foreground/60">(optional)</span>
+        )}
+      </Label>
+      {parameter.description && (
+        <p className="text-xs text-muted-foreground/80">
+          {parameter.description}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function ParameterField({ parameter }: ParameterFieldProps) {
   const { formData, setFormData } = useConfigurator();
   const materials = useMaterialsWithFilter(parameter.materialFormFilterId);
@@ -124,12 +154,7 @@ function ParameterField({ parameter }: ParameterFieldProps) {
     case "numeric":
       return (
         <div className="space-y-2">
-          <Label
-            className="text-xs text-muted-foreground"
-            htmlFor={parameter.key}
-          >
-            {parameter.label}
-          </Label>
+          <ParameterFieldLabel parameter={parameter} />
           <NumberField
             onChange={(value) => handleChange(Number(value))}
             value={formData[parameter.key] as number}
@@ -152,12 +177,7 @@ function ParameterField({ parameter }: ParameterFieldProps) {
     case "text":
       return (
         <div className="space-y-2">
-          <Label
-            className="text-xs text-muted-foreground"
-            htmlFor={parameter.key}
-          >
-            {parameter.label}
-          </Label>
+          <ParameterFieldLabel parameter={parameter} />
           <Input
             id={parameter.key}
             type="text"
@@ -171,12 +191,7 @@ function ParameterField({ parameter }: ParameterFieldProps) {
     case "list":
       return (
         <div className="space-y-2">
-          <Label
-            className="text-xs text-muted-foreground"
-            htmlFor={parameter.key}
-          >
-            {parameter.label}
-          </Label>
+          <ParameterFieldLabel parameter={parameter} />
           <Select
             value={formData[parameter.key] as string}
             onValueChange={handleChange}
@@ -198,12 +213,7 @@ function ParameterField({ parameter }: ParameterFieldProps) {
     case "boolean":
       return (
         <div className="flex flex-col items-start gap-2">
-          <Label
-            className="text-xs text-muted-foreground"
-            htmlFor={parameter.key}
-          >
-            {parameter.label}
-          </Label>
+          <ParameterFieldLabel parameter={parameter} />
           <Switch
             id={parameter.key}
             checked={(formData[parameter.key] as boolean) || false}
@@ -215,12 +225,7 @@ function ParameterField({ parameter }: ParameterFieldProps) {
     case "material":
       return (
         <div className="space-y-2">
-          <Label
-            className="text-xs text-muted-foreground"
-            htmlFor={parameter.key}
-          >
-            {parameter.label}
-          </Label>
+          <ParameterFieldLabel parameter={parameter} />
           <Combobox
             id={parameter.key}
             options={materials.map((material) => ({
@@ -365,6 +370,7 @@ function ConfiguratorFormContent({
     if (!groupedParameters[currentStep]) return false;
 
     return groupedParameters[currentStep].parameters.every((parameter) => {
+      if (parameter.required === false) return true;
       if (parameter.dataType === "boolean") return true;
       if (parameter.dataType === "numeric")
         return formData[parameter.key] !== undefined;
@@ -448,12 +454,23 @@ function ConfiguratorForm(props: ConfiguratorFormProps) {
   const initialValues = useMemo(() => {
     const values: FormData = {};
     props.parameters.forEach((param) => {
-      if (param.dataType === "boolean") {
-        values[param.key] = props.initialValues?.[param.key] ?? false;
+      const providedValue = props.initialValues?.[param.key];
+      if (providedValue !== undefined) {
+        values[param.key] = providedValue;
+      } else if (param.defaultValue != null && param.defaultValue !== "") {
+        if (param.dataType === "boolean") {
+          values[param.key] = param.defaultValue === "true";
+        } else if (param.dataType === "numeric") {
+          values[param.key] = Number(param.defaultValue) || 0;
+        } else {
+          values[param.key] = param.defaultValue;
+        }
+      } else if (param.dataType === "boolean") {
+        values[param.key] = false;
       } else if (param.dataType === "numeric") {
-        values[param.key] = props.initialValues?.[param.key] ?? 0;
+        values[param.key] = 0;
       } else {
-        values[param.key] = props.initialValues?.[param.key] ?? "";
+        values[param.key] = "";
       }
     });
     return values;
