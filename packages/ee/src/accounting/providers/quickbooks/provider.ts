@@ -154,14 +154,25 @@ export class QuickBooksProvider implements BaseProvider {
   }
 
   /**
-   * Execute a QBO query (e.g., SELECT * FROM Customer WHERE Id IN ('1','2'))
+   * Execute a QBO query (e.g., SELECT * FROM Customer WHERE Id IN ('1','2')).
+   * Unwraps the outer `{ QueryResponse: ... }` envelope so callers can read
+   * entity arrays directly off `result.data`.
    */
   async query<T>(queryString: string) {
     const encoded = encodeURIComponent(queryString);
-    return this.request<QBQueryResponse<T>["QueryResponse"]>(
+    const response = await this.request<QBQueryResponse<T>>(
       "GET",
       `/query?query=${encoded}`
     );
+    if (response.error || !response.data) {
+      return response as typeof response & {
+        data?: QBQueryResponse<T>["QueryResponse"];
+      };
+    }
+    return {
+      ...response,
+      data: response.data.QueryResponse
+    };
   }
 
   async validate(): Promise<boolean> {
