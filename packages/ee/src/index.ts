@@ -1,3 +1,4 @@
+import { Asana } from "./asana/config";
 import { EasyPost } from "./easypost/config";
 import { ExchangeRates } from "./exchange-rates/config";
 import { Jira } from "./jira/config";
@@ -30,6 +31,7 @@ export type {
 
 export const integrations = [
   // Radan,
+  Asana,
   EasyPost,
   ExchangeRates,
   Jira,

@@ -7,6 +7,7 @@ import {
 
 import { useCurrencyFormatter } from "./useCurrencyFormatter";
 import { useGooglePlaces } from "./useGooglePlaces";
+import { useIntegrations } from "./useIntegrations";
 import { useModules } from "./useModules";
 import { useMovingCellRef } from "./useMovingCellRef";
 import { useNextItemId } from "./useNextItemId";
@@ -23,6 +24,7 @@ import { useUser } from "./useUser";
 export {
   useCurrencyFormatter,
   useGooglePlaces,
+  useIntegrations,
   useModules,
   useMovingCellRef,
   useNanoStore,

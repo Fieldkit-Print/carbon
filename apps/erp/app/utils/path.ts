@@ -125,7 +125,7 @@ export const path = {
       asanaCreateTask: `${api}/integrations/asana/task/create`,
       asanaLinkExistingTask: `${api}/integrations/asana/task/link`,
       asanaSyncNotes: `${api}/integrations/asana/task/sync-notes`,
-      asanaSalesOrder: `${api}/integrations/asana/sales-order`,
+      asanaEntity: `${api}/integrations/asana/entity`,
       outsideOperations: (jobId: string) =>
         generatePath(`${api}/production/outside-operations/${jobId}`),
       purchasingKpi: (key: string) =>

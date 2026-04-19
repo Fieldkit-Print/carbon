@@ -5,6 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./accounting": "./src/accounting/index.ts",
+    "./asana": "./src/asana/lib/index.ts",
+    "./asana.server": "./src/asana/lib/index.server.ts",
     "./exchange-rates.server": "./src/exchange-rates/exchange-rates.server.ts",
     "./jira": "./src/jira/lib/index.ts",
     "./jira.server": "./src/jira/lib/index.server.ts",

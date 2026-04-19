@@ -9,12 +9,13 @@ import {
   toast,
   VStack
 } from "@carbon/react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { LuCopy, LuLink } from "react-icons/lu";
 import { useFetcher, useParams } from "react-router";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
 import { Assignee, useOptimisticAssignment } from "~/components";
+import { EntityAsanaProject } from "~/components/EntityAsanaProject";
 import {
   Customer,
   CustomerContact,
@@ -23,8 +24,9 @@ import {
   Location
 } from "~/components/Form";
 import CustomFormInlineFields from "~/components/Form/CustomFormInlineFields";
-import { usePermissions, useRouteData } from "~/hooks";
+import { useIntegrations, usePermissions, useRouteData } from "~/hooks";
 import type { action } from "~/routes/x+/items+/update";
+import { useCustomers } from "~/stores";
 import { path } from "~/utils/path";
 import { copyToClipboard } from "~/utils/string";
 import { isSalesRfqLocked } from "../../sales.models";
@@ -96,6 +98,15 @@ const SalesRFQProperties = () => {
   const canUpdate = permissions.can("update", "sales");
   const isLocked = isSalesRfqLocked(routeData?.rfqSummary?.status);
   const isDisabled = !canUpdate || isLocked;
+
+  const integrations = useIntegrations();
+  const [customers] = useCustomers();
+  const customerName = useMemo(
+    () =>
+      customers.find((c) => c.id === routeData?.rfqSummary?.customerId)?.name ??
+      "",
+    [customers, routeData?.rfqSummary?.customerId]
+  );
 
   return (
     <VStack
@@ -352,6 +363,17 @@ const SalesRFQProperties = () => {
           }}
         />
       </ValidatedForm>
+
+      {integrations.has("asana") && routeData?.rfqSummary && (
+        <EntityAsanaProject
+          entityType="salesRfq"
+          entityId={rfqId}
+          readableId={routeData.rfqSummary.rfqId ?? ""}
+          customerName={customerName}
+          status={routeData.rfqSummary.status ?? "Draft"}
+          isDisabled={isDisabled}
+        />
+      )}
 
       <CustomFormInlineFields
         customFields={

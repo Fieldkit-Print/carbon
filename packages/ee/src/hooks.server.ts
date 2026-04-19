@@ -1,3 +1,4 @@
+import { asanaHealthcheck } from "./asana/hooks.server";
 import { jiraHealthcheck } from "./jira/hooks.server";
 import { linearHealthcheck } from "./linear/hooks.server";
 import {
@@ -21,6 +22,9 @@ import {
  * their server-only lifecycle hooks.
  */
 const serverHooks: Record<string, IntegrationServerHooks> = {
+  asana: {
+    onHealthcheck: asanaHealthcheck
+  },
   jira: {
     onHealthcheck: jiraHealthcheck
   },

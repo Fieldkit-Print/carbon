@@ -1,11 +1,17 @@
-import { assertIsPost, error, success } from "@carbon/auth";
+import { assertIsPost, ERP_URL, error, success } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
+import { notifyEntityStatusChanged } from "@carbon/ee/notifications";
 import type { notifyTask } from "@carbon/jobs/trigger/notify";
 import { NotificationEvent } from "@carbon/notifications";
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
-import { salesRFQStatusType, updateSalesRFQStatus } from "~/modules/sales";
+import {
+  getSalesRFQ,
+  salesRFQStatusType,
+  updateSalesRFQStatus
+} from "~/modules/sales";
+import { getCompanyIntegrations } from "~/modules/settings/settings.server";
 import { getCompanySettings } from "~/modules/settings/settings.service";
 import { path } from "~/utils/path";
 import { tasks } from "~/utils/tasks";
@@ -73,6 +79,34 @@ export async function action({ request, params }: ActionFunctionArgs) {
       path.to.salesRfq(id),
       await flash(request, error(update.error, "Failed to update RFQ status"))
     );
+  }
+
+  try {
+    const [rfq, integrations] = await Promise.all([
+      getSalesRFQ(client, id),
+      getCompanyIntegrations(client, companyId)
+    ]);
+    if (rfq.data) {
+      const { data: customer } = await client
+        .from("customer")
+        .select("name")
+        .eq("id", rfq.data.customerId ?? "")
+        .maybeSingle();
+      await notifyEntityStatusChanged({ client }, integrations, {
+        companyId,
+        userId,
+        carbonUrl: `${ERP_URL}${path.to.salesRfq(id)}`,
+        entity: {
+          entityType: "salesRfq",
+          id,
+          status,
+          readableId: rfq.data.rfqId ?? "",
+          customerName: customer?.name ?? ""
+        }
+      });
+    }
+  } catch (err) {
+    console.error("Failed to notify RFQ status change:", err);
   }
 
   throw redirect(

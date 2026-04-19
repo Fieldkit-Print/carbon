@@ -21,6 +21,7 @@ import {
   EmployeeAvatar,
   useOptimisticAssignment
 } from "~/components";
+import { EntityAsanaProject } from "~/components/EntityAsanaProject";
 import {
   Currency,
   Customer,
@@ -30,9 +31,15 @@ import {
   Location
 } from "~/components/Form";
 import CustomFormInlineFields from "~/components/Form/CustomFormInlineFields";
-import { usePermissions, useRouteData, useUser } from "~/hooks";
+import {
+  useIntegrations,
+  usePermissions,
+  useRouteData,
+  useUser
+} from "~/hooks";
 import type { action } from "~/routes/x+/items+/update";
 import type { action as exchangeRateAction } from "~/routes/x+/sales-order+/$orderId.exchange-rate";
+import { useCustomers } from "~/stores";
 import { path } from "~/utils/path";
 import { copyToClipboard } from "~/utils/string";
 import { isSalesOrderLocked } from "../../sales.models";
@@ -106,6 +113,14 @@ const SalesOrderProperties = () => {
     [orderId]
   );
 
+  const integrations = useIntegrations();
+  const [customers] = useCustomers();
+  const customerName = useMemo(
+    () =>
+      customers.find((c) => c.id === routeData?.salesOrder?.customerId)?.name ??
+      "",
+    [customers, routeData?.salesOrder?.customerId]
+  );
   const permissions = usePermissions();
   const optimisticAssignment = useOptimisticAssignment({
     id: orderId,
@@ -469,6 +484,17 @@ const SalesOrderProperties = () => {
         </span>
         <EmployeeAvatar employeeId={routeData?.salesOrder?.createdBy} />
       </VStack>
+
+      {integrations.has("asana") && routeData?.salesOrder && (
+        <EntityAsanaProject
+          entityType="salesOrder"
+          entityId={orderId}
+          readableId={routeData.salesOrder.salesOrderId ?? ""}
+          customerName={customerName}
+          status={routeData.salesOrder.status ?? "Draft"}
+          isDisabled={isDisabled}
+        />
+      )}
 
       <CustomFormInlineFields
         customFields={

@@ -1,6 +1,7 @@
-import { assertIsPost } from "@carbon/auth";
+import { assertIsPost, ERP_URL } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { getCarbonServiceRole } from "@carbon/auth/client.server";
+import { notifyEntityStatusChanged } from "@carbon/ee/notifications";
 import { validator } from "@carbon/form";
 import { getSalesOrderStatus } from "@carbon/utils";
 import { getLocalTimeZone, today } from "@internationalized/date";
@@ -12,11 +13,13 @@ import {
   getSalesOrderLines,
   salesConfirmValidator
 } from "~/modules/sales";
+import { getCompanyIntegrations } from "~/modules/settings/settings.server";
 import {
   generateAndAttachSalesOrderPdf,
   sendSalesOrderEmail
 } from "~/modules/shared/shared.server";
 import { loader as pdfLoader } from "~/routes/file+/sales-order+/$id[.]pdf";
+import { path } from "~/utils/path";
 
 export async function action(args: ActionFunctionArgs) {
   const { request, params } = args;
@@ -163,6 +166,29 @@ export async function action(args: ActionFunctionArgs) {
         success: false,
         message: "Failed to confirm sales order"
       };
+    }
+
+    try {
+      const integrations = await getCompanyIntegrations(client, companyId);
+      const { data: customer } = await client
+        .from("customer")
+        .select("name")
+        .eq("id", salesOrder.data.customerId ?? "")
+        .maybeSingle();
+      await notifyEntityStatusChanged({ client }, integrations, {
+        companyId,
+        userId,
+        carbonUrl: `${ERP_URL}${path.to.salesOrderDetails(orderId)}`,
+        entity: {
+          entityType: "salesOrder",
+          id: orderId,
+          status,
+          readableId: salesOrder.data.salesOrderId ?? "",
+          customerName: customer?.name ?? ""
+        }
+      });
+    } catch (err) {
+      console.error("Failed to notify sales order status change:", err);
     }
 
     await runMRP(getCarbonServiceRole(), {

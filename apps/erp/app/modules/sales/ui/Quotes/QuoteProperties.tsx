@@ -21,6 +21,7 @@ import {
   EmployeeAvatar,
   useOptimisticAssignment
 } from "~/components";
+import { EntityAsanaProject } from "~/components/EntityAsanaProject";
 import {
   Currency,
   Customer,
@@ -30,9 +31,15 @@ import {
   Location
 } from "~/components/Form";
 import CustomFormInlineFields from "~/components/Form/CustomFormInlineFields";
-import { usePermissions, useRouteData, useUser } from "~/hooks";
+import {
+  useIntegrations,
+  usePermissions,
+  useRouteData,
+  useUser
+} from "~/hooks";
 import type { action } from "~/routes/x+/items+/update";
 import type { action as exchangeRateAction } from "~/routes/x+/quote+/$quoteId.exchange-rate";
+import { useCustomers } from "~/stores";
 import { path } from "~/utils/path";
 import { copyToClipboard } from "~/utils/string";
 import { isQuoteLocked } from "../../sales.models";
@@ -116,6 +123,14 @@ const QuoteProperties = () => {
   const canUpdate = permissions.can("update", "sales");
   const isLocked = isQuoteLocked(routeData?.quote?.status);
   const isDisabled = !canUpdate || isLocked;
+
+  const integrations = useIntegrations();
+  const [customers] = useCustomers();
+  const customerName = useMemo(
+    () =>
+      customers.find((c) => c.id === routeData?.quote?.customerId)?.name ?? "",
+    [customers, routeData?.quote?.customerId]
+  );
 
   return (
     <VStack
@@ -465,6 +480,17 @@ const QuoteProperties = () => {
         </span>
         <EmployeeAvatar employeeId={routeData?.quote?.createdBy} />
       </VStack>
+
+      {integrations.has("asana") && routeData?.quote && (
+        <EntityAsanaProject
+          entityType="quote"
+          entityId={quoteId}
+          readableId={routeData.quote.quoteId ?? ""}
+          customerName={customerName}
+          status={routeData.quote.status ?? "Draft"}
+          isDisabled={isDisabled}
+        />
+      )}
 
       <CustomFormInlineFields
         customFields={

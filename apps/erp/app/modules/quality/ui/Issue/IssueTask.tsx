@@ -60,6 +60,7 @@ import type {
 import { nonConformanceTaskStatus } from "~/modules/quality";
 import { useSuppliers } from "~/stores";
 import { getPrivateUrl, path } from "~/utils/path";
+import { AsanaIssueDialog } from "./Asana/IssueDialog";
 import { JiraIssueDialog } from "./Jira/IssueDialog";
 import { LinearIssueDialog } from "./Linear/IssueDialog";
 
@@ -283,18 +284,21 @@ export function TaskItem({
   const statusAction =
     statusActions[currentStatus as keyof typeof statusActions];
 
-  // Check if this action task has a linked Linear or Jira issue
+  // Check if this action task has a linked Linear, Jira, or Asana issue
   const hasLinearLink =
     type === "action" && !!(task as IssueActionTask).linearIssue;
   const hasJiraLink =
     type === "action" && !!(task as IssueActionTask).jiraIssue;
+  const hasAsanaLink =
+    type === "action" && !!(task as IssueActionTask).asanaTask;
 
   const { content, setContent, onUpdateContent, onUploadImage } = useTaskNotes({
     initialContent: (task.notes ?? {}) as JSONContent,
     taskId: task.id!,
     type,
     hasLinearLink,
-    hasJiraLink
+    hasJiraLink,
+    hasAsanaLink
   });
 
   const { id } = useParams();
@@ -331,6 +335,7 @@ export function TaskItem({
 
           {integrations.has("linear") && <LinearIssueDialog task={task} />}
           {integrations.has("jira") && <JiraIssueDialog task={task} />}
+          {integrations.has("asana") && <AsanaIssueDialog task={task} />}
 
           <IconButton
             icon={<LuChevronRight />}
@@ -440,13 +445,15 @@ function useTaskNotes({
   taskId,
   type,
   hasLinearLink = false,
-  hasJiraLink = false
+  hasJiraLink = false,
+  hasAsanaLink = false
 }: {
   initialContent: JSONContent;
   taskId: string;
   type: "investigation" | "action" | "approval" | "review";
   hasLinearLink?: boolean;
   hasJiraLink?: boolean;
+  hasAsanaLink?: boolean;
 }) {
   const {
     id: userId,
@@ -519,6 +526,22 @@ function useTaskNotes({
         } catch (e) {
           // Silently fail Jira sync - not critical
           console.error("Failed to sync notes to Jira:", e);
+        }
+      }
+
+      // Sync to Asana if this is an action task with a linked Asana task
+      if (type === "action" && hasAsanaLink) {
+        try {
+          await fetch(path.to.api.asanaSyncNotes, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              actionId: taskId,
+              notes: JSON.stringify(content)
+            })
+          });
+        } catch (e) {
+          console.error("Failed to sync notes to Asana:", e);
         }
       }
     },

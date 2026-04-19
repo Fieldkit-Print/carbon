@@ -1,4 +1,4 @@
-import { assertIsPost, error, success } from "@carbon/auth";
+import { assertIsPost, ERP_URL, error, success } from "@carbon/auth";
 import { requirePermissions } from "@carbon/auth/auth.server";
 import { flash } from "@carbon/auth/session.server";
 import { integrations as availableIntegrations } from "@carbon/ee";
@@ -8,6 +8,10 @@ import {
   ProviderID,
   type XeroProvider
 } from "@carbon/ee/accounting";
+import {
+  getAsanaClient,
+  setupAsanaIssuesWebhook
+} from "@carbon/ee/asana.server";
 import { validationError, validator } from "@carbon/form";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { redirect, useLoaderData, useNavigate } from "react-router";
@@ -85,8 +89,6 @@ function buildIntegrationMetadata(
     }
   };
 
-  // Remove owner settings from formData since they're now in syncConfig
-  // biome-ignore lint/correctness/noUnusedVariables: destructuring to exclude from restFormData
   const {
     customerOwner: _customerOwner,
     vendorOwner: _vendorOwner,
@@ -176,6 +178,32 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     }
   }
 
+  if (integrationId === "asana" && integrationData.data.active) {
+    try {
+      const asanaClient = getAsanaClient();
+      const workspaces = await asanaClient.listWorkspaces(companyId);
+      const workspaceOptions = workspaces.map((ws) => ({
+        value: ws.gid,
+        label: ws.name
+      }));
+      dynamicOptions.workspaceGid = workspaceOptions;
+
+      const workspaceGid = metadata.workspaceGid as string | undefined;
+      if (workspaceGid) {
+        const projects = await asanaClient.listProjects(
+          companyId,
+          workspaceGid
+        );
+        dynamicOptions.issuesProjectGid = projects.map((p) => ({
+          value: p.gid,
+          label: p.name
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch Asana options for settings:", error);
+    }
+  }
+
   return {
     installed: integrationData.data.active,
     metadata: flattenedMetadata,
@@ -254,6 +282,17 @@ export async function action({ request, params }: ActionFunctionArgs) {
       path.to.integrations,
       await flash(request, error(update.error, "Failed to install integration"))
     );
+  }
+
+  if (integrationId === "asana") {
+    try {
+      await setupAsanaIssuesWebhook(
+        companyId,
+        `${ERP_URL}/api/webhook/asana/${companyId}`
+      );
+    } catch (e) {
+      console.error("Failed to sync Asana webhook subscription:", e);
+    }
   }
 
   throw redirect(

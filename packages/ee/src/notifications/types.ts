@@ -68,12 +68,26 @@ export interface TaskNotesChangedEvent extends BaseNotificationEvent {
   };
 }
 
+export type EntityType = "salesOrder" | "quote" | "salesRfq";
+
+export interface EntityStatusChangedEvent extends BaseNotificationEvent {
+  type: "entity.status.changed";
+  data: {
+    entityType: EntityType;
+    id: string;
+    status: string;
+    readableId: string;
+    customerName: string;
+  };
+}
+
 export type NotificationEvent =
   | IssueCreatedEvent
   | IssueStatusChangedEvent
   | TaskStatusChangedEvent
   | TaskAssignedEvent
-  | TaskNotesChangedEvent;
+  | TaskNotesChangedEvent
+  | EntityStatusChangedEvent;
 
 // Notification service interface
 export interface NotificationService {
