@@ -257,9 +257,10 @@ export class ExternalIntegrationMappingService {
     entityType: string,
     tableName: string,
     integration: string,
-    limit: number
+    limit: number,
+    excludeIds?: Set<string>
   ): Promise<string[]> {
-    const result = await this.db
+    let query = this.db
       .selectFrom(tableName as keyof KyselyDatabase)
       .leftJoin("externalIntegrationMapping as m", (join) =>
         join
@@ -270,9 +271,17 @@ export class ExternalIntegrationMappingService {
       )
       .select([`${tableName}.id` as any])
       .where(`${tableName}.companyId` as any, "=", this.companyId)
-      .where("m.id", "is", null)
-      .limit(limit)
-      .execute();
+      .where("m.id", "is", null);
+
+    if (excludeIds && excludeIds.size > 0) {
+      query = query.where(
+        `${tableName}.id` as any,
+        "not in",
+        Array.from(excludeIds)
+      );
+    }
+
+    const result = await query.limit(limit).execute();
 
     return result.map((r: { id: string }) => r.id);
   }

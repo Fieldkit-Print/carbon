@@ -844,6 +844,7 @@ export const accountingBackfillTask = task({
 
       if (pushCustomers) {
         let hasMore = true;
+        const attemptedIds = new Set<string>();
 
         logger.info("[PUSH] Starting customers push phase");
 
@@ -852,13 +853,16 @@ export const accountingBackfillTask = task({
             "customer",
             "customer",
             provider.id,
-            payload.batchSize
+            payload.batchSize,
+            attemptedIds
           );
 
           if (unsyncedIds.length === 0) {
             hasMore = false;
             break;
           }
+
+          for (const id of unsyncedIds) attemptedIds.add(id);
 
           const pushResult = await accountingPushBatchTask.triggerAndWait({
             companyId: payload.companyId,
@@ -895,6 +899,7 @@ export const accountingBackfillTask = task({
 
       if (pushVendors) {
         let hasMore = true;
+        const attemptedIds = new Set<string>();
 
         logger.info("[PUSH] Starting vendors push phase");
 
@@ -903,13 +908,16 @@ export const accountingBackfillTask = task({
             "vendor",
             "supplier",
             provider.id,
-            payload.batchSize
+            payload.batchSize,
+            attemptedIds
           );
 
           if (unsyncedIds.length === 0) {
             hasMore = false;
             break;
           }
+
+          for (const id of unsyncedIds) attemptedIds.add(id);
 
           const pushResult = await accountingPushBatchTask.triggerAndWait({
             companyId: payload.companyId,
@@ -946,6 +954,7 @@ export const accountingBackfillTask = task({
 
       if (pushItems) {
         let hasMore = true;
+        const attemptedIds = new Set<string>();
 
         logger.info("[PUSH] Starting items push phase");
 
@@ -954,13 +963,16 @@ export const accountingBackfillTask = task({
             "item",
             "item",
             provider.id,
-            payload.batchSize
+            payload.batchSize,
+            attemptedIds
           );
 
           if (unsyncedIds.length === 0) {
             hasMore = false;
             break;
           }
+
+          for (const id of unsyncedIds) attemptedIds.add(id);
 
           const pushResult = await accountingPushBatchTask.triggerAndWait({
             companyId: payload.companyId,
@@ -1126,6 +1138,7 @@ export const accountingBackfillTask = task({
 
       if (pushInvoices) {
         let hasMore = true;
+        const attemptedIds = new Set<string>();
 
         logger.info("[PUSH] Starting invoices push phase");
 
@@ -1134,13 +1147,16 @@ export const accountingBackfillTask = task({
             "invoice",
             "salesInvoice",
             provider.id,
-            payload.batchSize
+            payload.batchSize,
+            attemptedIds
           );
 
           if (unsyncedIds.length === 0) {
             hasMore = false;
             break;
           }
+
+          for (const id of unsyncedIds) attemptedIds.add(id);
 
           const pushResult = await accountingPushBatchTask.triggerAndWait({
             companyId: payload.companyId,
@@ -1176,6 +1192,7 @@ export const accountingBackfillTask = task({
 
       if (pushBills) {
         let hasMore = true;
+        const attemptedIds = new Set<string>();
 
         logger.info("[PUSH] Starting bills push phase");
 
@@ -1184,13 +1201,16 @@ export const accountingBackfillTask = task({
             "bill",
             "purchaseInvoice",
             provider.id,
-            payload.batchSize
+            payload.batchSize,
+            attemptedIds
           );
 
           if (unsyncedIds.length === 0) {
             hasMore = false;
             break;
           }
+
+          for (const id of unsyncedIds) attemptedIds.add(id);
 
           const pushResult = await accountingPushBatchTask.triggerAndWait({
             companyId: payload.companyId,
@@ -1226,6 +1246,7 @@ export const accountingBackfillTask = task({
 
       if (pushPurchaseOrders) {
         let hasMore = true;
+        const attemptedIds = new Set<string>();
 
         logger.info("[PUSH] Starting purchase orders push phase");
 
@@ -1234,13 +1255,16 @@ export const accountingBackfillTask = task({
             "purchaseOrder",
             "purchaseOrder",
             provider.id,
-            payload.batchSize
+            payload.batchSize,
+            attemptedIds
           );
 
           if (unsyncedIds.length === 0) {
             hasMore = false;
             break;
           }
+
+          for (const id of unsyncedIds) attemptedIds.add(id);
 
           const pushResult = await accountingPushBatchTask.triggerAndWait({
             companyId: payload.companyId,
