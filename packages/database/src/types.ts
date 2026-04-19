@@ -55135,6 +55135,8 @@ export type Database = {
       services: {
         Row: {
           active: boolean | null
+          approved: boolean | null
+          approvedBy: string | null
           assignee: string | null
           companyId: string | null
           createdAt: string | null
@@ -55143,6 +55145,7 @@ export type Database = {
           defaultMethodType: Database["public"]["Enums"]["methodType"] | null
           description: string | null
           externalId: Json | null
+          fromDate: string | null
           id: string | null
           itemPostingGroupId: string | null
           itemTrackingType:
@@ -55157,9 +55160,11 @@ export type Database = {
             | null
           revision: string | null
           revisions: Json | null
+          serviceType: Database["public"]["Enums"]["serviceType"] | null
           supplierIds: string | null
           tags: string[] | null
           thumbnailPath: string | null
+          toDate: string | null
           unitOfMeasure: string | null
           unitOfMeasureCode: string | null
           updatedAt: string | null

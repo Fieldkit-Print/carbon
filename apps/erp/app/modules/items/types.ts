@@ -27,6 +27,7 @@ import type {
   getPart,
   getParts,
   getPickMethods,
+  getService,
   getServices,
   getSupplierParts,
   getTool,
@@ -170,6 +171,10 @@ export type PickMethod = NonNullable<
 export type Service = NonNullable<
   Awaited<ReturnType<typeof getServices>>["data"]
 >[number];
+
+export type ServiceSummary = NonNullable<
+  Awaited<ReturnType<typeof getService>>
+>["data"];
 
 export type ServiceType = Database["public"]["Enums"]["serviceType"];
 

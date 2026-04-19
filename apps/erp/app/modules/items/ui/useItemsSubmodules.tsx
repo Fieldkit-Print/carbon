@@ -7,6 +7,7 @@ import {
   LuGlassWater,
   LuGroup,
   LuHammer,
+  LuHeadphones,
   LuPizza,
   LuPuzzle,
   LuRuler,
@@ -44,12 +45,13 @@ const itemsRoutes: AuthenticatedRouteGroup[] = [
         to: path.to.consumables,
         icon: <LuPizza />,
         table: "consumable"
+      },
+      {
+        name: "Services",
+        to: path.to.services,
+        icon: <LuHeadphones />,
+        table: "service"
       }
-      // {
-      //   name: "Services",
-      //   to: path.to.services,
-      //   icon: <LuHeadphones />,
-      // },
     ]
   },
   // {

@@ -1598,7 +1598,7 @@ export async function getServices(
   }
 ) {
   let query = client
-    .from("service")
+    .from("services")
     .select("*", {
       count: "exact"
     })
@@ -1622,7 +1622,7 @@ export async function getServices(
   }
 
   if (args.supplierId) {
-    query = query.contains("supplierIds", [args.supplierId]);
+    query = query.like("supplierIds", `%${args.supplierId}%`);
   }
 
   query = setGenericQueryFilters(query, args, [
@@ -1637,9 +1637,9 @@ export async function getService(
   companyId: string
 ) {
   return client
-    .from("service")
+    .from("services")
     .select("*")
-    .eq("itemId", itemId)
+    .eq("id", itemId)
     .eq("companyId", companyId)
     .single();
 }
@@ -3075,6 +3075,7 @@ export async function upsertService(
       .from("service")
       .insert({
         id: service.id,
+        itemId,
         serviceType: service.serviceType,
         companyId: service.companyId,
         createdBy: service.createdBy,
@@ -3087,7 +3088,12 @@ export async function upsertService(
 
     const costUpdate = await client
       .from("itemCost")
-      .update({ unitCost: service.unitCost })
+      .update(
+        sanitize({
+          itemPostingGroupId: service.postingGroupId,
+          unitCost: service.unitCost
+        })
+      )
       .eq("itemId", itemId)
       .select("*")
       .single();
@@ -3095,9 +3101,10 @@ export async function upsertService(
     if (costUpdate.error) return costUpdate;
 
     const newService = await client
-      .from("service")
-      .select("*")
-      .eq("readableId", service.id)
+      .from("services")
+      .select("id")
+      .eq("id", itemId)
+      .eq("companyId", service.companyId)
       .single();
 
     return newService;
@@ -3111,7 +3118,7 @@ export async function upsertService(
     defaultMethodType:
       service.serviceType === "External" ? "Buy" : ("Make" as "Buy"),
     itemTrackingType: service.itemTrackingType,
-    unitOfMeasureCode: null,
+    unitOfMeasureCode: service.unitOfMeasureCode,
     active: true
   };
 

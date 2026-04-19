@@ -32,6 +32,7 @@ import { useFetcher } from "react-router";
 import ConsumableForm from "~/modules/items/ui/Consumables/ConsumableForm";
 import MaterialForm from "~/modules/items/ui/Materials/MaterialForm";
 import PartForm from "~/modules/items/ui/Parts/PartForm";
+import ServiceForm from "~/modules/items/ui/Services/ServiceForm";
 import ToolForm from "~/modules/items/ui/Tools/ToolForm";
 import type { MethodItemType } from "~/modules/shared";
 import { methodItemType } from "~/modules/shared";
@@ -422,7 +423,28 @@ const Item = ({
           }}
         />
       )}
-      {/* TODO: Add service */}
+      {type === "Service" && newItemsModal.isOpen && (
+        <ServiceForm
+          type="modal"
+          onClose={() => {
+            setCreated("");
+            newItemsModal.onClose();
+            triggerRef.current?.click();
+          }}
+          initialValues={{
+            id: "",
+            name: created,
+            description: "",
+            serviceType: "Internal",
+            itemTrackingType: "Non-Inventory",
+            unitOfMeasureCode: "EA",
+            replenishmentSystem: "Make",
+            defaultMethodType: "Make",
+            unitCost: 0,
+            tags: []
+          }}
+        />
+      )}
       {type === "Tool" && newItemsModal.isOpen && (
         <ToolForm
           type="modal"
