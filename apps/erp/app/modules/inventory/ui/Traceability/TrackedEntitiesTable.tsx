@@ -116,6 +116,34 @@ const TrackedEntitiesTable = memo(
           meta: {
             icon: <LuFile />
           }
+        },
+        {
+          id: "shelfAssetId",
+          header: "Shelf Asset",
+          cell: ({ row }) => {
+            // Shelf pushes its generated sequentialId back into attributes
+            // under the "Shelf Asset ID" key. Cast through unknown because
+            // the TrackedEntity row type doesn't (yet) surface this field
+            // explicitly.
+            const attrs = (
+              row.original as unknown as {
+                attributes?: Record<string, unknown> | null;
+              }
+            ).attributes;
+            const shelfAssetId =
+              attrs && typeof attrs["Shelf Asset ID"] === "string"
+                ? (attrs["Shelf Asset ID"] as string)
+                : null;
+            return shelfAssetId ? (
+              <Badge variant="secondary" className="items-center gap-1">
+                <LuQrCode />
+                {shelfAssetId}
+              </Badge>
+            ) : null;
+          },
+          meta: {
+            icon: <LuHash />
+          }
         }
       ],
       [numberFormatter, items]
