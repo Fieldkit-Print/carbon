@@ -99,7 +99,8 @@ const PartProperties = () => {
         | "partId"
         | "name"
         | "replenishmentSystem"
-        | "unitOfMeasureCode",
+        | "unitOfMeasureCode"
+        | "visibleInShelf",
       value: string | null
     ) => {
       const formData = new FormData();
@@ -499,6 +500,29 @@ const PartProperties = () => {
           variant="small"
           onChange={(value) => {
             onUpdate("active", value ? "on" : "off");
+          }}
+        />
+      </ValidatedForm>
+
+      <ValidatedForm
+        defaultValues={{
+          // visibleInShelf is exposed via the updated get_part_details RPC,
+          // but Supabase-generated types lag until `pnpm supabase gen types`
+          // is rerun against the updated function signature.
+          // @ts-expect-error
+          visibleInShelf: routeData?.partSummary?.visibleInShelf ?? undefined
+        }}
+        validator={z.object({
+          visibleInShelf: zfd.checkbox()
+        })}
+        className="w-full"
+      >
+        <Boolean
+          label="Visible in Shelf"
+          name="visibleInShelf"
+          variant="small"
+          onChange={(value) => {
+            onUpdate("visibleInShelf", value ? "on" : "off");
           }}
         />
       </ValidatedForm>
