@@ -80,7 +80,8 @@ const ConsumableProperties = () => {
         | "itemTrackingType"
         | "itemPostingGroupId"
         | "consumableId"
-        | "active",
+        | "active"
+        | "visibleInShelf",
       value: string | null
     ) => {
       const formData = new FormData();
@@ -395,6 +396,30 @@ const ConsumableProperties = () => {
           variant="small"
           onChange={(value) => {
             onUpdate("active", value ? "on" : "off");
+          }}
+        />
+      </ValidatedForm>
+
+      <ValidatedForm
+        defaultValues={{
+          // visibleInShelf is exposed via the updated get_consumable_details
+          // RPC, but Supabase-generated types lag until
+          // `pnpm supabase gen types` reruns against the updated function.
+          // @ts-expect-error
+          visibleInShelf:
+            routeData?.consumableSummary?.visibleInShelf ?? undefined
+        }}
+        validator={z.object({
+          visibleInShelf: zfd.checkbox()
+        })}
+        className="w-full"
+      >
+        <Boolean
+          label="Visible in Shelf"
+          name="visibleInShelf"
+          variant="small"
+          onChange={(value) => {
+            onUpdate("visibleInShelf", value ? "on" : "off");
           }}
         />
       </ValidatedForm>
