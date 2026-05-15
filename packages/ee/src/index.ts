@@ -9,6 +9,7 @@ import { QuickBooks } from "./quickbooks/config";
 // import { Radan } from "./radan/config";
 import { Resend } from "./resend/config";
 import { Sage } from "./sage/config";
+import { Shipstation } from "./shipstation/config";
 import { Slack } from "./slack/config";
 
 import { Xero } from "./xero/config";
@@ -41,6 +42,7 @@ export const integrations = [
   QuickBooks,
   Resend,
   Sage,
+  Shipstation,
   Slack,
   Xero,
   Zapier
